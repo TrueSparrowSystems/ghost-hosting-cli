@@ -1,0 +1,44 @@
+*.d.ts
+*.js
+cdktf.out
+cdktf.log
+*terraform.*.tfstate*
+.gen
+.terraform
+tsconfig.tsbuildinfo
+!jest.config.js
+!setup.js
+
+# Editor / IDE files
+/.idea
+/.idea/*
+.vscode
+
+*.log
+
+# dotenv environment variables file
+.env
+.env.test
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Dependency directory
+# https://docs.npmjs.com/cli/shrinkwrap#caveats
+node_modules
+package-lock.json
+
+# Optional npm cache directory
+.npm
+npm-debug.log*
+
+# Optional eslint cache
+.eslintcache
+
+# Dev Folder
+.dev
+
+.DS_Store
