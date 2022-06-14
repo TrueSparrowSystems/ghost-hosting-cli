@@ -1,8 +1,6 @@
 const shell = require('shelljs');
 const promptSync = require("prompt-sync")({ sigint: true });
 
-console.log(typeof promptSync);
-
 function run(): void {
     _getUserInput();
 

@@ -15,8 +15,6 @@ class GetInput {
     }
 
     perform() {
-        console.log('Hey perform..!');
-
         this._parseArguments();
 
         this._getUserInputs();
