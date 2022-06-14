@@ -1,5 +1,6 @@
-const shell = require('shelljs');
-const promptSync = require("prompt-sync")({ sigint: true });
+import * as shell from 'shelljs';
+import * as promptSync from 'prompt-sync';
+const prompt = promptSync({ sigint: true });
 
 function run(): void {
     _getUserInput();
@@ -8,15 +9,15 @@ function run(): void {
 }
 
 function _getUserInput(): void {
-    const GetInput = require('../lib/GetInput');
-    new GetInput({ promptSync: promptSync }).perform();
+    const getInput = require('../lib/getInput');
+    new getInput({ prompt }).perform();
 }
 
 function _applyPlanChanges(): void {
     shell.exec('cdktf diff');
 
     console.log('Please review the diff output above for ghost-hosting-cli');
-    const approve = promptSync("Do you want to approve?(y/n) (Applies the changes outlined in the plan): ");
+    const approve = prompt("Do you want to approve?(y/n) (Applies the changes outlined in the plan): ");
 
     if (approve === 'y') {
         if (shell.exec('cdktf deploy --auto-approve').code !== 0) {
@@ -28,7 +29,9 @@ function _applyPlanChanges(): void {
         console.log(`Invalid input! Please choose 'y' or 'n'`);
     }
 
+    shell.exec('rm config.json');
+
     shell.exit(1);
 }
 
-run();
+export { run };
