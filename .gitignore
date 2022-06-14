@@ -8,6 +8,7 @@ cdktf.log
 tsconfig.tsbuildinfo
 !jest.config.js
 !setup.js
+config.json
 
 # Editor / IDE files
 /.idea
