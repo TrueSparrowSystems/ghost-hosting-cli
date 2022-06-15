@@ -2,7 +2,7 @@
 *.js
 cdktf.out
 cdktf.log
-*terraform.*.tfstate*
+*terraform.*.tfstate
 .gen
 .terraform
 tsconfig.tsbuildinfo

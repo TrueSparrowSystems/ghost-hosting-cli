@@ -4,7 +4,18 @@
   "projectId": "5e9223d5-25ae-46cf-b58e-a9134091d151",
   "sendCrashReports": "false",
   "terraformProviders": [],
-  "terraformModules": [],
+  "terraformModules": [
+    {
+      "name": "vpc",
+      "source": "terraform-aws-modules/vpc/aws",
+      "version": "~> 3.2"
+    },
+    {
+      "name": "rds",
+      "source": "terraform-aws-modules/rds/aws",
+      "version": "~> 3.2"
+    }
+  ],
   "context": {
     "excludeStackIdFromLogicalIds": "true",
     "allowSepCharsInLogicalIds": "true"

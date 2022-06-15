@@ -4,6 +4,7 @@
     "lib": ["es6"]
   },
   "rules": {
-    "no-console": false
+    "no-console": false,
+    "no-unused-expression": false
   }
 }
