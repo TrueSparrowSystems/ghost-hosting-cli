@@ -14,6 +14,7 @@ import {
 const cidrPrefix = "10.0.0.0/16";
 const vpcName = "PLG Ghost VPC";
 const rdsName = "plg-ghost-rds";
+const securityGroup = "plg-gh-sg";
 
 class MyStack extends TerraformStack {
     userInput: any;
@@ -35,7 +36,15 @@ class MyStack extends TerraformStack {
 
         // VPC
         const vpcOptions = this._getVpcOptions();
-        const vpc = new Vpc(this, vpcName, vpcOptions);
+        const vpcOutput = new Vpc(this, vpcName, vpcOptions);
+
+        // Add VPC security group
+        const securityGroupOutput = new SecurityGroup(this, securityGroup, {
+            name: "PLG Ghost Security Group",
+            description: "Security Group managed by Terraform",
+            vpcId: vpcOutput.vpcIdOutput,
+            useNamePrefix: false
+        });
 
         // RDS
         new Rds(this, rdsName, {
@@ -48,7 +57,7 @@ class MyStack extends TerraformStack {
             password: "password",
             availabilityZone: "us-east-1a",
             instanceClass: "db.t3.micro",
-            subnetIds: Fn.tolist(vpc.privateSubnetsOutput),
+            subnetIds: Fn.tolist(vpcOutput.privateSubnetsOutput),
             createDbSubnetGroup: true,
             majorEngineVersion: "5.7",
             parameterGroupName: "parameter-group-test-terraform",
@@ -58,12 +67,17 @@ class MyStack extends TerraformStack {
             dbSubnetGroupName: "db-group-test-terraform",
             dbSubnetGroupUseNamePrefix: false,
             parameterGroupUseNamePrefix: false,
-            optionGroupUseNamePrefix: false
+            optionGroupUseNamePrefix: false,
+            vpcSecurityGroupIds: [securityGroupOutput.thisSecurityGroupIdOutput]
         });
     }
 
     _getVpcOptions() {
-        const privateSubnetCidrBlocks = getPrivateSubnetCidrBlocks(cidrPrefix, 2, 2);
+        const privateSubnetCidrBlocks = getPrivateSubnetCidrBlocks(
+            cidrPrefix,
+            2,
+            2
+        );
 
         return {
             name: vpcName,
