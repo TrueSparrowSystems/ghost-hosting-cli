@@ -14,6 +14,11 @@
       "name": "rds",
       "source": "terraform-aws-modules/rds/aws",
       "version": "~> 3.2"
+    },
+    {
+      "name": "security-group",
+      "source": "terraform-aws-modules/security-group/aws",
+      "version": "~> 3.2"
     }
   ],
   "context": {

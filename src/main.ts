@@ -1,16 +1,17 @@
 import { Construct } from "constructs";
-import { App, TerraformStack } from "cdktf";
+import { App, TerraformStack, TerraformOutput, Fn } from "cdktf";
 import { AwsProvider } from "@cdktf/provider-aws";
 import { Vpc } from '../.gen/modules/vpc';
 
 import { readInput } from "../lib/readInput";
 import {
     getPublicSubnetCidrBlocks,
-    getPrivateSubnetCidrBlocks
+    getPrivateSubnetCidrBlocks, getDefaultCidrBlock
 } from '../lib/util';
 
-const defaultCidr = "10.0.0.0/16";
+const cidrPrefix = "10.0.0.0/16";
 const vpcName = "plg-gh-vpc";
+const rdsName = "plg-gh-rds";
 
 class MyStack extends TerraformStack {
     userInput: any;
@@ -29,31 +30,24 @@ class MyStack extends TerraformStack {
             secretKey: this.userInput.aws.awsSecretAccessKey
         });
 
-        new Vpc(this, vpcName, {
+        const privateSubnetCidrBlocks = getPrivateSubnetCidrBlocks(cidrPrefix, 2, 2);
+
+        const vpc = new Vpc(this, vpcName, {
             name: vpcName,
-            azs: ["us-east-1a"],
-            cidr: defaultCidr,
-            publicSubnets: getPublicSubnetCidrBlocks(defaultCidr),
+            azs: ["us-east-1a", "us-east-1b"],
+            cidr: cidrPrefix,
+            publicSubnets: getPublicSubnetCidrBlocks(cidrPrefix),
             publicSubnetTags: {
                 "Name": vpcName + " public"
             },
-            privateSubnets: getPrivateSubnetCidrBlocks(defaultCidr, 2),
+            privateSubnets: privateSubnetCidrBlocks,
             privateSubnetTags: {
-                "Name": vpcName + " public"
+                "Name": vpcName + " private"
             },
             enableNatGateway: true,
             singleNatGateway: true,
             enableDnsHostnames: true
         });
-
-        // new Rds(this, "plg-gh-rds", {
-        //     identifier: "plg-gh-rds",
-        //     username: "username",
-        //     password: "password",
-        //     engine: "aurora-mysql",
-        //     engineVersion: "5.7.mysql_aurora.2.03.2",
-        //     availabilityZone: "us-east-1a"
-        // });
     }
 }
 
