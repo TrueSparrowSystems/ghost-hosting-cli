@@ -1,9 +1,5 @@
 import { Fn } from "cdktf";
 
-function getDefaultCidrBlock(cidrPrefix: string) {
-    return Fn.cidrsubnet(cidrPrefix, 8, 0);
-}
-
 function getPublicSubnetCidrBlocks(cidrPrefix: string) {
     return [
         Fn.cidrsubnet(cidrPrefix, 8, 0),
@@ -21,4 +17,4 @@ function getPrivateSubnetCidrBlocks(cidrPrefix: string, privateSubnetCount: numb
     return privateSubnetCidrBlocks;
 }
 
-export { getPublicSubnetCidrBlocks, getPrivateSubnetCidrBlocks, getDefaultCidrBlock };
+export { getPublicSubnetCidrBlocks, getPrivateSubnetCidrBlocks };
