@@ -26,6 +26,8 @@ const cidrPrefix = "10.0.0.0/16";
 const vpcName = "PLG Ghost VPC";
 const rdsName = "plg-ghost-rds";
 const securityGroup = "plg-gh-sg";
+const ghostImageUri = "docker.io/ghost:alpine";
+const nginxImageUri = "public.ecr.aws/j0d2y7t1/plg-nginx-ghost:latest";
 
 /**
  * Terraform stack
@@ -80,7 +82,7 @@ class MyStack extends TerraformStack {
 
         this._createIamRoleAndPolicy();
 
-        // this._performEcsOperations();
+        this._performEcsOperations();
     }
 
     /**
@@ -268,7 +270,7 @@ class MyStack extends TerraformStack {
 
         const ecsTaskDefinition = this._createEcsTaskDefinition();
 
-        this._createEcsService();
+        this._createEcsService(ecsCluster, ecsTaskDefinition);
     }
 
     /**
@@ -294,9 +296,9 @@ class MyStack extends TerraformStack {
             containerDefinitions: Fn.jsonencode(
                 [
                     {
-                        "name": "iis",
-                        "image": "",
-                        "cpu": 1024,
+                        "name": "ghost-container",
+                        "image": ghostImageUri,
+                        "cpu": 4,
                         "memory": 2048,
                         "essential": true
                     }
@@ -310,10 +312,11 @@ class MyStack extends TerraformStack {
      *
      * @private
      */
-    _createEcsService() {
+    _createEcsService(ecsCluster: EcsCluster, ecsTaskDefinition: EcsTaskDefinition) {
         new EcsService(this, "plg-gh-ecs-service", {
             name: "plg-gh-ecs-service",
-            iamRole: Fn.jsonencode(this.iamRole)
+            cluster: ecsCluster.arn,
+            taskDefinition: ecsTaskDefinition.arn
         })
     }
 }
