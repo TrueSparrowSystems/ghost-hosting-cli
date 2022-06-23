@@ -1,20 +1,20 @@
 import { Construct } from "constructs";
 import { App, TerraformStack, Fn } from "cdktf";
 import { AwsProvider } from "@cdktf/provider-aws";
-import { Vpc } from '../.gen/modules/vpc';
-import { Rds } from '../.gen/modules/rds';
-import { SecurityGroup } from '../.gen/modules/security-group';
+import { Vpc } from '../gen/modules/vpc';
+import { Rds } from '../gen/modules/rds';
+import { SecurityGroup } from '../gen/modules/security-group';
 
 import {
     EcsTaskDefinition,
     EcsCluster,
     EcsService,
-} from "../.gen/providers/aws/ecs";
+} from "../gen/providers/aws/ecs";
 import {
     IamRole,
     IamRolePolicyAttachment,
     IamPolicy
-} from '../.gen/providers/aws/iam';
+} from '../gen/providers/aws/iam';
 
 import { readInput } from "../lib/readInput";
 import {

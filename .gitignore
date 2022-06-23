@@ -8,6 +8,7 @@ tsconfig.tsbuildinfo
 !jest.config.js
 !setup.js
 config.json
+.gen
 
 # Editor / IDE files
 /.idea
