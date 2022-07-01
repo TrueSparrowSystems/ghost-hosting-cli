@@ -186,7 +186,7 @@ class GetInput {
             };
         }
 
-        fs.writeFileSync('config.json', JSON.stringify(userConfig, null, 4));
+        // fs.writeFileSync('config.json', JSON.stringify(userConfig, null, 4));
     }
 
 }

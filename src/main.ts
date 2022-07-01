@@ -1,8 +1,9 @@
 import { Construct } from "constructs";
-import { App, TerraformStack, Fn } from "cdktf";
-import { AwsProvider } from "@cdktf/provider-aws";
+import { App, TerraformStack, Fn, TerraformOutput } from "cdktf";
+import { AwsProvider, datasources } from "@cdktf/provider-aws";
 import { Vpc } from '../gen/modules/vpc';
 import { Rds } from '../gen/modules/rds';
+import { Alb } from '../gen/modules/alb';
 import { SecurityGroup } from '../gen/modules/security-group';
 
 import {
@@ -23,9 +24,8 @@ import {
 } from '../lib/util';
 
 const cidrPrefix = "10.0.0.0/16";
-const vpcName = "PLG Ghost VPC";
-const rdsName = "plg-ghost-rds";
-const securityGroup = "plg-gh-sg";
+const nameLabel = "PLG Ghost";
+const nameIdentifier = "plg-ghost";
 const ghostImageUri = "docker.io/ghost:alpine";
 const nginxImageUri = "public.ecr.aws/j0d2y7t1/plg-nginx-ghost:latest";
 
@@ -37,6 +37,7 @@ class MyStack extends TerraformStack {
     vpcOutput: Vpc | {
         vpcIdOutput: string
         privateSubnetsOutput: string[]
+        publicSubnetsOutput: string[]
     };
     securityGroupOutput: SecurityGroup | {
         thisSecurityGroupIdOutput: string
@@ -57,7 +58,8 @@ class MyStack extends TerraformStack {
         this.userInput = {};
         this.vpcOutput = {
             vpcIdOutput: '',
-            privateSubnetsOutput: []
+            privateSubnetsOutput: [],
+            publicSubnetsOutput: []
         };
         this.securityGroupOutput = {
             thisSecurityGroupIdOutput: ''
@@ -76,13 +78,15 @@ class MyStack extends TerraformStack {
 
         this._createVpc();
 
-        this._createSecurityGroup();
+        // this._createSecurityGroup();
 
         // this._createRdsInstance();
 
         this._createIamRoleAndPolicy();
 
-        this._performEcsOperations();
+        // this._performEcsOperations();
+
+        this._setupAlb();
     }
 
     /**
@@ -111,24 +115,36 @@ class MyStack extends TerraformStack {
             2
         );
 
+        const zones = new datasources.DataAwsAvailabilityZones(this, 'zones', {
+            state: 'available'
+        });
+
+        new TerraformOutput(this, "first_zone", {
+            value: Fn.element(zones.names, 0)
+        });
+
+        new TerraformOutput(this, "second_zone", {
+            value: Fn.element(zones.names, 1)
+        });
+
         const vpcOptions = {
-            name: vpcName,
-            azs: ["us-east-1a", "us-east-1b"],
+            name: nameLabel,
+            azs: [Fn.element(zones.names, 0), Fn.element(zones.names, 1)],
             cidr: cidrPrefix,
             publicSubnets: getPublicSubnetCidrBlocks(cidrPrefix),
             publicSubnetTags: {
-                "Name": vpcName + " public"
+                "Name": nameLabel + " public"
             },
             privateSubnets: privateSubnetCidrBlocks,
             privateSubnetTags: {
-                "Name": vpcName + " private"
+                "Name": nameLabel + " private"
             },
             enableNatGateway: true,
             singleNatGateway: true,
             enableDnsHostnames: true
         };
 
-        this.vpcOutput = new Vpc(this, vpcName, vpcOptions);
+        this.vpcOutput = new Vpc(this, nameIdentifier, vpcOptions);
     }
 
     /**
@@ -138,7 +154,7 @@ class MyStack extends TerraformStack {
      * @private
      */
     _createSecurityGroup() {
-        this.securityGroupOutput = new SecurityGroup(this, securityGroup, {
+        this.securityGroupOutput = new SecurityGroup(this, 'rds_sg', {
             name: "PLG Ghost VPC Security Group",
             description: "Security Group managed by Terraform",
             vpcId: this.vpcOutput.vpcIdOutput,
@@ -152,8 +168,22 @@ class MyStack extends TerraformStack {
      * @private
      */
     _createRdsInstance() {
+
+        const rdsSg = new SecurityGroup(this, 'rds_sg', {
+            name: 'rds-sg',
+            description: 'Firewall for RDS instance',
+            vpcId: this.vpcOutput.vpcIdOutput,
+            useNamePrefix: false,
+            ingressRules: ["mysql-tcp"],
+            ingressCidrBlocks: [cidrPrefix],
+            egressRules: ["all-all"],
+            tags: {
+                'Name': nameLabel
+            }
+        });
+
         const rdsOptions = {
-            identifier: rdsName,
+            identifier: nameIdentifier,
             engine: "mysql",
             engineVersion: "5.7",
             allocatedStorage: "10",
@@ -173,10 +203,10 @@ class MyStack extends TerraformStack {
             dbSubnetGroupUseNamePrefix: false,
             parameterGroupUseNamePrefix: false,
             optionGroupUseNamePrefix: false,
-            vpcSecurityGroupIds: [this.securityGroupOutput.thisSecurityGroupIdOutput]
+            vpcSecurityGroupIds: [rdsSg.thisSecurityGroupIdOutput]
         };
 
-        new Rds(this, rdsName, rdsOptions);
+        new Rds(this, 'rds', rdsOptions);
     }
 
     /**
@@ -271,6 +301,38 @@ class MyStack extends TerraformStack {
         const ecsTaskDefinition = this._createEcsTaskDefinition();
 
         this._createEcsService(ecsCluster, ecsTaskDefinition);
+    }
+
+    /**
+     * Setup ALB - create ALB with listeners and target groups
+     *
+     * @private
+     */
+    _setupAlb() {
+        // Security group for ALB
+        const albSg = new SecurityGroup(this, 'alb_sg', {
+            name: 'alb-sg',
+            description: 'Firewall for internet traffic',
+            vpcId: this.vpcOutput.vpcIdOutput,
+            useNamePrefix: false,
+            ingressRules: ["https-443-tcp", "http-80-tcp"],
+            ingressCidrBlocks: ["0.0.0.0/0"],
+            egressRules: ["all-all"],
+            tags: {
+                'Name': nameLabel
+            }
+        });
+
+        new Alb(this, 'alb', {
+            name: nameIdentifier,
+            loadBalancerType: 'application',
+            vpcId: this.vpcOutput.vpcIdOutput,
+            subnets: Fn.tolist(this.vpcOutput.publicSubnetsOutput),
+            securityGroups: [albSg.thisSecurityGroupIdOutput],
+            tags: {
+                'Name': nameLabel
+            }
+        });
     }
 
     /**

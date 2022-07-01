@@ -21,6 +21,11 @@
       "name": "security-group",
       "source": "terraform-aws-modules/security-group/aws",
       "version": "~> 3.2"
+    },
+    {
+      "name": "alb",
+      "source": "terraform-aws-modules/alb/aws",
+      "version": "~> 7.0"
     }
   ],
   "context": {
