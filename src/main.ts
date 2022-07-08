@@ -6,16 +6,20 @@ import { Rds } from '../gen/modules/rds';
 import { Alb } from '../gen/modules/alb';
 import { SecurityGroup } from '../gen/modules/security-group';
 
+import { DataAwsAmi } from '../.gen/providers/aws/ec2';
 import {
     EcsTaskDefinition,
     EcsCluster,
-    EcsService,
+    EcsService
 } from "../gen/providers/aws/ecs";
 import {
     IamRole,
     IamRolePolicyAttachment,
-    IamPolicy
+    IamPolicy,
+    IamInstanceProfile
 } from '../gen/providers/aws/iam';
+
+import { Instance } from '../.gen/providers/aws/ec2';
 
 import { readInput } from "../lib/readInput";
 import {
@@ -24,8 +28,8 @@ import {
 } from '../lib/util';
 
 const cidrPrefix = "10.0.0.0/16";
-const nameLabel = "PLG Ghost";
-const nameIdentifier = "plg-ghost";
+const nameLabel = "PLG Ghost test";
+const nameIdentifier = "plg-ghost test";
 const ghostImageUri = "docker.io/ghost:alpine";
 const nginxImageUri = "public.ecr.aws/j0d2y7t1/plg-nginx-ghost:latest";
 
@@ -43,7 +47,14 @@ class MyStack extends TerraformStack {
         thisSecurityGroupIdOutput: string
     };
     iamRole: IamRole | {
-
+        arn: string
+    };
+    dbInstanceEndpointOutput: string;
+    instanceProfile: IamInstanceProfile | {
+        name: ''
+    };
+    ecsInstanceRole: IamRole | {
+        arn: ''
     };
 
     /**
@@ -65,7 +76,13 @@ class MyStack extends TerraformStack {
             thisSecurityGroupIdOutput: ''
         };
         this.iamRole = {};
+        this.dbInstanceEndpointOutput = '';
+        this.instanceProfile = {
+            name: ''
+        };
+        this.ecsInstanceRole = {};
     }
+
 
     /**
      * Main performer of the class.
@@ -78,15 +95,15 @@ class MyStack extends TerraformStack {
 
         this._createVpc();
 
-        // this._createSecurityGroup();
+        this._createSecurityGroup();
 
         // this._createRdsInstance();
 
         this._createIamRoleAndPolicy();
 
-        // this._performEcsOperations();
+        this._performEcsOperations();
 
-        this._setupAlb();
+        // this._setupAlb();
     }
 
     /**
@@ -154,12 +171,16 @@ class MyStack extends TerraformStack {
      * @private
      */
     _createSecurityGroup() {
-        this.securityGroupOutput = new SecurityGroup(this, 'rds_sg', {
+        const securityGroupOutput = new SecurityGroup(this, 'vpc_sg', {
             name: "PLG Ghost VPC Security Group",
             description: "Security Group managed by Terraform",
             vpcId: this.vpcOutput.vpcIdOutput,
             useNamePrefix: false
         });
+
+        this.securityGroupOutput = {
+            thisSecurityGroupIdOutput: securityGroupOutput.thisSecurityGroupIdOutput
+        };
     }
 
     /**
@@ -168,7 +189,6 @@ class MyStack extends TerraformStack {
      * @private
      */
     _createRdsInstance() {
-
         const rdsSg = new SecurityGroup(this, 'rds_sg', {
             name: 'rds-sg',
             description: 'Firewall for RDS instance',
@@ -185,19 +205,19 @@ class MyStack extends TerraformStack {
         const rdsOptions = {
             identifier: nameIdentifier,
             engine: "mysql",
-            engineVersion: "5.7",
+            engineVersion: "8.1",
             allocatedStorage: "10",
-            name: "testDb",
+            name: "test_db",
             username: "username",
             password: "password",
             availabilityZone: "us-east-1a",
             instanceClass: "db.t3.micro",
             subnetIds: Fn.tolist(this.vpcOutput.privateSubnetsOutput),
             createDbSubnetGroup: true,
-            majorEngineVersion: "5.7",
+            majorEngineVersion: "8.1",
             parameterGroupName: "parameter-group-test-terraform",
             parameterGroupDescription: "Parameter group for plg cdk",
-            family: "mysql5.7",
+            family: "mysql8.1",
             optionGroupName: "option-group-test-terraform",
             dbSubnetGroupName: "db-group-test-terraform",
             dbSubnetGroupUseNamePrefix: false,
@@ -206,7 +226,8 @@ class MyStack extends TerraformStack {
             vpcSecurityGroupIds: [rdsSg.thisSecurityGroupIdOutput]
         };
 
-        new Rds(this, 'rds', rdsOptions);
+        const rdsOutput = new Rds(this, 'rds', rdsOptions);
+        this.dbInstanceEndpointOutput = rdsOutput.dbInstanceEndpointOutput;
     }
 
     /**
@@ -215,11 +236,130 @@ class MyStack extends TerraformStack {
      * @private
      */
     async _createIamRoleAndPolicy() {
-        const iamRole = this._createIamRole();
+        // const iamRole = this._createIamRole();
+        //
+        // const iamPolicy = this._createIamPolicy();
 
-        const iamPolicy = this._createIamPolicy();
+        // Create instance role, instance policy and attach them.
+        this.ecsInstanceRole = this._createEcsInstanceRole();
 
-        this._attachIamRoleAndPolicy(iamRole, iamPolicy);
+        const ecsInstancePolicy = this._createEcsInstancePolicy();
+
+        this._attachIamRoleAndPolicy(
+            this.ecsInstanceRole,
+            ecsInstancePolicy,
+            "ecs-instance-role-policy-attachment"
+        );
+
+        // Create IAM instance profile
+        this.instanceProfile = this._createEcsInstanceProfile(this.ecsInstanceRole);
+        //
+        // // Create service role, service policy and attach them.
+        // const ecsServiceRole = this._createEcsServiceRole();
+        //
+        // const ecsServicePolicy = this._createEcsServicePolicy();
+        //
+        // this._attachIamRoleAndPolicy(
+        //     ecsServiceRole,
+        //     ecsServicePolicy,
+        //     "ecs-service-role-policy-attachment"
+        // );
+    }
+
+    _createEcsInstanceRole() {
+        return new IamRole(this, "plg-gh-ecs-instance-role", {
+            name: "ecs-instance-role",
+            assumeRolePolicy: Fn.jsonencode({
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Action": "sts:AssumeRole",
+                        "Principal": {
+                            "Service": "ecs.amazonaws.com"
+                        },
+                        "Effect": "Allow",
+                        "Sid": ""
+                    }
+                ]
+            })
+        });
+    }
+
+    _createEcsInstancePolicy() {
+        const ecsInstancePolicyConfig = {
+            name: "ecs-instance-policy",
+            policy: Fn.jsonencode({
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "ecr:GetAuthorizationToken",
+                            "ecr:BatchCheckLayerAvailability",
+                            "ecr:GetDownloadUrlForLayer",
+                            "ecr:BatchGetImage",
+                            "logs:CreateLogStream",
+                            "logs:PutLogEvents"
+                        ],
+                        "Resource": "*"
+                    }
+                ]
+            })
+        };
+
+        return new IamPolicy(this, "plg-gh-ecs-instance-policy", ecsInstancePolicyConfig);
+    }
+
+    _createEcsInstanceProfile(ecsInstanceRole: IamRole) {
+        return new IamInstanceProfile(this, "ecs-instance-profile", {
+            name: "ecs-instance-profile",
+            path: "/",
+            role: ecsInstanceRole.id
+        })
+    }
+
+    _createEcsServiceRole() {
+        return new IamRole(this, "plg-gh-ecs-service-role", {
+            name: "ecs-service-role",
+            assumeRolePolicy: Fn.jsonencode({
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Action": "sts:AssumeRole",
+                        "Principal": {
+                            "Service": "ecs.amazonaws.com"
+                        },
+                        "Effect": "Allow",
+                        "Sid": ""
+                    }
+                ]
+            })
+        });
+    }
+
+    _createEcsServicePolicy() {
+        const ecsServicePolicyConfig = {
+            name: "ecs-service-policy",
+            policy: Fn.jsonencode({
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "ecr:GetAuthorizationToken",
+                            "ecr:BatchCheckLayerAvailability",
+                            "ecr:GetDownloadUrlForLayer",
+                            "ecr:BatchGetImage",
+                            "logs:CreateLogStream",
+                            "logs:PutLogEvents"
+                        ],
+                        "Resource": "*"
+                    }
+                ]
+            })
+        };
+
+        return new IamPolicy(this, "plg-gh-ecs-service-policy", ecsServicePolicyConfig);
     }
 
     /**
@@ -283,8 +423,8 @@ class MyStack extends TerraformStack {
      * @param iamPolicy
      * @private
      */
-    _attachIamRoleAndPolicy(iamRole: IamRole, iamPolicy: IamPolicy) {
-        new IamRolePolicyAttachment(this, "plg-gh-policy-attachment", {
+    _attachIamRoleAndPolicy(iamRole, iamPolicy: IamPolicy, attachmentId: string) {
+        new IamRolePolicyAttachment(this, attachmentId, {
             role: iamRole.name,
             policyArn: iamPolicy.arn
         });
@@ -298,9 +438,38 @@ class MyStack extends TerraformStack {
     _performEcsOperations() {
         const ecsCluster = this._createEcsCluster();
 
+        const ec2EcsInstance = this._createEC2ECSInstance();
+
         const ecsTaskDefinition = this._createEcsTaskDefinition();
 
-        this._createEcsService(ecsCluster, ecsTaskDefinition);
+        const ecsService = this._createEcsService(ecsCluster, ecsTaskDefinition);
+
+        // this._createEcsTaskSet(ecsCluster, ecsTaskDefinition, ecsService);
+    }
+
+    _createEC2ECSInstance() {
+        const dataAwsAmiOutput = new DataAwsAmi(this, "data-aws-ami", {
+            mostRecent: true,
+            owners: ["amazon"],
+            filter: [{
+                name: "name",
+                values: ["amzn2-ami-ecs-hvm-2.0.202*-x86_64-ebs"]
+            }]
+        });
+
+        const subnetId = Fn.element(Fn.tolist(this.vpcOutput.privateSubnetsOutput), 0);
+        return new Instance(this, "ec2-ecs-instance", {
+            ami: dataAwsAmiOutput.id,
+            subnetId,
+            instanceType: "t2.medium",
+            ebsOptimized: false,
+            userData: "#!/bin/bash\n" +
+                "{\n" +
+                "  echo \"ECS_CLUSTER=plg-gh-ecs-cluster\"\n" +
+                "} >> /etc/ecs/ecs.config",
+            iamInstanceProfile: this.instanceProfile.name,
+            securityGroups: [this.securityGroupOutput.thisSecurityGroupIdOutput]
+        });
     }
 
     /**
@@ -352,17 +521,108 @@ class MyStack extends TerraformStack {
      */
     _createEcsTaskDefinition(): EcsTaskDefinition {
         return new EcsTaskDefinition(this, "ecs-task-definition", {
-            family: "service",
+            family: "ghost-task-def",
+            memory: "512",
             cpu: "256",
-            networkMode: "awsvpc",
+            networkMode: "bridge",
+            requiresCompatibilities: ["EC2"],
+            executionRoleArn: '',
+            taskRoleArn: '', // TODO - add here
+            volume: [
+                {
+                    name: "ghost",
+                    hostPath: "/mnt/ghost"
+                }
+            ],
             containerDefinitions: Fn.jsonencode(
                 [
                     {
-                        "name": "ghost-container",
+                        "name": "ghost",
                         "image": ghostImageUri,
-                        "cpu": 4,
-                        "memory": 2048,
-                        "essential": true
+                        "cpu": 0,
+                        "memory": null,
+                        "essential": true,
+                        "entryPoint": [ "sh", "-c" ],
+                        "command": [
+                            // TODO: add command
+                        ],
+                        "portMappings": [
+                            {
+                                "hostPort": 2368,
+                                "containerPort": 2368,
+                                "protocol": "tcp"
+                            }
+                        ],
+                        "environment": [
+                            {
+                                "name": "database__client",
+                                "value": "mysql"
+                            },
+                            {
+                                "name": "database__connection__database",
+                                "value": "test_db"
+                            },
+                            {
+                                "name": "database__connection__host",
+                                "value": this.dbInstanceEndpointOutput
+                            },
+                            {
+                                "name": "database__connection__password",
+                                "value": "password"
+                            },
+                            {
+                                "name": "database__connection__user",
+                                "value": "username"
+                            }
+                        ],
+                        "mountPoints": [
+                            {
+                                "readOnly": null,
+                                "containerPath": "/var/lib/ghost/content",
+                                "sourceVolume": "ghost"
+                            }
+                        ],
+                        "logConfiguration": {
+                            "logDriver": "awslogs",
+                            "secretOptions": null,
+                            "options": {
+                                "awslogs-group": "/ecs/ghost",
+                                "awslogs-region": "us-east-1",
+                                "awslogs-stream-prefix": "ecs"
+                            }
+                        },
+                    },
+                    {
+                        "name": "nginx",
+                        "image": nginxImageUri,
+                        "cpu": 0,
+                        "memory": null,
+                        "essential": true,
+                        "portMappings": [
+                            {
+                                "hostPort": 80,
+                                "protocol": "tcp",
+                                "containerPort": 80
+                            }
+                        ],
+                        "links": [
+                            "ghost"
+                        ],
+                        "dependsOn": [
+                            {
+                                "containerName": "ghost",
+                                "condition": "START"
+                            }
+                        ],
+                        "logConfiguration": {
+                            "logDriver": "awslogs",
+                            "secretOptions": null,
+                            "options": {
+                                "awslogs-group": "/ecs/ghost",
+                                "awslogs-region": "us-east-1",
+                                "awslogs-stream-prefix": "ecs"
+                            }
+                        },
                     }
                 ]
             )
@@ -374,11 +634,13 @@ class MyStack extends TerraformStack {
      *
      * @private
      */
-    _createEcsService(ecsCluster: EcsCluster, ecsTaskDefinition: EcsTaskDefinition) {
-        new EcsService(this, "plg-gh-ecs-service", {
+    _createEcsService(ecsCluster: EcsCluster, ecsTaskDefinition: EcsTaskDefinition): EcsService {
+        return new EcsService(this, "plg-gh-ecs-service", {
             name: "plg-gh-ecs-service",
             cluster: ecsCluster.arn,
-            taskDefinition: ecsTaskDefinition.arn
+            taskDefinition: ecsTaskDefinition.arn,
+            launchType: "EC2",
+            iamRole: this.ecsInstanceRole.arn
         })
     }
 }
