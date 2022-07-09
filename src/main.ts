@@ -46,15 +46,9 @@ class MyStack extends TerraformStack {
     securityGroupOutput: SecurityGroup | {
         thisSecurityGroupIdOutput: string
     };
-    iamRole: IamRole | {
-        arn: string
-    };
     dbInstanceEndpointOutput: string;
     instanceProfile: IamInstanceProfile | {
         name: ''
-    };
-    ecsInstanceRole: IamRole | {
-        arn: ''
     };
 
     /**
@@ -75,12 +69,10 @@ class MyStack extends TerraformStack {
         this.securityGroupOutput = {
             thisSecurityGroupIdOutput: ''
         };
-        this.iamRole = {};
         this.dbInstanceEndpointOutput = '';
         this.instanceProfile = {
             name: ''
         };
-        this.ecsInstanceRole = {};
     }
 
 
@@ -241,18 +233,18 @@ class MyStack extends TerraformStack {
         // const iamPolicy = this._createIamPolicy();
 
         // Create instance role, instance policy and attach them.
-        this.ecsInstanceRole = this._createEcsInstanceRole();
+        const ecsInstanceRole = this._createEcsInstanceRole();
 
         const ecsInstancePolicy = this._createEcsInstancePolicy();
 
         this._attachIamRoleAndPolicy(
-            this.ecsInstanceRole,
+            ecsInstanceRole,
             ecsInstancePolicy,
             "ecs-instance-role-policy-attachment"
         );
 
         // Create IAM instance profile
-        this.instanceProfile = this._createEcsInstanceProfile(this.ecsInstanceRole);
+        this.instanceProfile = this._createEcsInstanceProfile(ecsInstanceRole);
         //
         // // Create service role, service policy and attach them.
         // const ecsServiceRole = this._createEcsServiceRole();
@@ -421,9 +413,10 @@ class MyStack extends TerraformStack {
      *
      * @param iamRole
      * @param iamPolicy
+     * @param attachmentId
      * @private
      */
-    _attachIamRoleAndPolicy(iamRole, iamPolicy: IamPolicy, attachmentId: string) {
+    _attachIamRoleAndPolicy(iamRole: IamRole, iamPolicy: IamPolicy, attachmentId: string) {
         new IamRolePolicyAttachment(this, attachmentId, {
             role: iamRole.name,
             policyArn: iamPolicy.arn
@@ -639,8 +632,7 @@ class MyStack extends TerraformStack {
             name: "plg-gh-ecs-service",
             cluster: ecsCluster.arn,
             taskDefinition: ecsTaskDefinition.arn,
-            launchType: "EC2",
-            iamRole: this.ecsInstanceRole.arn
+            launchType: "EC2"
         })
     }
 }
