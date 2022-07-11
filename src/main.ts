@@ -15,7 +15,6 @@ import {
 import {
     IamRole,
     IamRolePolicyAttachment,
-    IamPolicy,
     IamInstanceProfile
 } from '../gen/providers/aws/iam';
 
@@ -27,9 +26,9 @@ import {
     getPrivateSubnetCidrBlocks
 } from '../lib/util';
 
-const cidrPrefix = "10.0.0.0/16";
-const nameLabel = "PLG Ghost test";
-const nameIdentifier = "plg-ghost test";
+const cidrPrefix = "23.0.0.0/16";
+const nameLabel = "PLG Ghost Test";
+const nameIdentifier = "plg-ghost-test";
 const ghostImageUri = "docker.io/ghost:alpine";
 const nginxImageUri = "public.ecr.aws/j0d2y7t1/plg-nginx-ghost:latest";
 
@@ -167,7 +166,12 @@ class MyStack extends TerraformStack {
             name: "PLG Ghost VPC Security Group",
             description: "Security Group managed by Terraform",
             vpcId: this.vpcOutput.vpcIdOutput,
-            useNamePrefix: false
+            useNamePrefix: false,
+            ingressCidrBlocks: ["0.0.0.0/0"],
+            ingressRules: [
+                "ssh-tcp"
+            ],
+            egressRules: ["all-all"]
         });
 
         this.securityGroupOutput = {
@@ -228,46 +232,29 @@ class MyStack extends TerraformStack {
      * @private
      */
     async _createIamRoleAndPolicy() {
-        // const iamRole = this._createIamRole();
-        //
-        // const iamPolicy = this._createIamPolicy();
-
-        // Create instance role, instance policy and attach them.
         const ecsInstanceRole = this._createEcsInstanceRole();
 
-        const ecsInstancePolicy = this._createEcsInstancePolicy();
+        // const ecsInstancePolicy = this._createEcsInstancePolicy();
 
         this._attachIamRoleAndPolicy(
             ecsInstanceRole,
-            ecsInstancePolicy,
             "ecs-instance-role-policy-attachment"
         );
 
         // Create IAM instance profile
         this.instanceProfile = this._createEcsInstanceProfile(ecsInstanceRole);
-        //
-        // // Create service role, service policy and attach them.
-        // const ecsServiceRole = this._createEcsServiceRole();
-        //
-        // const ecsServicePolicy = this._createEcsServicePolicy();
-        //
-        // this._attachIamRoleAndPolicy(
-        //     ecsServiceRole,
-        //     ecsServicePolicy,
-        //     "ecs-service-role-policy-attachment"
-        // );
     }
 
     _createEcsInstanceRole() {
         return new IamRole(this, "plg-gh-ecs-instance-role", {
-            name: "ecs-instance-role",
+            name: "plg-gh-ecs-instance-role",
             assumeRolePolicy: Fn.jsonencode({
                 "Version": "2012-10-17",
                 "Statement": [
                     {
                         "Action": "sts:AssumeRole",
                         "Principal": {
-                            "Service": "ecs.amazonaws.com"
+                            "Service": "ec2.amazonaws.com"
                         },
                         "Effect": "Allow",
                         "Sid": ""
@@ -275,31 +262,6 @@ class MyStack extends TerraformStack {
                 ]
             })
         });
-    }
-
-    _createEcsInstancePolicy() {
-        const ecsInstancePolicyConfig = {
-            name: "ecs-instance-policy",
-            policy: Fn.jsonencode({
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Action": [
-                            "ecr:GetAuthorizationToken",
-                            "ecr:BatchCheckLayerAvailability",
-                            "ecr:GetDownloadUrlForLayer",
-                            "ecr:BatchGetImage",
-                            "logs:CreateLogStream",
-                            "logs:PutLogEvents"
-                        ],
-                        "Resource": "*"
-                    }
-                ]
-            })
-        };
-
-        return new IamPolicy(this, "plg-gh-ecs-instance-policy", ecsInstancePolicyConfig);
     }
 
     _createEcsInstanceProfile(ecsInstanceRole: IamRole) {
@@ -310,116 +272,17 @@ class MyStack extends TerraformStack {
         })
     }
 
-    _createEcsServiceRole() {
-        return new IamRole(this, "plg-gh-ecs-service-role", {
-            name: "ecs-service-role",
-            assumeRolePolicy: Fn.jsonencode({
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Action": "sts:AssumeRole",
-                        "Principal": {
-                            "Service": "ecs.amazonaws.com"
-                        },
-                        "Effect": "Allow",
-                        "Sid": ""
-                    }
-                ]
-            })
-        });
-    }
-
-    _createEcsServicePolicy() {
-        const ecsServicePolicyConfig = {
-            name: "ecs-service-policy",
-            policy: Fn.jsonencode({
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Action": [
-                            "ecr:GetAuthorizationToken",
-                            "ecr:BatchCheckLayerAvailability",
-                            "ecr:GetDownloadUrlForLayer",
-                            "ecr:BatchGetImage",
-                            "logs:CreateLogStream",
-                            "logs:PutLogEvents"
-                        ],
-                        "Resource": "*"
-                    }
-                ]
-            })
-        };
-
-        return new IamPolicy(this, "plg-gh-ecs-service-policy", ecsServicePolicyConfig);
-    }
-
-    /**
-     * Create IAM role
-     *
-     * @private
-     */
-    _createIamRole(): IamRole {
-        return new IamRole(this, "plg-gh-ecs-iam-role", {
-            name: "plg-gh-ecs-iam-role",
-            assumeRolePolicy: Fn.jsonencode({
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Action": "sts:AssumeRole",
-                        "Principal": {
-                            "Service": "ecs.amazonaws.com"
-                        },
-                        "Effect": "Allow",
-                        "Sid": ""
-                    }
-                ]
-            })
-        });
-    }
-
-    /**
-     * Create IAM policy
-     *
-     * @private
-     */
-    _createIamPolicy(): IamPolicy {
-        const iamPolicyConfig = {
-            name: "plg-gh-iam-policy",
-            policy: Fn.jsonencode({
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Action": [
-                            "ecr:GetAuthorizationToken",
-                            "ecr:BatchCheckLayerAvailability",
-                            "ecr:GetDownloadUrlForLayer",
-                            "ecr:BatchGetImage",
-                            "logs:CreateLogStream",
-                            "logs:PutLogEvents"
-                        ],
-                        "Resource": "*"
-                    }
-                ]
-            })
-        };
-
-        return new IamPolicy(this, "plg-gh-iam-policy", iamPolicyConfig);
-    }
-
     /**
      * Attach IAM role and IAM policy
      *
      * @param iamRole
-     * @param iamPolicy
      * @param attachmentId
      * @private
      */
-    _attachIamRoleAndPolicy(iamRole: IamRole, iamPolicy: IamPolicy, attachmentId: string) {
+    _attachIamRoleAndPolicy(iamRole: IamRole, attachmentId: string) {
         new IamRolePolicyAttachment(this, attachmentId, {
             role: iamRole.name,
-            policyArn: iamPolicy.arn
+            policyArn: "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
         });
     }
 
@@ -429,9 +292,9 @@ class MyStack extends TerraformStack {
      * @private
      */
     _performEcsOperations() {
-        const ecsCluster = this._createEcsCluster();
-
         const ec2EcsInstance = this._createEC2ECSInstance();
+
+        const ecsCluster = this._createEcsCluster();
 
         const ecsTaskDefinition = this._createEcsTaskDefinition();
 
@@ -450,18 +313,22 @@ class MyStack extends TerraformStack {
             }]
         });
 
-        const subnetId = Fn.element(Fn.tolist(this.vpcOutput.privateSubnetsOutput), 0);
+        const subnetId = Fn.element(Fn.tolist(this.vpcOutput.publicSubnetsOutput), 0);
         return new Instance(this, "ec2-ecs-instance", {
             ami: dataAwsAmiOutput.id,
             subnetId,
-            instanceType: "t2.medium",
-            ebsOptimized: false,
-            userData: "#!/bin/bash\n" +
-                "{\n" +
-                "  echo \"ECS_CLUSTER=plg-gh-ecs-cluster\"\n" +
-                "} >> /etc/ecs/ecs.config",
+            instanceType: "t3.micro",
+            ebsOptimized: true,
+            userData: "#!/bin/bash \n" +
+                "cat <<'EOF' >> /etc/ecs/ecs.config \n" +
+                "ECS_CLUSTER=plg-gh-ecs-cluster \n" +
+                "EOF",
             iamInstanceProfile: this.instanceProfile.name,
-            securityGroups: [this.securityGroupOutput.thisSecurityGroupIdOutput]
+            securityGroups: [this.securityGroupOutput.thisSecurityGroupIdOutput],
+            tags: {
+                Name: "Test EC2 ECS instance"
+            },
+            keyName: "infra" // TODO: remove this later,
         });
     }
 
@@ -482,6 +349,7 @@ class MyStack extends TerraformStack {
             egressRules: ["all-all"],
             tags: {
                 'Name': nameLabel
+                // provisionedVia
             }
         });
 
