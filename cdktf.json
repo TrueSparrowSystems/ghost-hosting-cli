@@ -26,6 +26,11 @@
       "name": "alb",
       "source": "terraform-aws-modules/alb/aws",
       "version": "~> 7.0"
+    },
+    {
+      "name": "acm",
+      "source": "terraform-aws-modules/acm/aws",
+      "version": "~> 4.0"
     }
   ],
   "context": {
