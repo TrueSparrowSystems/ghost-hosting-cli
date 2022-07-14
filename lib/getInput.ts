@@ -10,9 +10,7 @@ class GetInput {
     awsAccessKeyId: string | null;
     awsSecretAccessKey: string | null;
     awsDefaultRegion: string | null;
-    isRDSRequired: string | null;
     useExistingRDSInstance: string | null;
-    RDSCredentials;
     blogManagementHostDomain: string | null;
     hostStaticPages: string | null;
     staticPageSiteData;
@@ -22,16 +20,9 @@ class GetInput {
         this.awsSecretAccessKey = null;
         this.awsDefaultRegion = null;
         this.prompt = params.prompt;
-        this.isRDSRequired = null;
         this.useExistingRDSInstance = null;
         this.blogManagementHostDomain = null;
         this.hostStaticPages = null;
-        this.RDSCredentials = {
-            hostName: null,
-            userName: null,
-            password: null,
-            dbName: null
-        };
         this.staticPageSiteData = {
             staticPageSiteDomain: null,
             staticPageSiteRootPath: null
@@ -44,8 +35,6 @@ class GetInput {
         this._getAwsCredentials();
 
         this._validateAWSCredentials();
-
-        this._getRDSRequirements();
 
         this._getBlogManagementRequirements();
 
@@ -95,41 +84,6 @@ class GetInput {
         // Validate aws creds
     }
 
-    _getRDSRequirements() {
-        this.isRDSRequired = this.prompt("RDS required? (yes/no) ");
-        let hostName = null;
-        let userName = null;
-        let password = null;
-        let dbName = null;
-
-        if (this.isRDSRequired === 'yes') {
-            this.useExistingRDSInstance = this.prompt("Do you want to use existing RDS instance? (yes/no) ");
-            if (this.useExistingRDSInstance === 'yes') {
-                hostName = this.prompt("RDS host name: ");
-                userName = this.prompt("RDS user name: ");
-                password = this.prompt("RDS password: ");
-                dbName = this.prompt("RDS database name: ");
-            } else if (this.useExistingRDSInstance === 'no') {
-                console.log('Please provide RDS credentials to create new RDS instance.');
-                userName = this.prompt("RDS user name: ");
-                password = this.prompt("RDS password: ");
-            } else {
-                throw new Error('Invalid choice.');
-            }
-
-            this.RDSCredentials = {
-                hostName,
-                userName,
-                password,
-                dbName
-            };
-        } else if (this.isRDSRequired === 'no') {
-            // Use SQLite
-        } else {
-            throw new Error('Invalid choice.');
-        }
-    }
-
     _getBlogManagementRequirements() {
         this.blogManagementHostDomain = this.prompt("Blog management host domain:");
 
@@ -167,17 +121,6 @@ class GetInput {
             awsDefaultRegion: this.awsDefaultRegion
         };
 
-        // Add RDS credentials
-        if (this.isRDSRequired === yes) {
-            userConfig[`rds`] = {
-                useExistingRDSInstance: this.useExistingRDSInstance,
-                hostName: this.RDSCredentials.hostName,
-                userName: this.RDSCredentials.userName,
-                password: this.RDSCredentials.password,
-                dbName: this.RDSCredentials.dbName
-            };
-        }
-
         // Add static page site data
         if (this.hostStaticPages === yes) {
             userConfig[`staticPageSite`] = {
@@ -186,7 +129,7 @@ class GetInput {
             };
         }
 
-        // fs.writeFileSync('config.json', JSON.stringify(userConfig, null, 4));
+        fs.writeFileSync('config.json', JSON.stringify(userConfig, null, 4));
     }
 
 }

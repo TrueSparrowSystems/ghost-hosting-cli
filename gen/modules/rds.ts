@@ -132,7 +132,7 @@ export interface RdsOptions {
   readonly domainIamRoleName?: string;
   /**
    * List of log types to enable for exporting to CloudWatch logs. If omitted, no logs will be exported. Valid values (depending on engine): alert, audit, error, general, listener, slowquery, trace, postgresql (PostgreSQL), upgrade (PostgreSQL).
-   * @default 
+   * @default
    */
   readonly enabledCloudwatchLogsExports?: string[];
   /**
@@ -238,7 +238,7 @@ export interface RdsOptions {
   readonly optionGroupUseNamePrefix?: boolean;
   /**
    * A list of Options to apply.
-   * @default 
+   * @default
    */
   readonly options?: any;
   /**
@@ -256,7 +256,7 @@ export interface RdsOptions {
   readonly parameterGroupUseNamePrefix?: boolean;
   /**
    * A list of DB parameters (map) to apply
-   * @default 
+   * @default
    * The property type contains a map, they have special handling, please see {@link cdk.tf/module-map-inputs the docs}
    */
   readonly parameters?: { [key: string]: string }[];
@@ -322,7 +322,7 @@ export interface RdsOptions {
   readonly storageType?: string;
   /**
    * A list of VPC subnet IDs
-   * @default 
+   * @default
    */
   readonly subnetIds?: string[];
   /**
@@ -347,7 +347,7 @@ export interface RdsOptions {
   readonly username?: string;
   /**
    * List of VPC security groups to associate
-   * @default 
+   * @default
    */
   readonly vpcSecurityGroupIds?: string[];
 }
@@ -730,6 +730,12 @@ export class Rds extends TerraformModule {
   }
   public set name(value: string | undefined) {
     this.inputs['name'] = value;
+  }
+  public get dbName(): string | undefined {
+    return this.inputs['db_name'] as string | undefined;
+  }
+  public set dbName(value: string | undefined) {
+    this.inputs['db_name'] = value;
   }
   public get optionGroupDescription(): string | undefined {
     return this.inputs['option_group_description'] as string | undefined;
