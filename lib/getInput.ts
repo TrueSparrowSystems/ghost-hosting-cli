@@ -2,8 +2,8 @@ import * as fs from 'fs';
 import { Command } from 'commander';
 const command = new Command();
 
-const yes = 'yes';
-const no = 'no';
+const yes = 'y';
+const no = 'n';
 
 class GetInput {
     prompt: (arg0: string) => any;
@@ -14,6 +14,9 @@ class GetInput {
     blogManagementHostDomain: string | null;
     hostStaticPages: string | null;
     staticPageSiteData;
+    listenerArn: string;
+    isExistingAlb: string;
+    isConfiguredDomain: string;
 
     constructor(params: { prompt: () => any; }) {
         this.awsAccessKeyId = null;
@@ -27,6 +30,9 @@ class GetInput {
             staticPageSiteDomain: null,
             staticPageSiteRootPath: null
         };
+        this.listenerArn = '';
+        this.isExistingAlb = '';
+        this.isConfiguredDomain = '';
     }
 
     perform() {
@@ -37,6 +43,8 @@ class GetInput {
         this._validateAWSCredentials();
 
         this._getBlogManagementRequirements();
+
+        this._getAlbRequirements();
 
         this._validateInput();
 
@@ -85,12 +93,12 @@ class GetInput {
     }
 
     _getBlogManagementRequirements() {
-        this.blogManagementHostDomain = this.prompt("Blog management host domain:");
+        this.blogManagementHostDomain = this.prompt("Blog management host domain : ");
 
-        this.hostStaticPages = this.prompt("Do you want to host static pages site?");
+        this.hostStaticPages = this.prompt("Do you want to host static pages site? (y/n) : ");
         if (this.hostStaticPages === yes) {
-            const staticPageSiteDomain = this.prompt("Static pages site domain: ");
-            const staticPageSiteRootPath = this.prompt("Static pages site root path: ");
+            const staticPageSiteDomain = this.prompt("Static pages site domain : ");
+            const staticPageSiteRootPath = this.prompt("Static pages site root path : ");
 
             this.staticPageSiteData = {
                 staticPageSiteDomain,
@@ -103,6 +111,16 @@ class GetInput {
         }
     }
 
+    _getAlbRequirements() {
+        this.isExistingAlb = this.prompt("Do you have existing ALB? (y/n) : ");
+
+        if (this.isExistingAlb === yes) {
+            this.listenerArn = this.prompt("Please provide listener ARN : ");
+        } else {
+            this.isConfiguredDomain = this.prompt("Do you have Route53 configured for domain? (Else the SSL certification verification will fail) (y/n) : ");
+        }
+    }
+
     _validateInput() {
         // Validate input here
     }
@@ -110,8 +128,8 @@ class GetInput {
     _createConfig() {
         const userConfig = {
             aws: {},
-            rds: {},
-            staticPageSite: {}
+            staticPageSite: {},
+            alb: {}
         };
 
         // Add AWS credentials
@@ -128,6 +146,13 @@ class GetInput {
                 staticPageSiteRootPath: this.staticPageSiteData.staticPageSiteRootPath
             };
         }
+
+        // Add alb inputs
+        userConfig[`alb`] = {
+            isExistingAlb: this.isExistingAlb,
+            listenerArn: this.listenerArn,
+            isConfiguredDomain: this.isConfiguredDomain
+        };
 
         fs.writeFileSync('config.json', JSON.stringify(userConfig, null, 4));
     }
