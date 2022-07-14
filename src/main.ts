@@ -92,7 +92,14 @@ class MyStack extends TerraformStack {
      * @private
      */
     _createAlb(vpcOutput: Vpc) {
-        return new AlbResource(this, "plg-gh-alb", { vpcId: vpcOutput.vpcIdOutput }).perform();
+         // TODO: change arguments - read from config.json
+        return new AlbResource(this, "plg-gh-alb", {
+            vpcId: vpcOutput.vpcIdOutput,
+            publicSubnets: Fn.tolist(vpcOutput.publicSubnetsOutput),
+            isExistingAlb: false,
+            listenerArn: "",
+            isConfiguredDomain: ""
+        }).perform();
     }
 
     /**

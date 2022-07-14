@@ -7,23 +7,20 @@ import { EcsCluster, EcsService, EcsTaskDefinition, EcsTaskSet } from "../gen/pr
 const ghostImageUri = "docker.io/ghost:alpine";
 const nginxImageUri = "public.ecr.aws/j0d2y7t1/plg-nginx-ghost:latest";
 
+interface Options {
+    vpcId: string,
+    publicSubnets: string[],
+    vpcSecurityGroupId: string,
+    dbInstanceEndpoint: string
+};
+
 /**
  * Class to deploy ECS tasks.
  */
 class EcsResource extends Resource {
-    options: {
-        vpcId: string,
-        publicSubnets: string[],
-        vpcSecurityGroupId: string,
-        dbInstanceEndpoint: string
-    };
+    options: Options;
 
-    constructor(scope: Construct, name: string, options: {
-        vpcId: string,
-        publicSubnets: string[],
-        vpcSecurityGroupId: string,
-        dbInstanceEndpoint: string
-    }) {
+    constructor(scope: Construct, name: string, options: Options) {
         super(scope, name);
 
         this.options = options;

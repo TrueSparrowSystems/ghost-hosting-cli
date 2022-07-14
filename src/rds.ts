@@ -5,14 +5,16 @@ import { SecurityGroup } from "../gen/modules/security-group";
 
 const cidrPrefix =  "23.0.0.0/16";
 
+interface Options {
+    vpcId: string,
+    privateSubnets: string[]
+};
+
 /**
  * Class to deploy RDS instance.
  */
 class RdsResource extends Resource {
-    options: {
-        vpcId: string,
-        privateSubnets: string[]
-    };
+    options: Options;
 
     /**
      * Constructor to deploy RDS instance.
@@ -20,7 +22,7 @@ class RdsResource extends Resource {
      * @param name
      * @param options
      */
-    constructor(scope: Construct, name: string, options: { vpcId: string, privateSubnets: string[] }) {
+    constructor(scope: Construct, name: string, options: Options) {
         super(scope, name);
 
         this.options = options;
