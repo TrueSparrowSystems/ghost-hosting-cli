@@ -71,7 +71,7 @@ class AlbResource extends Resource {
                 {
                     type: "redirect",
                     redirect: {
-                        statusCode: "HTTPS_301",
+                        statusCode: "HTTP_301",
                         port: "443",
                         protocol: "HTTPS"
                     }
@@ -81,6 +81,10 @@ class AlbResource extends Resource {
     }
 
     _addHttpsListener(alb: Alb) {
+        if (!this.options.isConfiguredDomain) {
+            return;
+        }
+
         const targetGroup = new AlbTargetGroup(this, "alb_tg", {
             name: "plg-alb-target-group",
             port: 443,
@@ -89,7 +93,7 @@ class AlbResource extends Resource {
             vpcId: this.options.vpcId
         });
 
-        return new AlbListener(this, "http-listener", {
+        return new AlbListener(this, "https-listener", {
             port: 443,
             protocol: "HTTPS",
             loadBalancerArn: alb.arn,
