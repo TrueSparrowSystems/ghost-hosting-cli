@@ -1,6 +1,6 @@
 import { Resource } from "cdktf";
 import { Construct } from "constructs";
-import { SecurityGroup } from "../gen/modules/security-group";
+import { SecurityGroup } from "../.gen/providers/aws/vpc";
 import { Alb, AlbListener, AlbTargetGroup } from "../.gen/providers/aws/elb";
 
 interface Options {
@@ -16,13 +16,11 @@ interface Options {
  */
 class AlbResource extends Resource {
     options: Options;
-    listenerArn: string;
 
     constructor(scope: Construct, name: string, options: Options) {
         super(scope, name);
 
         this.options = options;
-        this.listenerArn = "";
     }
 
     /**
@@ -30,70 +28,107 @@ class AlbResource extends Resource {
      */
     perform() {
         // TODO: logic based on user input
-        const ablSg = this._createSecurityGroup();
+        const securityGroup = this._createAlbSecurityGroup();
 
-        const alb = this._createAlb(ablSg);
+        const targetGroup = this._createTargetGroup();
 
-        this._addHttpListener(alb);
+        const alb = this._createAlb(securityGroup);
 
-        this._addHttpsListener(alb);
+        this._addHttpListener(alb, targetGroup);
+
+        this._addHttpsListener(alb, targetGroup);
+
+        return { alb, targetGroup };
     }
 
-    _createSecurityGroup() {
-        return new SecurityGroup(this, 'alb_sg', {
-            name: 'alb-sg',
-            description: 'Firewall for internet traffic',
+    _createAlbSecurityGroup() {
+        return new SecurityGroup(this, "plg-gh-alb-sg", {
+            name: "alb-sg",
+            description: "Firewall for internet traffic",
             vpcId: this.options.vpcId,
-            useNamePrefix: false,
-            ingressRules: ["https-443-tcp", "http-80-tcp"],
-            ingressCidrBlocks: ["0.0.0.0/0"],
-            egressRules: ["all-all"],
+            ingress: [
+                {
+                    description: "HTTP Internet to ALB",
+                    fromPort: 80,
+                    toPort: 80,
+                    protocol: "tcp",
+                    cidrBlocks: ["0.0.0.0/0"]
+                },
+                {
+                    description: "HTTPS Internet to ALB",
+                    fromPort: 443,
+                    toPort: 443,
+                    protocol: "tcp",
+                    cidrBlocks: ["0.0.0.0/0"]
+                }
+            ],
+            egress: [
+                {
+                    fromPort: 0,
+                    toPort: 0,
+                    protocol: "-1",
+                    cidrBlocks: ["0.0.0.0/0"]
+                }
+            ],
             tags: {
-                'Name': "PLG Ghost"
+                Name: "PLG Ghost ALB Security Group"
+            }
+        });
+
+    }
+
+    _createTargetGroup() {
+        return new AlbTargetGroup(this, "plg-gh-alb-tg", {
+            targetType: "instance",
+            vpcId: this.options.vpcId,
+            name: "plg-gh-alb-tg",
+            protocol: "HTTP",
+            port: 80,
+            protocolVersion: "HTTP1",
+            healthCheck: {
+                protocol: "HTTP",
+                path: "/"
             }
         });
     }
 
-    _createAlb(ablSg: SecurityGroup) {
-        return new Alb(this, "alb", {
+    _createAlb(securityGroup: SecurityGroup) {
+        return new Alb(this, "plg-gh-alb", {
             loadBalancerType: "application",
-            securityGroups: [ablSg.thisSecurityGroupIdOutput],
-            subnets: this.options.publicSubnets
+            name: "plg-gh-alb",
+            internal: false,
+            ipAddressType: "ipv4",
+            subnets: this.options.publicSubnets,
+            securityGroups: [securityGroup.id]
         });
     }
 
-    _addHttpListener(alb: Alb) {
-        return new AlbListener(this, "http-listener", {
+    _addHttpListener(alb: Alb, targetGroup: AlbTargetGroup) {
+        return new AlbListener(this, "plg-gh-http-listener", {
             port: 80,
             protocol: "HTTP",
             loadBalancerArn: alb.arn,
             defaultAction: [
                 {
-                    type: "redirect",
-                    redirect: {
-                        statusCode: "HTTP_301",
-                        port: "443",
-                        protocol: "HTTPS"
+                    type: "forward",
+                    forward: {
+                        targetGroup: [
+                            {
+                                arn: targetGroup.arn
+                            }
+                        ]
                     }
                 }
             ]
         });
     }
 
-    _addHttpsListener(alb: Alb) {
+    _addHttpsListener(alb: Alb, targetGroup: AlbTargetGroup) {
         if (!this.options.isConfiguredDomain) {
             return;
         }
 
-        const targetGroup = new AlbTargetGroup(this, "alb_tg", {
-            name: "plg-alb-target-group",
-            port: 443,
-            protocol: "HTTPS",
-            targetType: "instance",
-            vpcId: this.options.vpcId
-        });
-
-        return new AlbListener(this, "https-listener", {
+        return new AlbListener(this, "plg-gh-https-listener", {
             port: 443,
             protocol: "HTTPS",
             loadBalancerArn: alb.arn,

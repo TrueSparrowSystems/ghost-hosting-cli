@@ -40,13 +40,17 @@ class MyStack extends TerraformStack {
 
         const rdsOutput = this._createRdsInstance(vpcOutput);
 
-        const albOutput = this._createAlb(vpcOutput);
+        const { alb, targetGroup } = this._createAlb(vpcOutput);
+
+        const securityGroupId = alb.securityGroups[0];
 
         const ecsOutput = this._createEcs(
             vpcOutput.vpcIdOutput,
             vpcOutput.publicSubnetsOutput,
             vpcSg.thisSecurityGroupIdOutput,
-            rdsOutput.dbInstanceAddressOutput
+            rdsOutput.dbInstanceAddressOutput,
+            securityGroupId,
+            targetGroup.arn
         );
     }
 
@@ -109,14 +113,25 @@ class MyStack extends TerraformStack {
      * @param publicSubnets
      * @param securityGroupId
      * @param dbInstanceAddress
+     * @param albSecurityGroupId
+     * @param targetGroupArn
      * @private
      */
-    _createEcs(vpcId: string, publicSubnets: string, securityGroupId: string, dbInstanceAddress: string) {
+    _createEcs(
+        vpcId: string,
+        publicSubnets: string,
+        securityGroupId: string,
+        dbInstanceAddress: string,
+        albSecurityGroupId: string,
+        targetGroupArn: string
+    ) {
         return new EcsResource(this, "plg-gh-ecs", {
             vpcId,
             publicSubnets: Fn.tolist(publicSubnets),
             vpcSecurityGroupId: securityGroupId,
-            dbInstanceEndpoint: dbInstanceAddress
+            dbInstanceEndpoint: dbInstanceAddress,
+            albSecurityGroupId,
+            targetGroupArn
         }).perform();
     }
 }
