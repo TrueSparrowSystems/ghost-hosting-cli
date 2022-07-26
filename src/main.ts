@@ -44,13 +44,14 @@ class MyStack extends TerraformStack {
 
         const securityGroupId = alb.securityGroups[0];
 
-        const ecsOutput = this._createEcs(
+        this._createEcs(
             vpcOutput.vpcIdOutput,
             vpcOutput.publicSubnetsOutput,
             vpcSg.thisSecurityGroupIdOutput,
             rdsOutput.dbInstanceAddressOutput,
             securityGroupId,
-            targetGroup.arn
+            targetGroup.arn,
+            alb.dnsName
         );
     }
 
@@ -115,6 +116,7 @@ class MyStack extends TerraformStack {
      * @param dbInstanceAddress
      * @param albSecurityGroupId
      * @param targetGroupArn
+     * @param albDnsName
      * @private
      */
     _createEcs(
@@ -123,7 +125,8 @@ class MyStack extends TerraformStack {
         securityGroupId: string,
         dbInstanceAddress: string,
         albSecurityGroupId: string,
-        targetGroupArn: string
+        targetGroupArn: string,
+        albDnsName: string
     ) {
         return new EcsResource(this, "plg-gh-ecs", {
             vpcId,
@@ -131,7 +134,8 @@ class MyStack extends TerraformStack {
             vpcSecurityGroupId: securityGroupId,
             dbInstanceEndpoint: dbInstanceAddress,
             albSecurityGroupId,
-            targetGroupArn
+            targetGroupArn,
+            albDnsName
         }).perform();
     }
 }

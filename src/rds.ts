@@ -8,7 +8,7 @@ const cidrPrefix =  "23.0.0.0/16";
 interface Options {
     vpcId: string,
     privateSubnets: string[]
-};
+}
 
 /**
  * Class to deploy RDS instance.
@@ -51,8 +51,8 @@ class RdsResource extends Resource {
             engine: "mysql",
             engineVersion: "8.0",
             allocatedStorage: "10",
-            dbName: "test_db",
-            username: "username",
+            dbName: "ghost_db",
+            username: "ghost",
             password: "password",
             availabilityZone: "us-east-1a",
             instanceClass: "db.t3.micro",

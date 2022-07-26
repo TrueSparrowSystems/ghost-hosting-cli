@@ -9,7 +9,7 @@ interface Options {
     isExistingAlb: boolean,
     listenerArn: string,
     isConfiguredDomain: string
-};
+}
 
 /**
  * Class to deploy ALB.
