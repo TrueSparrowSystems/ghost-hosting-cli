@@ -68,7 +68,8 @@ class RdsResource extends Resource {
             optionGroupUseNamePrefix: false,
             skipFinalSnapshot: true,
             skipFinalBackup: true,
-            vpcSecurityGroupIds: [rdsSg.thisSecurityGroupIdOutput]
+            publiclyAccessible: true, // TODO: change this later once testing done
+            vpcSecurityGroupIds: [rdsSg.thisSecurityGroupIdOutput],
         };
 
         return new Rds(this, 'rds', rdsOptions);
