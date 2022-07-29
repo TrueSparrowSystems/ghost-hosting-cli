@@ -123,6 +123,13 @@ class EcsResource extends Resource {
                     toPort: 65535,
                     protocol: "tcp",
                     securityGroups: [this.options.albSecurityGroupId]
+                },
+                {
+                    description: "SSH access to machine",
+                    fromPort: 22,
+                    toPort: 22,
+                    protocol: "tcp",
+                    cidrBlocks: ["0.0.0.0/0"]
                 }
             ],
             egress: [
@@ -166,7 +173,8 @@ class EcsResource extends Resource {
                 "ECS_CLUSTER=plg-gh-ecs-cluster \n" +
                 "EOF",
             iamInstanceProfile: instanceProfile.name,
-            tags: plgTags
+            tags: plgTags,
+            keyName: "ghost" // TODO: remove this later
         });
     }
 
@@ -232,147 +240,158 @@ class EcsResource extends Resource {
             requiresCompatibilities: ["EC2"],
             executionRoleArn: executionRole.arn,
             // taskRoleArn: "arn:aws:iam::884276917262:role/AWS_ECS_Custom_Role_S3", // TODO - change later
+            containerDefinitions: Fn.jsonencode(
+                [
+                    this._getGhostContainerDefinition(),
+                    this._getNginxContainerDefinition()
+                ]
+            ),
             volume: [
                 {
                     name: "ghost",
-                    hostPath: "/mnt/ghost",
+                    hostPath: "/mnt/ghost"
+                }
+            ]
+        });
+    }
+
+    _getGhostContainerDefinition() {
+        return {
+            "name": "ghost",
+            "image": ghostImageUri,
+            "cpu": 0,
+            "memory": null,
+            "essential": true,
+            "portMappings": [
+                {
+                    "hostPort": 2368,
+                    "containerPort": 2368,
+                    "protocol": "tcp"
                 }
             ],
-            containerDefinitions: Fn.jsonencode(
-                [
-                        {
-                            "name": "ghost",
-                            "image": ghostImageUri,
-                            "cpu": 0,
-                            "memory": null,
-                            "essential": true,
-                            "entryPoint": [ "sh", "-c" ],
-                            "command": [
-                                `/bin/sh -c 'npm install ghost-storage-adapter-s3 && mkdir -p ./content/adapters/storage && cp -r ./node_modules/ghost-storage-adapter-s3 ./content/adapters/storage/s3 &&node current/index.js'`
-                            ],
-                            "portMappings": [
-                                {
-                                    "hostPort": 2368,
-                                    "containerPort": 2368,
-                                    "protocol": "tcp"
-                                }
-                            ],
-                            "environment": [
-                                {
-                                    "name": "database__client",
-                                    "value": "mysql"
-                                },
-                                {
-                                    "name": "database__connection__database",
-                                    "value": "ghost_db"
-                                },
-                                {
-                                    "name": "database__connection__host",
-                                    "value": this.options.dbInstanceEndpoint
-                                },
-                                {
-                                    "name": "database__connection__password",
-                                    "value": "password"
-                                },
-                                {
-                                    "name": "database__connection__user",
-                                    "value": "ghost"
-                                },
-                                {
-                                    "name": "storage__active",
-                                    "value": "s3"
-                                },
-                                {
-                                    "name": "storage__s3__acl",
-                                    "value": "public-read"
-                                },
-                                {
-                                    "name": "storage__s3__bucket",
-                                    "value": "plg-ghost"
-                                },
-                                {
-                                    "name": "storage__s3__forcePathStyle",
-                                    "value": "true"
-                                },
-                                {
-                                    "name": "storage__s3__pathPrefix",
-                                    "value": "blog/images"
-                                },
-                                {
-                                    "name": "storage__s3__region",
-                                    "value": "us-east-1"
-                                },
-                                {
-                                    "name": "url",
-                                    "value": "http://127.0.0.1"
-                                }
-                            ],
-                            "mountPoints": [
-                                {
-                                    "readOnly": null,
-                                    "containerPath": "/var/lib/ghost/content",
-                                    "sourceVolume": "ghost"
-                                }
-                            ],
-                            "logConfiguration": {
-                                "logDriver": "awslogs",
-                                "secretOptions": null,
-                                "options": {
-                                    "awslogs-group": "plg-ghost",
-                                    "awslogs-region": "us-east-1",
-                                    "awslogs-stream-prefix": "ecs"
-                                }
-                            }
-                        },
-                        {
-                            "name": "nginx",
-                            "image": nginxImageUri,
-                            "cpu": 0,
-                            "memory": null,
-                            "essential": true,
-                            "portMappings": [
-                                {
-                                    "hostPort": 0,
-                                    "protocol": "tcp",
-                                    "containerPort": 80
-                                }
-                            ],
-                            "dependsOn": [
-                                {
-                                    "containerName": "ghost",
-                                    "condition": "START"
-                                }
-                            ],
-                            "links": [
-                                "ghost"
-                            ],
-                            "environment": [
-                                {
-                                    "name": "GHOST_CONTAINER_NAME",
-                                    "value": "ghost"
-                                },
-                                {
-                                    "name": "GHOST_CONTAINER_PORT",
-                                    "value": "2368"
-                                },
-                                {
-                                    "name": "S3_STATIC_BUCKET",
-                                    "value": "plg-ghost"
-                                }
-                            ],
-                            "logConfiguration": {
-                                "logDriver": "awslogs",
-                                "secretOptions": null,
-                                "options": {
-                                    "awslogs-group": "plg-ghost",
-                                    "awslogs-region": "us-east-1",
-                                    "awslogs-stream-prefix": "ecs"
-                                }
-                            }
-                        }
-                    ]
-            )
-        });
+            "entryPoint": [
+                "sh",
+                "-c"
+            ],
+            "command": [
+                `/bin/sh -c 'npm install ghost-storage-adapter-s3 && mkdir -p ./content/adapters/storage && cp -r ./node_modules/ghost-storage-adapter-s3 ./content/adapters/storage/s3 && node current/index.js'`
+            ],
+            "mountPoints": [
+                {
+                    "readOnly": null,
+                    "containerPath": "/var/lib/ghost/content",
+                    "sourceVolume": "ghost"
+                }
+            ],
+            "environment": [
+                {
+                    "name": "database__client",
+                    "value": "mysql"
+                },
+                {
+                    "name": "database__connection__database",
+                    "value": "ghost_db"
+                },
+                {
+                    "name": "database__connection__host",
+                    "value": this.options.dbInstanceEndpoint
+                },
+                {
+                    "name": "database__connection__password",
+                    "value": "password"
+                },
+                {
+                    "name": "database__connection__user",
+                    "value": "ghost"
+                },
+                {
+                    "name": "storage__active",
+                    "value": "s3"
+                },
+                {
+                    "name": "storage__s3__acl",
+                    "value": "public-read"
+                },
+                {
+                    "name": "storage__s3__bucket",
+                    "value": "plg-ghost"
+                },
+                {
+                    "name": "storage__s3__forcePathStyle",
+                    "value": "true"
+                },
+                {
+                    "name": "storage__s3__pathPrefix",
+                    "value": "blog/images"
+                },
+                {
+                    "name": "storage__s3__region",
+                    "value": "us-east-1"
+                },
+                {
+                    "name": "url",
+                    "value": "http://" + this.options.albDnsName
+                }
+             ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "secretOptions": null,
+                "options": {
+                    "awslogs-group": "plg-ghost",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            },
+        };
+    }
+
+    _getNginxContainerDefinition() {
+        return {
+            "name": "nginx",
+            "image": nginxImageUri,
+            "cpu": 0,
+            "memory": null,
+            "essential": true,
+            "portMappings": [
+                {
+                    "hostPort": 0,
+                    "protocol": "tcp",
+                    "containerPort": 8080
+                }
+            ],
+            "dependsOn": [
+                {
+                    "containerName": "ghost",
+                    "condition": "START"
+                }
+            ],
+            "links": [
+                "ghost"
+            ],
+            "environment": [
+                {
+                    "name": "GHOST_CONTAINER_NAME",
+                    "value": "ghost"
+                },
+                {
+                    "name": "GHOST_CONTAINER_PORT",
+                    "value": "2368"
+                },
+                {
+                    "name": "S3_STATIC_BUCKET",
+                    "value": "plg-ghost"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "secretOptions": null,
+                "options": {
+                    "awslogs-group": "plg-ghost",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
+        };
     }
 
     /**
@@ -393,7 +412,7 @@ class EcsResource extends Resource {
             loadBalancer: [
                 {
                     containerName: "nginx",
-                    containerPort: 80,
+                    containerPort: 8080,
                     targetGroupArn: this.options.targetGroupArn
                 }
             ],

@@ -83,7 +83,7 @@ class AlbResource extends Resource {
             vpcId: this.options.vpcId,
             name: "plg-gh-alb-tg",
             protocol: "HTTP",
-            port: 80,
+            port: 8080,
             protocolVersion: "HTTP1",
             healthCheck: {
                 protocol: "HTTP",
