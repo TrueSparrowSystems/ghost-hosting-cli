@@ -402,7 +402,11 @@ class EcsResource extends Resource {
      * @param ec2Instance
      * @private
      */
-    _createEcsService(ecsCluster: EcsCluster, ecsTaskDefinition: EcsTaskDefinition, ec2Instance: Instance): EcsService {
+    _createEcsService(
+        ecsCluster: EcsCluster,
+        ecsTaskDefinition: EcsTaskDefinition,
+        ec2Instance: Instance
+    ): EcsService {
         return new EcsService(this, "plg-gh-ecs-service", {
             name: "plg-gh-ecs-service",
             cluster: ecsCluster.arn,
