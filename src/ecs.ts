@@ -6,11 +6,12 @@ import { EcsCluster, EcsService, EcsTaskDefinition } from "../gen/providers/aws/
 import { SecurityGroup } from "../.gen/providers/aws/vpc";
 import { CloudwatchLogGroup } from "../.gen/providers/aws/cloudwatch";
 
-const ghostImageUri = "docker.io/ghost:alpine";
+const ghostImageUri = "public.ecr.aws/y3c6v0h7/ghost:latest";
 const nginxImageUri = "public.ecr.aws/y3c6v0h7/plg-nginx-ghost:latest";
 const clusterName = "plg-gh-ecs-cluster";
 const nameIdentifier = "plg-ghost";
 const executionPolicyArn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy";
+const ecsTaskRoleArn = "arn:aws:iam::466859438955:role/PLG_Ghost_Task_Role";
 
 const plgTags = {
     Name: "PLG Ghost"
@@ -239,7 +240,7 @@ class EcsResource extends Resource {
             networkMode: "bridge",
             requiresCompatibilities: ["EC2"],
             executionRoleArn: executionRole.arn,
-            // taskRoleArn: "arn:aws:iam::884276917262:role/AWS_ECS_Custom_Role_S3", // TODO - change later
+            taskRoleArn: ecsTaskRoleArn, // TODO - change later
             containerDefinitions: Fn.jsonencode(
                 [
                     this._getGhostContainerDefinition(),
@@ -248,8 +249,12 @@ class EcsResource extends Resource {
             ),
             volume: [
                 {
-                    name: "ghost",
-                    hostPath: "/mnt/ghost"
+                    name: "ghost-volume",
+                    // hostPath: "/data/ghost",
+                    dockerVolumeConfiguration: {
+                        "scope": "shared",
+                        "autoprovision": true
+                    }
                 }
             ]
         });
@@ -269,18 +274,10 @@ class EcsResource extends Resource {
                     "protocol": "tcp"
                 }
             ],
-            "entryPoint": [
-                "sh",
-                "-c"
-            ],
-            "command": [
-                `/bin/sh -c 'npm install ghost-storage-adapter-s3 && mkdir -p ./content/adapters/storage && cp -r ./node_modules/ghost-storage-adapter-s3 ./content/adapters/storage/s3 && node current/index.js'`
-            ],
             "mountPoints": [
                 {
-                    "readOnly": null,
                     "containerPath": "/var/lib/ghost/content",
-                    "sourceVolume": "ghost"
+                    "sourceVolume": "ghost-volume"
                 }
             ],
             "environment": [
