@@ -3,7 +3,7 @@ import { Construct } from "constructs";
 import { IamInstanceProfile, IamRole, IamRolePolicyAttachment } from "../gen/providers/aws/iam";
 import { DataAwsAmi, Instance } from "../.gen/providers/aws/ec2";
 import { EcsCluster, EcsService, EcsTaskDefinition } from "../gen/providers/aws/ecs";
-import { SecurityGroup } from "../.gen/providers/aws/vpc";
+import { SecurityGroup, SecurityGroupRule } from "../.gen/providers/aws/vpc";
 import { CloudwatchLogGroup } from "../.gen/providers/aws/cloudwatch";
 
 const ghostImageUri = "public.ecr.aws/y3c6v0h7/ghost:5.7.0-alpine";
@@ -25,7 +25,8 @@ interface Options {
     dbInstanceEndpoint: string,
     albSecurityGroupId: string,
     targetGroupArn: string,
-    albDnsName: string
+    albDnsName: string,
+    rdsSecurityGroupId: string
 }
 
 /**
@@ -114,7 +115,7 @@ class EcsResource extends Resource {
     }
 
     _createSecurityGroup() {
-        return new SecurityGroup(this, "plg-gh-ecs-security-group", {
+        const ecsSecurityGroup = new SecurityGroup(this, "plg-gh-ecs", {
             name: "plg-gh-ecs-security-group",
             description: "Firewall for ECS traffic",
             vpcId: this.options.vpcId,
@@ -125,13 +126,6 @@ class EcsResource extends Resource {
                     toPort: 2368,
                     protocol: "tcp",
                     securityGroups: [this.options.albSecurityGroupId]
-                },
-                {
-                    description: "SSH access to machine",
-                    fromPort: 22,
-                    toPort: 22,
-                    protocol: "tcp",
-                    cidrBlocks: ["0.0.0.0/0"]
                 }
             ],
             egress: [
@@ -144,6 +138,19 @@ class EcsResource extends Resource {
             ],
             tags: plgTags
         });
+
+        // Allow DB connection
+        new SecurityGroupRule(this, 'rds_sg_rule', {
+            type: 'ingress',
+            fromPort: 3306,
+            toPort: 3306,
+            protocol: 'tcp',
+            securityGroupId: this.options.rdsSecurityGroupId,
+            sourceSecurityGroupId: ecsSecurityGroup.id
+
+        });
+
+        return ecsSecurityGroup
     }
 
     /**
