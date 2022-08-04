@@ -47,6 +47,7 @@ class MyStack extends TerraformStack {
         this._createEcs(
             vpcOutput.vpcIdOutput,
             vpcOutput.publicSubnetsOutput,
+            vpcOutput.privateSubnetsOutput,
             vpcSg.thisSecurityGroupIdOutput,
             rdsOutput.dbInstanceAddressOutput,
             securityGroupId,
@@ -122,6 +123,7 @@ class MyStack extends TerraformStack {
     _createEcs(
         vpcId: string,
         publicSubnets: string,
+        privateSubnets: string,
         securityGroupId: string,
         dbInstanceAddress: string,
         albSecurityGroupId: string,
@@ -131,6 +133,7 @@ class MyStack extends TerraformStack {
         return new EcsResource(this, "plg-gh-ecs", {
             vpcId,
             publicSubnets: Fn.tolist(publicSubnets),
+            privateSubnets: Fn.tolist(privateSubnets),
             vpcSecurityGroupId: securityGroupId,
             dbInstanceEndpoint: dbInstanceAddress,
             albSecurityGroupId,

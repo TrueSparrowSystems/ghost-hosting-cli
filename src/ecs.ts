@@ -6,7 +6,7 @@ import { EcsCluster, EcsService, EcsTaskDefinition } from "../gen/providers/aws/
 import { SecurityGroup } from "../.gen/providers/aws/vpc";
 import { CloudwatchLogGroup } from "../.gen/providers/aws/cloudwatch";
 
-const ghostImageUri = "public.ecr.aws/y3c6v0h7/ghost:latest";
+const ghostImageUri = "public.ecr.aws/y3c6v0h7/ghost:5.7.0-alpine";
 const nginxImageUri = "public.ecr.aws/y3c6v0h7/plg-nginx-ghost:latest";
 const clusterName = "plg-gh-ecs-cluster";
 const nameIdentifier = "plg-ghost";
@@ -20,6 +20,7 @@ const plgTags = {
 interface Options {
     vpcId: string,
     publicSubnets: string[],
+    privateSubnets: string[],
     vpcSecurityGroupId: string,
     dbInstanceEndpoint: string,
     albSecurityGroupId: string,
@@ -53,7 +54,7 @@ class EcsResource extends Resource {
 
         const ecsTaskDefinition = this._createEcsTaskDefinition();
 
-        this._createEcsService(ecsCluster, ecsTaskDefinition, ec2Instance);
+        this._createEcsService(ecsCluster, ecsTaskDefinition, ec2Instance, ecsSecurityGroup);
     }
 
     /**
@@ -120,8 +121,8 @@ class EcsResource extends Resource {
             ingress: [
                 {
                     description: "Traffic to ECS",
-                    fromPort: 32768,
-                    toPort: 65535,
+                    fromPort: 2368,
+                    toPort: 2368,
                     protocol: "tcp",
                     securityGroups: [this.options.albSecurityGroupId]
                 },
@@ -162,10 +163,10 @@ class EcsResource extends Resource {
             }]
         });
 
-        const publicSubnetId = Fn.element(this.options.publicSubnets, 0);
+        const privateSubnetId = Fn.element(this.options.privateSubnets, 0);
         return new Instance(this, "ec2-ecs-instance", {
             ami: dataAwsAmiOutput.id,
-            subnetId: publicSubnetId,
+            subnetId: privateSubnetId,
             instanceType: "t3.small",
             ebsOptimized: true,
             securityGroups: [ecsSecurityGroup.id],
@@ -235,28 +236,27 @@ class EcsResource extends Resource {
 
         return new EcsTaskDefinition(this, "ecs-task-definition", {
             family: "ghost-task",
-            memory: "512",
-            cpu: "256",
-            networkMode: "bridge",
-            requiresCompatibilities: ["EC2"],
+            memory: "1024",
+            cpu: "512",
+            networkMode: "awsvpc",
+            runtimePlatform: {
+                operatingSystemFamily: "LINUX"
+            },
+            requiresCompatibilities: ["FARGATE"],
             executionRoleArn: executionRole.arn,
             taskRoleArn: ecsTaskRoleArn, // TODO - change later
             containerDefinitions: Fn.jsonencode(
                 [
                     this._getGhostContainerDefinition(),
-                    this._getNginxContainerDefinition()
+                    // this._getNginxContainerDefinition()
                 ]
             ),
-            volume: [
-                {
-                    name: "ghost-volume",
-                    // hostPath: "/data/ghost",
-                    dockerVolumeConfiguration: {
-                        "scope": "shared",
-                        "autoprovision": true
-                    }
-                }
-            ]
+            // volume: [
+            //     {
+            //         name: "ghost-volume",
+            //         hostPath: "null"
+            //     }
+            // ]
         });
     }
 
@@ -264,22 +264,25 @@ class EcsResource extends Resource {
         return {
             "name": "ghost",
             "image": ghostImageUri,
-            "cpu": 0,
-            "memory": null,
             "essential": true,
             "portMappings": [
                 {
-                    "hostPort": 2368,
-                    "containerPort": 2368,
-                    "protocol": "tcp"
+                    "containerPort": 2368
                 }
             ],
-            "mountPoints": [
-                {
-                    "containerPath": "/var/lib/ghost/content",
-                    "sourceVolume": "ghost-volume"
-                }
+            "entryPoint": [
+                "sh",
+                "-c"
             ],
+            "command": [
+                `/bin/sh -c 'npm install ghost-storage-adapter-s3 && mkdir -p ./content/adapters/storage && cp -r ./node_modules/ghost-storage-adapter-s3 ./content/adapters/storage/s3 && node current/index.js'`
+            ],
+            // "mountPoints": [
+            //     {
+            //         "containerPath": "/var/lib/ghost/content",
+            //         "sourceVolume": "ghost-volume"
+            //     }
+            // ],
             "environment": [
                 {
                     "name": "database__client",
@@ -397,33 +400,34 @@ class EcsResource extends Resource {
      * @param ecsCluster
      * @param ecsTaskDefinition
      * @param ec2Instance
+     * @param ecsSecurityGroup
      * @private
      */
     _createEcsService(
         ecsCluster: EcsCluster,
         ecsTaskDefinition: EcsTaskDefinition,
-        ec2Instance: Instance
+        ec2Instance: Instance,
+        ecsSecurityGroup: SecurityGroup
     ): EcsService {
         return new EcsService(this, "plg-gh-ecs-service", {
             name: "plg-gh-ecs-service",
             cluster: ecsCluster.arn,
             taskDefinition: ecsTaskDefinition.arn,
-            launchType: "EC2",
+            launchType: "FARGATE",
             desiredCount: 1,
             loadBalancer: [
                 {
-                    containerName: "nginx",
-                    containerPort: 8080,
+                    containerName: "ghost",
+                    containerPort: 2368,
                     targetGroupArn: this.options.targetGroupArn
                 }
             ],
-            orderedPlacementStrategy: [
-                {
-                    type: "spread",
-                    field: "instanceId"
-                }
-            ],
-            dependsOn: [ec2Instance]
+            dependsOn: [ec2Instance],
+            networkConfiguration: {
+                assignPublicIp: false,
+                securityGroups: [ecsSecurityGroup.id],
+                subnets: this.options.privateSubnets
+            }
         });
     }
 }

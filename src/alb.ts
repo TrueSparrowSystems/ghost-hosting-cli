@@ -27,7 +27,6 @@ class AlbResource extends Resource {
      * Main performer.
      */
     perform() {
-        // TODO: logic based on user input
         const securityGroup = this._createAlbSecurityGroup();
 
         const targetGroup = this._createTargetGroup();
@@ -79,15 +78,18 @@ class AlbResource extends Resource {
 
     _createTargetGroup() {
         return new AlbTargetGroup(this, "plg-gh-alb-tg", {
-            targetType: "instance",
-            vpcId: this.options.vpcId,
             name: "plg-gh-alb-tg",
+            port: 80,
             protocol: "HTTP",
-            port: 8080,
+            targetType: "ip",
+            vpcId: this.options.vpcId,
             protocolVersion: "HTTP1",
             healthCheck: {
                 protocol: "HTTP",
-                path: "/"
+                path: "/",
+                timeout: 3,
+                matcher: "200",
+                unhealthyThreshold: 2
             }
         });
     }
@@ -99,7 +101,8 @@ class AlbResource extends Resource {
             internal: false,
             ipAddressType: "ipv4",
             subnets: this.options.publicSubnets,
-            securityGroups: [securityGroup.id]
+            securityGroups: [securityGroup.id],
+            idleTimeout: 60
         });
     }
 
