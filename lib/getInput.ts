@@ -1,12 +1,13 @@
 import * as fs from 'fs';
 import { Command } from 'commander';
+import * as promptSync from "prompt-sync";
 const command = new Command();
 
 const yes = 'y';
 const no = 'n';
 
 class GetInput {
-    prompt: (arg0: string) => any;
+    prompt: promptSync;
     awsAccessKeyId: string | null;
     awsSecretAccessKey: string | null;
     awsDefaultRegion: string | null;
@@ -18,7 +19,7 @@ class GetInput {
     isExistingAlb: string;
     isConfiguredDomain: string;
 
-    constructor(params: { prompt: () => any; }) {
+    constructor(params: { prompt: promptSync }) {
         this.awsAccessKeyId = null;
         this.awsSecretAccessKey = null;
         this.awsDefaultRegion = null;
