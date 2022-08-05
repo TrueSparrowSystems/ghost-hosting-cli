@@ -1,39 +1,44 @@
 import * as fs from 'fs';
+import * as readlineSyc from "readline-sync";
 import { Command } from 'commander';
-import * as promptSync from "prompt-sync";
 const command = new Command();
 
 const yes = 'y';
 const no = 'n';
 
-class GetInput {
-    prompt: promptSync;
-    awsAccessKeyId: string | null;
-    awsSecretAccessKey: string | null;
-    awsDefaultRegion: string | null;
-    useExistingRDSInstance: string | null;
-    blogManagementHostDomain: string | null;
-    hostStaticPages: string | null;
-    staticPageSiteData;
-    listenerArn: string;
-    isExistingAlb: string;
-    isConfiguredDomain: string;
+interface Options {
+    awsAccessKeyId: string,
+    awsSecretAccessKey: string,
+    awsDefaultRegion: string,
+    useExistingRDSInstance: boolean,
+    blogManagementHostDomain: string,
+    hostStaticPages: string,
+    listenerArn: string,
+    isExistingAlb: string,
+    isConfiguredDomain: string,
+    staticPageSiteDomain: string,
+    staticPageSiteRootPath: string
+}
 
-    constructor(params: { prompt: promptSync }) {
-        this.awsAccessKeyId = null;
-        this.awsSecretAccessKey = null;
-        this.awsDefaultRegion = null;
-        this.prompt = params.prompt;
-        this.useExistingRDSInstance = null;
-        this.blogManagementHostDomain = null;
-        this.hostStaticPages = null;
-        this.staticPageSiteData = {
-            staticPageSiteDomain: null,
-            staticPageSiteRootPath: null
-        };
-        this.listenerArn = '';
-        this.isExistingAlb = '';
-        this.isConfiguredDomain = '';
+const options: Options = {
+    awsAccessKeyId: '',
+    awsSecretAccessKey: '',
+    awsDefaultRegion: '',
+    useExistingRDSInstance: false,
+    blogManagementHostDomain: '',
+    hostStaticPages: '',
+    listenerArn: '',
+    isExistingAlb: '',
+    isConfiguredDomain: '',
+    staticPageSiteDomain: '',
+    staticPageSiteRootPath: ''
+};
+
+console.log(process.argv);
+
+export class GetInput {
+    constructor() {
+        // Do nothing
     }
 
     perform() {
@@ -70,22 +75,22 @@ class GetInput {
             'AWS Default Region'
         ).parse(process.argv);
 
-        this.awsAccessKeyId = command.opts().awsAccessKeyId;
-        this.awsSecretAccessKey = command.opts().awsSecretAccessKey;
-        this.awsDefaultRegion = command.opts().awsDefaultRegion;
+        options.awsAccessKeyId = command.opts().awsAccessKeyId;
+        options.awsSecretAccessKey = command.opts().awsSecretAccessKey;
+        options.awsDefaultRegion = command.opts().awsDefaultRegion;
     }
 
     _getAwsCredentials() {
-        if (!this.awsAccessKeyId) {
-            this.awsAccessKeyId = this.prompt("AWS access key id? ");
+        if (!options.awsAccessKeyId) {
+            options.awsAccessKeyId = readlineSyc.question("AWS access key id? ");
         }
 
-        if (!this.awsSecretAccessKey) {
-            this.awsSecretAccessKey = this.prompt("AWS secret access key? ");
+        if (!options.awsSecretAccessKey) {
+            options.awsSecretAccessKey = readlineSyc.question("AWS secret access key? ");
         }
 
-        if (!this.awsDefaultRegion) {
-            this.awsDefaultRegion = this.prompt("Default AWS region? ");
+        if (!options.awsDefaultRegion) {
+            options.awsDefaultRegion = readlineSyc.question("Default AWS region? ");
         }
     }
 
@@ -94,18 +99,13 @@ class GetInput {
     }
 
     _getBlogManagementRequirements() {
-        this.blogManagementHostDomain = this.prompt("Blog management host domain : ");
+        options.blogManagementHostDomain = readlineSyc.question("Blog management host domain : ");
 
-        this.hostStaticPages = this.prompt("Do you want to host static pages site? (y/n) : ");
-        if (this.hostStaticPages === yes) {
-            const staticPageSiteDomain = this.prompt("Static pages site domain : ");
-            const staticPageSiteRootPath = this.prompt("Static pages site root path : ");
-
-            this.staticPageSiteData = {
-                staticPageSiteDomain,
-                staticPageSiteRootPath
-            }
-        } else if (this.hostStaticPages === no) {
+        options.hostStaticPages = readlineSyc.question("Do you want to host static pages site? (y/n) : ");
+        if (options.hostStaticPages === yes) {
+            options.staticPageSiteDomain = readlineSyc.question("Static pages site domain : ");
+            options.staticPageSiteRootPath = readlineSyc.question("Static pages site root path : ");
+        } else if (options.hostStaticPages === no) {
             // Do nothing
         } else {
             throw new Error('Invalid choice.');
@@ -113,12 +113,12 @@ class GetInput {
     }
 
     _getAlbRequirements() {
-        this.isExistingAlb = this.prompt("Do you have existing ALB? (y/n) : ");
+        options.isExistingAlb = readlineSyc.question("Do you have existing ALB? (y/n) : ");
 
-        if (this.isExistingAlb === yes) {
-            this.listenerArn = this.prompt("Please provide listener ARN : ");
+        if (options.isExistingAlb === yes) {
+            options.listenerArn = readlineSyc.question("Please provide listener ARN : ");
         } else {
-            this.isConfiguredDomain = this.prompt("Do you have Route53 configured for domain? (Else the SSL certification verification will fail) (y/n) : ");
+            options.isConfiguredDomain = readlineSyc.question("Do you have Route53 configured for domain? (Else the SSL certification verification will fail) (y/n) : ");
         }
     }
 
@@ -135,24 +135,24 @@ class GetInput {
 
         // Add AWS credentials
         userConfig[`aws`] = {
-            awsAccessKeyId: this.awsAccessKeyId,
-            awsSecretAccessKey: this.awsSecretAccessKey,
-            awsDefaultRegion: this.awsDefaultRegion
+            awsAccessKeyId: options.awsAccessKeyId,
+            awsSecretAccessKey: options.awsSecretAccessKey,
+            awsDefaultRegion: options.awsDefaultRegion
         };
 
         // Add static page site data
-        if (this.hostStaticPages === yes) {
+        if (options.hostStaticPages === yes) {
             userConfig[`staticPageSite`] = {
-                staticPageSiteDomain: this.staticPageSiteData.staticPageSiteDomain,
-                staticPageSiteRootPath: this.staticPageSiteData.staticPageSiteRootPath
+                staticPageSiteDomain: options.staticPageSiteDomain,
+                staticPageSiteRootPath: options.staticPageSiteRootPath
             };
         }
 
         // Add alb inputs
         userConfig[`alb`] = {
-            isExistingAlb: this.isExistingAlb,
-            listenerArn: this.listenerArn,
-            isConfiguredDomain: this.isConfiguredDomain
+            isExistingAlb: options.isExistingAlb,
+            listenerArn: options.listenerArn,
+            isConfiguredDomain: options.isConfiguredDomain
         };
 
         fs.writeFileSync('config.json', JSON.stringify(userConfig, null, 4));

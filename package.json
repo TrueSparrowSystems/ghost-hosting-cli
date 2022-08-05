@@ -2,7 +2,7 @@
   "name": "ghost-hosting-cli",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "./src/driver.ts",
   "scripts": {
     "build": "tsc",
     "get": "cdktf get",
@@ -30,17 +30,17 @@
   "dependencies": {
     "@cdktf/provider-aws": "^8.0.12",
     "cdktf": "^0.11.2",
+    "cdktf-cli": "^0.11.2",
     "commander": "^9.3.0",
     "constructs": "^10.1.37",
-    "prompt-sync": "^4.2.0",
-    "shelljs": "^0.8.5",
-    "cdktf-cli": "^0.11.2"
+    "readline-sync": "^1.4.10",
+    "shelljs": "^0.8.5"
   },
   "devDependencies": {
     "@types/commander": "^2.12.2",
     "@types/jest": "^28.1.1",
     "@types/node": "^17.0.42",
-    "@types/prompt-sync": "^4.1.1",
+    "@types/readline-sync": "^1.4.4",
     "@types/shelljs": "^0.8.11",
     "jest": "^28.1.1",
     "prettier": "^2.6.2",
@@ -54,6 +54,6 @@
     "build/**/*"
   ],
   "bin": {
-    "plg-gh": "npx ts-node bin/installer"
+    "plg-gh": "./bin/installer"
   }
 }

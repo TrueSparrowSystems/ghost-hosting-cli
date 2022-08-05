@@ -1,6 +1,5 @@
 import * as shell from 'shelljs';
-import * as promptSync from 'prompt-sync';
-const prompt = promptSync({ sigint: true });
+import * as readlineSync from "readline-sync";
 const cdktfExec = './node_modules/.bin/cdktf';
 
 function run(): void {
@@ -11,7 +10,7 @@ function run(): void {
 
 function _getUserInput(): void {
     const getInput = require('../lib/getInput');
-    new getInput({ prompt }).perform();
+    new getInput().perform();
 }
 
 function _applyPlanChanges(): void {
@@ -22,7 +21,7 @@ function _applyPlanChanges(): void {
     }
 
     console.log('Please review the diff output above for ghost-hosting-cli');
-    const approve = prompt("Do you want to approve?(y/n) (Applies the changes outlined in the plan): ");
+    const approve = readlineSync.question("Do you want to approve?(y/n) (Applies the changes outlined in the plan): ");
 
     if (approve === 'y') {
         if (shell.exec('cdktf deploy --auto-approve').code !== 0) {
