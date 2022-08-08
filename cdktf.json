@@ -4,33 +4,22 @@
   "projectId": "5e9223d5-25ae-46cf-b58e-a9134091d151",
   "sendCrashReports": "false",
   "terraformProviders": [
-    "aws"
+    {
+      "name": "aws",
+      "source": "registry.terraform.io/hashicorp/aws",
+      "version": "4.25.0"
+    }
   ],
   "terraformModules": [
     {
       "name": "vpc",
       "source": "terraform-aws-modules/vpc/aws",
-      "version": "~> 3.2"
+      "version": "3.14.2"
     },
     {
       "name": "rds",
       "source": "terraform-aws-modules/rds/aws",
-      "version": "~> 3.2"
-    },
-    {
-      "name": "security-group",
-      "source": "terraform-aws-modules/security-group/aws",
-      "version": "~> 3.2"
-    },
-    {
-      "name": "alb",
-      "source": "terraform-aws-modules/alb/aws",
-      "version": "~> 7.0"
-    },
-    {
-      "name": "acm",
-      "source": "terraform-aws-modules/acm/aws",
-      "version": "~> 4.0"
+      "version": "5.0.1"
     }
   ],
   "context": {
