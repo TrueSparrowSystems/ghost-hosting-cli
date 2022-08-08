@@ -6,11 +6,9 @@ import { EcsCluster, EcsService, EcsTaskDefinition } from "../gen/providers/aws/
 import { SecurityGroup, SecurityGroupRule } from "../.gen/providers/aws/vpc";
 import { CloudwatchLogGroup } from "../.gen/providers/aws/cloudwatch";
 
-const ghostImageUri = "public.ecr.aws/y3c6v0h7/ghost:5.7.0-alpine";
-const nginxImageUri = "public.ecr.aws/y3c6v0h7/plg-nginx-ghost:latest";
-const clusterName = "plg-gh-ecs-cluster";
-const nameIdentifier = "plg-ghost";
-const executionPolicyArn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy";
+const ecsConfig = require("../config/ecs.json");
+const rdsConfig = require("../config/rds.json");
+
 const ecsTaskRoleArn = "arn:aws:iam::466859438955:role/PLG_Ghost_Task_Role";
 
 const plgTags = {
@@ -45,17 +43,17 @@ class EcsResource extends Resource {
      * Main performer.
      */
     perform() {
-        const instanceProfile = this._performEcsInstanceRoleAndProfile();
+        // const instanceProfile = this._performEcsInstanceRoleAndProfile();
 
         const ecsSecurityGroup = this._createSecurityGroup();
 
-        const ec2Instance = this._createEC2ECSInstance(instanceProfile, ecsSecurityGroup);
+        // const ec2Instance = this._createEC2ECSInstance(instanceProfile, ecsSecurityGroup);
 
         const ecsCluster = this._createEcsCluster();
 
         const ecsTaskDefinition = this._createEcsTaskDefinition();
 
-        this._createEcsService(ecsCluster, ecsTaskDefinition, ec2Instance, ecsSecurityGroup);
+        this._createEcsService(ecsCluster, ecsTaskDefinition, ecsSecurityGroup);
     }
 
     /**
@@ -81,7 +79,7 @@ class EcsResource extends Resource {
      */
     _createEcsInstanceRole() {
         return new IamRole(this, "ecs-instance-role", {
-            name: nameIdentifier + "-instance-role",
+            name: ecsConfig.nameIdentifier + "-instance-role",
             assumeRolePolicy: Fn.jsonencode({
                 "Version": "2012-10-17",
                 "Statement": [
@@ -107,7 +105,7 @@ class EcsResource extends Resource {
      */
     _createEcsInstanceProfile(ecsInstanceRole: IamRole) {
         return new IamInstanceProfile(this, "ecs-instance-profile", {
-            name: nameIdentifier,
+            name: ecsConfig.nameIdentifier,
             path: "/",
             role: ecsInstanceRole.id,
             tags: plgTags
@@ -194,7 +192,7 @@ class EcsResource extends Resource {
      */
     _createEcsCluster(): EcsCluster {
         return new EcsCluster(this, "plg-ghost", {
-            name: clusterName,
+            name: ecsConfig.clusterName,
         });
     }
 
@@ -219,7 +217,7 @@ class EcsResource extends Resource {
 
         new IamRolePolicyAttachment(this, 'execution-role-attachment', {
             role: ecsExecutionRole.name,
-            policyArn: executionPolicyArn,
+            policyArn: ecsConfig.executionPolicyArn,
         });
 
         return ecsExecutionRole;
@@ -227,7 +225,7 @@ class EcsResource extends Resource {
 
     _createLogGroup() {
         new CloudwatchLogGroup(this, "plg-gh-log-group", {
-            name: "plg-ghost"
+            name: ecsConfig.logGroupName
         });
     }
 
@@ -243,8 +241,8 @@ class EcsResource extends Resource {
 
         return new EcsTaskDefinition(this, "ecs-task-definition", {
             family: "ghost-task",
-            memory: "1024",
-            cpu: "512",
+            memory: ecsConfig.taskDefinition.memory,
+            cpu: ecsConfig.taskDefinition.cpu,
             networkMode: "awsvpc",
             runtimePlatform: {
                 operatingSystemFamily: "LINUX"
@@ -255,41 +253,32 @@ class EcsResource extends Resource {
             containerDefinitions: Fn.jsonencode(
                 [
                     this._getGhostContainerDefinition(),
-                    // this._getNginxContainerDefinition()
                 ]
             ),
-            // volume: [
-            //     {
-            //         name: "ghost-volume",
-            //         hostPath: "null"
-            //     }
-            // ]
+            volume: [
+                {
+                    name: "ghost"
+                }
+            ]
         });
     }
 
     _getGhostContainerDefinition() {
         return {
             "name": "ghost",
-            "image": ghostImageUri,
+            "image": ecsConfig.ghostImageUri,
             "essential": true,
             "portMappings": [
                 {
                     "containerPort": 2368
                 }
             ],
-            "entryPoint": [
-                "sh",
-                "-c"
+            "mountPoints": [
+                {
+                    "containerPath": "/var/lib/ghost/content",
+                    "sourceVolume": "ghost"
+                }
             ],
-            "command": [
-                `/bin/sh -c 'npm install ghost-storage-adapter-s3 && mkdir -p ./content/adapters/storage && cp -r ./node_modules/ghost-storage-adapter-s3 ./content/adapters/storage/s3 && node current/index.js'`
-            ],
-            // "mountPoints": [
-            //     {
-            //         "containerPath": "/var/lib/ghost/content",
-            //         "sourceVolume": "ghost-volume"
-            //     }
-            // ],
             "environment": [
                 {
                     "name": "database__client",
@@ -297,7 +286,7 @@ class EcsResource extends Resource {
                 },
                 {
                     "name": "database__connection__database",
-                    "value": "ghost_db"
+                    "value": rdsConfig.dbName
                 },
                 {
                     "name": "database__connection__host",
@@ -305,11 +294,11 @@ class EcsResource extends Resource {
                 },
                 {
                     "name": "database__connection__password",
-                    "value": "password"
+                    "value": rdsConfig.dbPassword
                 },
                 {
                     "name": "database__connection__user",
-                    "value": "ghost"
+                    "value": rdsConfig.dbUserName
                 },
                 {
                     "name": "storage__active",
@@ -321,7 +310,7 @@ class EcsResource extends Resource {
                 },
                 {
                     "name": "storage__s3__bucket",
-                    "value": "plg-ghost"
+                    "value": ecsConfig.s3BucketName
                 },
                 {
                     "name": "storage__s3__forcePathStyle",
@@ -329,11 +318,11 @@ class EcsResource extends Resource {
                 },
                 {
                     "name": "storage__s3__pathPrefix",
-                    "value": "blog/images"
+                    "value": ecsConfig.s3StoragePathPrefix
                 },
                 {
                     "name": "storage__s3__region",
-                    "value": "us-east-1"
+                    "value": ecsConfig.s3StorageRegion
                 },
                 {
                     "name": "url",
@@ -344,9 +333,9 @@ class EcsResource extends Resource {
                 "logDriver": "awslogs",
                 "secretOptions": null,
                 "options": {
-                    "awslogs-group": "plg-ghost",
-                    "awslogs-region": "us-east-1",
-                    "awslogs-stream-prefix": "ecs"
+                    "awslogs-group": ecsConfig.logGroupName,
+                    "awslogs-region": ecsConfig.logGroupRegion,
+                    "awslogs-stream-prefix": ecsConfig.logStreamPrefix
                 }
             },
         };
@@ -355,7 +344,7 @@ class EcsResource extends Resource {
     _getNginxContainerDefinition() {
         return {
             "name": "nginx",
-            "image": nginxImageUri,
+            "image": ecsConfig.nginxImageUri,
             "cpu": 0,
             "memory": null,
             "essential": true,
@@ -393,7 +382,7 @@ class EcsResource extends Resource {
                 "logDriver": "awslogs",
                 "secretOptions": null,
                 "options": {
-                    "awslogs-group": "plg-ghost",
+                    "awslogs-group": ecsConfig.logGroupName,
                     "awslogs-region": "us-east-1",
                     "awslogs-stream-prefix": "ecs"
                 }
@@ -406,14 +395,12 @@ class EcsResource extends Resource {
      *
      * @param ecsCluster
      * @param ecsTaskDefinition
-     * @param ec2Instance
      * @param ecsSecurityGroup
      * @private
      */
     _createEcsService(
         ecsCluster: EcsCluster,
         ecsTaskDefinition: EcsTaskDefinition,
-        ec2Instance: Instance,
         ecsSecurityGroup: SecurityGroup
     ): EcsService {
         return new EcsService(this, "plg-gh-ecs-service", {
@@ -429,7 +416,6 @@ class EcsResource extends Resource {
                     targetGroupArn: this.options.targetGroupArn
                 }
             ],
-            dependsOn: [ec2Instance],
             networkConfiguration: {
                 assignPublicIp: false,
                 securityGroups: [ecsSecurityGroup.id],

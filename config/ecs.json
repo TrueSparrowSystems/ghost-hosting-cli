@@ -1,0 +1,17 @@
+{
+  "nameIdentifier":"plg-ghost",
+  "logGroupName": "plg/ghost",
+  "logGroupRegion": "us-east-1",
+  "logStreamPrefix": "ecs",
+  "taskDefinition": {
+    "memory": "1024",
+    "cpu": "512"
+  },
+  "ghostImageUri": "public.ecr.aws/y3c6v0h7/ghost:latest",
+  "nginxImageUri": "public.ecr.aws/y3c6v0h7/plg-nginx-ghost:latest",
+  "clusterName": "plg-gh-cluster",
+  "executionPolicyArn": "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
+  "s3BucketName": "plg-ghost",
+  "s3StoragePathPrefix": "blog/images",
+  "s3StorageRegion": "us-east-1"
+}

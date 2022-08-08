@@ -2,8 +2,7 @@ import { Resource} from "cdktf";
 import { Construct } from "constructs";
 import { Rds } from "../gen/modules/rds";
 import { SecurityGroup } from "../.gen/providers/aws/vpc";
-
-const cidrPrefix =  "23.0.0.0/16";
+const rdsConfig = require("../config/rds.json");
 
 interface Options {
     vpcId: string,
@@ -32,14 +31,7 @@ class RdsResource extends Resource {
      * Main performer.
      */
     perform() {
-
         const nameIdentifier = 'plg-ghost';
-        let dbUserName = "ghost";
-        let dbPassword = "password";
-        let dbName = "ghost_db";
-        let dbStorageSizeinGB = "10";
-        let awsRegion = "us-east-1";
-        let dbInstanceClas = "db.t3.micro";
 
         const rdsSgOutput = new SecurityGroup(this, "rds_sg", {
             name: nameIdentifier,
@@ -62,25 +54,24 @@ class RdsResource extends Resource {
             family: "mysql8.0",
             engine: "mysql",
             engineVersion: "8.0",
-            allocatedStorage: dbStorageSizeinGB,
-            dbName: dbName,
-            username: dbUserName,
-            password: dbPassword,
-            availabilityZone: awsRegion,
-            instanceClass: dbInstanceClas,
+            majorEngineVersion: "8.0",
+            allocatedStorage: rdsConfig.dbStorageSizeInGB,
+            dbName: rdsConfig.dbName,
+            username: rdsConfig.dbUserName,
+            password: rdsConfig.dbPassword,
+            availabilityZone: rdsConfig.availabilityZone,
+            instanceClass: rdsConfig.dbInstanceClass,
             subnetIds: this.options.privateSubnets,
             createDbSubnetGroup: true,
-            majorEngineVersion: "8.0",
             parameterGroupName: nameIdentifier,
             optionGroupName: nameIdentifier,
             dbSubnetGroupName: nameIdentifier,
+            vpcSecurityGroupIds: [rdsSgOutput.id],
             dbSubnetGroupUseNamePrefix: false,
             parameterGroupUseNamePrefix: false,
             optionGroupUseNamePrefix: false,
             skipFinalSnapshot: true,
-            skipFinalBackup: true,
-            publiclyAccessible: true, // TODO: change this later once testing done
-            vpcSecurityGroupIds: [rdsSgOutput.id],
+            skipFinalBackup: true
         };
 
         const rdsOutput =  new Rds(this, 'rds', rdsOptions);

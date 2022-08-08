@@ -4,14 +4,11 @@ import { Vpc } from "../.gen/modules/vpc";
 import { SecurityGroup } from "../gen/modules/security-group";
 import { DataAwsAvailabilityZones } from "../.gen/providers/aws/datasources";
 
+const vpcConfig = require("../config/vpc.json");
 import { getPrivateSubnetCidrBlocks, getPublicSubnetCidrBlocks } from "../lib/util";
 
-const cidrPrefix = "23.0.0.0/16";
-const nameLabel = "PLG Ghost Test";
-const nameIdentifier = "plg-ghost-test";
-
 /**
- * Class to deploy VPC.
+ * Class to create VPC and subnets.
  */
 class VpcResource extends Resource {
     options: {};
@@ -40,8 +37,8 @@ class VpcResource extends Resource {
      */
     _getSubnetCidr() {
         return getPrivateSubnetCidrBlocks(
-            cidrPrefix,
-            2,
+            vpcConfig.cidrPrefix,
+            vpcConfig.numberOfPrivateSubnets,
             2
         );
     }
@@ -76,23 +73,23 @@ class VpcResource extends Resource {
      */
     _createVpc(privateSubnetCidrBlocks: string[], zones: DataAwsAvailabilityZones) {
         const vpcOptions = {
-            name: nameLabel,
+            name: vpcConfig.nameLabel,
             azs: [Fn.element(zones.names, 0), Fn.element(zones.names, 1)],
-            cidr: cidrPrefix,
-            publicSubnets: getPublicSubnetCidrBlocks(cidrPrefix),
+            cidr: vpcConfig.cidrPrefix,
+            publicSubnets: getPublicSubnetCidrBlocks(vpcConfig.cidrPrefix),
             publicSubnetTags: {
-                "Name": nameLabel + " public"
+                "Name": vpcConfig.nameLabel + " public"
             },
             privateSubnets: privateSubnetCidrBlocks,
             privateSubnetTags: {
-                "Name": nameLabel + " private"
+                "Name": vpcConfig.nameLabel + " private"
             },
             enableNatGateway: true,
             singleNatGateway: true,
             enableDnsHostnames: true
         };
 
-        const vpc = new Vpc(this, nameIdentifier, vpcOptions);
+        const vpc = new Vpc(this, vpcConfig.nameIdentifier, vpcOptions);
 
         const securityGroupOutput = new SecurityGroup(this, 'vpc_sg', {
             name: "PLG Ghost VPC Security Group",
