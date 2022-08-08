@@ -1,6 +1,6 @@
 import { Resource, Fn } from "cdktf";
 import { Construct } from "constructs";
-import { IamInstanceProfile, IamRole, IamRolePolicyAttachment } from "../gen/providers/aws/iam";
+import { IamInstanceProfile, IamPolicy, IamRole, IamRolePolicyAttachment} from "../gen/providers/aws/iam";
 import { DataAwsAmi, Instance } from "../.gen/providers/aws/ec2";
 import { EcsCluster, EcsService, EcsTaskDefinition } from "../gen/providers/aws/ecs";
 import { SecurityGroup, SecurityGroupRule } from "../.gen/providers/aws/vpc";
@@ -8,8 +8,6 @@ import { CloudwatchLogGroup } from "../.gen/providers/aws/cloudwatch";
 
 const ecsConfig = require("../config/ecs.json");
 const rdsConfig = require("../config/rds.json");
-
-const ecsTaskRoleArn = "arn:aws:iam::466859438955:role/PLG_Ghost_Task_Role";
 
 const plgTags = {
     Name: "PLG Ghost"
@@ -45,13 +43,19 @@ class EcsResource extends Resource {
     perform() {
         // const instanceProfile = this._performEcsInstanceRoleAndProfile();
 
+        this._createLogGroup();
+
         const ecsSecurityGroup = this._createSecurityGroup();
 
         // const ec2Instance = this._createEC2ECSInstance(instanceProfile, ecsSecurityGroup);
 
         const ecsCluster = this._createEcsCluster();
 
-        const ecsTaskDefinition = this._createEcsTaskDefinition();
+        const executionRole = this._createAndAttachEcsExecutionRole();
+
+        const taskRole = this._createAndAttachEcsTaskRole();
+
+        const ecsTaskDefinition = this._createEcsTaskDefinition(executionRole, taskRole);
 
         this._createEcsService(ecsCluster, ecsTaskDefinition, ecsSecurityGroup);
     }
@@ -112,6 +116,11 @@ class EcsResource extends Resource {
         });
     }
 
+    /**
+     * Create security group for ecs - this will allow traffic to ECS from ALB only.
+     *
+     * @private
+     */
     _createSecurityGroup() {
         const ecsSecurityGroup = new SecurityGroup(this, "plg-gh-ecs", {
             name: "plg-gh-ecs-security-group",
@@ -120,8 +129,8 @@ class EcsResource extends Resource {
             ingress: [
                 {
                     description: "Traffic to ECS",
-                    fromPort: 2368,
-                    toPort: 2368,
+                    fromPort: ecsConfig.containerPort,
+                    toPort: ecsConfig.containerPort,
                     protocol: "tcp",
                     securityGroups: [this.options.albSecurityGroupId]
                 }
@@ -145,7 +154,6 @@ class EcsResource extends Resource {
             protocol: 'tcp',
             securityGroupId: this.options.rdsSecurityGroupId,
             sourceSecurityGroupId: ecsSecurityGroup.id
-
         });
 
         return ecsSecurityGroup
@@ -181,7 +189,6 @@ class EcsResource extends Resource {
                 "EOF",
             iamInstanceProfile: instanceProfile.name,
             tags: plgTags,
-            keyName: "ghost" // TODO: remove this later
         });
     }
 
@@ -196,7 +203,12 @@ class EcsResource extends Resource {
         });
     }
 
-    _createEcsExecutionRole() {
+    /**
+     * Create iam role for ecs task execution and attach it to policy - AmazonECSTaskExecutionRolePolicy
+     *
+     * @private
+     */
+    _createAndAttachEcsExecutionRole() {
         const ecsExecutionRole = new IamRole(this, "plg-gh-ecs-execution-role", {
             name: "plg-gh-ecs-execution-role",
             assumeRolePolicy: Fn.jsonencode({
@@ -223,6 +235,73 @@ class EcsResource extends Resource {
         return ecsExecutionRole;
     }
 
+    /**
+     * Create and attach ecs task role to access other aws resources.
+     * Here, allowing access to use S3
+     *
+     * @private
+     */
+    _createAndAttachEcsTaskRole() {
+        const taskPolicy = new IamPolicy(this, "plg-gh-task-policy", {
+            name: "plg-gh-task",
+            policy: Fn.jsonencode(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "",
+                            "Effect": "Allow",
+                            "Action": "s3:ListBucket",
+                            "Resource": `arn:aws:s3:::${ecsConfig.s3BucketName}`
+                        },
+                        {
+                            "Sid": "",
+                            "Effect": "Allow",
+                            "Action": [
+                                "s3:PutObject",
+                                "s3:GetObject",
+                                "s3:PutObjectVersionAcl",
+                                "s3:DeleteObject",
+                                "s3:PutObjectAcl"
+                            ],
+                            "Resource": `arn:aws:s3:::${ecsConfig.s3BucketName}/*`
+                        }
+                    ]
+                }
+            )
+        });
+
+        const taskRole = new IamRole(this, "plg-gh-ecs-task-role", {
+            name: "plg-gh-ecs-task-role",
+            assumeRolePolicy: Fn.jsonencode({
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Sid": "",
+                        "Effect": "Allow",
+                        "Principal": {
+                            "Service": "ecs-tasks.amazonaws.com"
+                        },
+                        "Action": "sts:AssumeRole"
+                    }
+                ]
+            }),
+            tags: plgTags
+        });
+
+        new IamRolePolicyAttachment(this, 'task-role-attachment', {
+            role: taskRole.name,
+            policyArn: taskPolicy.arn,
+        });
+
+        return taskRole;
+    }
+
+    /**
+     * Create log group for ecs tasks.
+     *
+     * @private
+     */
     _createLogGroup() {
         new CloudwatchLogGroup(this, "plg-gh-log-group", {
             name: ecsConfig.logGroupName
@@ -234,11 +313,7 @@ class EcsResource extends Resource {
      *
      * @private
      */
-    _createEcsTaskDefinition(): EcsTaskDefinition {
-        const executionRole = this._createEcsExecutionRole();
-
-        this._createLogGroup();
-
+    _createEcsTaskDefinition(executionRole: IamRole, taskRole: IamRole): EcsTaskDefinition {
         return new EcsTaskDefinition(this, "ecs-task-definition", {
             family: "ghost-task",
             memory: ecsConfig.taskDefinition.memory,
@@ -249,10 +324,10 @@ class EcsResource extends Resource {
             },
             requiresCompatibilities: ["FARGATE"],
             executionRoleArn: executionRole.arn,
-            taskRoleArn: ecsTaskRoleArn, // TODO - change later
+            taskRoleArn: taskRole.arn,
             containerDefinitions: Fn.jsonencode(
                 [
-                    this._getGhostContainerDefinition(),
+                    this._getGhostContainerDefinition()
                 ]
             ),
             volume: [
@@ -270,7 +345,7 @@ class EcsResource extends Resource {
             "essential": true,
             "portMappings": [
                 {
-                    "containerPort": 2368
+                    "containerPort": ecsConfig.containerPort
                 }
             ],
             "mountPoints": [
@@ -337,7 +412,7 @@ class EcsResource extends Resource {
                     "awslogs-region": ecsConfig.logGroupRegion,
                     "awslogs-stream-prefix": ecsConfig.logStreamPrefix
                 }
-            },
+            }
         };
     }
 
@@ -371,7 +446,7 @@ class EcsResource extends Resource {
                 },
                 {
                     "name": "GHOST_CONTAINER_PORT",
-                    "value": "2368"
+                    "value": ecsConfig.containerPort
                 },
                 {
                     "name": "S3_STATIC_BUCKET",
@@ -412,7 +487,7 @@ class EcsResource extends Resource {
             loadBalancer: [
                 {
                     containerName: "ghost",
-                    containerPort: 2368,
+                    containerPort: ecsConfig.containerPort,
                     targetGroupArn: this.options.targetGroupArn
                 }
             ],

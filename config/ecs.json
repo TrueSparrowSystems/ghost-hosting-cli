@@ -1,4 +1,5 @@
 {
+  "containerPort": 2368,
   "nameIdentifier":"plg-ghost",
   "logGroupName": "plg/ghost",
   "logGroupRegion": "us-east-1",
