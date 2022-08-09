@@ -66,7 +66,7 @@ class RdsResource extends Resource {
             parameterGroupName: nameIdentifier,
             optionGroupName: nameIdentifier,
             dbSubnetGroupName: nameIdentifier,
-            vpcSecurityGroupIds: [rdsSgOutput.id],
+            vpcSecurityGroupIds: [rdsSg.id],
             dbSubnetGroupUseNamePrefix: false,
             parameterGroupUseNamePrefix: false,
             optionGroupUseNamePrefix: false,
