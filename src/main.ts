@@ -42,14 +42,14 @@ class MyStack extends TerraformStack {
 
         const { alb, targetGroup } = this._createAlb(vpc);
 
-        const securityGroupId = alb.securityGroups[0];
+        const albSecurityGroupId = alb.securityGroups[0];
 
         this._createEcs(
             vpc.vpcIdOutput,
             vpc.privateSubnetsOutput,
             vpcSg.id,
             rds.dbInstanceAddressOutput,
-            securityGroupId,
+            albSecurityGroupId,
             targetGroup.arn,
             alb.dnsName,
             rdsSg.id
@@ -87,7 +87,8 @@ class MyStack extends TerraformStack {
     _createRdsInstance(vpc: Vpc) {
         return new RdsResource(this, "plg-gh-rds", {
             vpcId: vpc.vpcIdOutput,
-            privateSubnets: Fn.tolist(vpc.privateSubnetsOutput)
+            privateSubnets: Fn.tolist(vpc.privateSubnetsOutput),
+            publicSubnets: Fn.tolist(vpc.publicSubnetsOutput)
         }).perform();
     }
 

@@ -11,6 +11,10 @@ interface Options {
     isConfiguredDomain: string
 }
 
+const plgTags = {
+    Name: "PLG Ghost"
+};
+
 /**
  * Class to deploy ALB.
  */
@@ -69,9 +73,7 @@ class AlbResource extends Resource {
                     cidrBlocks: ["0.0.0.0/0"]
                 }
             ],
-            tags: {
-                Name: "PLG Ghost ALB Security Group"
-            }
+            tags: plgTags
         });
 
     }
@@ -90,7 +92,8 @@ class AlbResource extends Resource {
                 timeout: 3,
                 matcher: "200",
                 unhealthyThreshold: 2
-            }
+            },
+            tags: plgTags
         });
     }
 
@@ -102,7 +105,8 @@ class AlbResource extends Resource {
             ipAddressType: "ipv4",
             subnets: this.options.publicSubnets,
             securityGroups: [securityGroup.id],
-            idleTimeout: 60
+            idleTimeout: 60,
+            tags: plgTags
         });
     }
 
@@ -122,7 +126,8 @@ class AlbResource extends Resource {
                         ]
                     }
                 }
-            ]
+            ],
+            tags: plgTags
         });
     }
 
@@ -147,7 +152,8 @@ class AlbResource extends Resource {
                         ]
                     }
                 }
-            ]
+            ],
+            tags: plgTags
         });
     }
 }

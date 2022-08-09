@@ -6,8 +6,13 @@ const rdsConfig = require("../config/rds.json");
 
 interface Options {
     vpcId: string,
-    privateSubnets: string[]
+    privateSubnets: string[],
+    publicSubnets: string[]
 }
+
+const plgTags = {
+    Name: "PLG Ghost"
+};
 
 /**
  * Class to deploy RDS instance.
@@ -34,7 +39,7 @@ class RdsResource extends Resource {
         const nameIdentifier = 'plg-ghost';
 
         const rdsSg = new SecurityGroup(this, "rds_sg", {
-            name: nameIdentifier,
+            name: nameIdentifier + "rds-sg",
             vpcId: this.options.vpcId,
             egress: [
                 {
@@ -44,9 +49,7 @@ class RdsResource extends Resource {
                     cidrBlocks: ["0.0.0.0/0"]
                 }
             ],
-            tags: {
-                Name: "PLG Ghost"
-            }
+            tags: plgTags
         });
 
         const rdsOptions = {
@@ -61,17 +64,19 @@ class RdsResource extends Resource {
             password: rdsConfig.dbPassword,
             availabilityZone: rdsConfig.availabilityZone,
             instanceClass: rdsConfig.dbInstanceClass,
-            subnetIds: this.options.privateSubnets,
-            createDbSubnetGroup: true,
+            subnetIds: this.options.publicSubnets,
             parameterGroupName: nameIdentifier,
             optionGroupName: nameIdentifier,
             dbSubnetGroupName: nameIdentifier,
             vpcSecurityGroupIds: [rdsSg.id],
+            createDbSubnetGroup: true,
             dbSubnetGroupUseNamePrefix: false,
             parameterGroupUseNamePrefix: false,
             optionGroupUseNamePrefix: false,
             skipFinalSnapshot: true,
-            skipFinalBackup: true
+            skipFinalBackup: true,
+            publiclyAccessible: true,
+            tags: plgTags
         };
 
         const rds =  new Rds(this, 'rds', rdsOptions);

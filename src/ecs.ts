@@ -44,7 +44,7 @@ class EcsResource extends Resource {
 
         this._createLogGroup();
 
-        const ecsSecurityGroup = this._createSecurityGroup();
+        const ecsSg = this._createSecurityGroup();
 
         // const ec2Instance = this._createEC2ECSInstance(instanceProfile, ecsSecurityGroup);
 
@@ -56,7 +56,7 @@ class EcsResource extends Resource {
 
         const ecsTaskDefinition = this._createEcsTaskDefinition(executionRole, taskRole);
 
-        this._createEcsService(ecsCluster, ecsTaskDefinition, ecsSecurityGroup);
+        this._createEcsService(ecsCluster, ecsTaskDefinition, ecsSg);
     }
 
     /**
@@ -120,8 +120,8 @@ class EcsResource extends Resource {
      *
      * @private
      */
-    _createSecurityGroup(): SecurityGroup {
-        const ecsSecurityGroup = new SecurityGroup(this, "plg-gh-ecs", {
+    _createSecurityGroup() {
+        const ecsSg = new SecurityGroup(this, "plg-gh-ecs", {
             name: "plg-gh-ecs-security-group",
             description: "Firewall for ECS traffic",
             vpcId: this.options.vpcId,
@@ -146,16 +146,16 @@ class EcsResource extends Resource {
         });
 
         // Allow DB connection
-        new SecurityGroupRule(this, 'rds_sg_rule', {
-            type: 'ingress',
+        new SecurityGroupRule(this, "rds_sg_rule", {
+            type: "ingress",
             fromPort: 3306,
             toPort: 3306,
-            protocol: 'tcp',
+            protocol: "tcp",
             securityGroupId: this.options.rdsSecurityGroupId,
-            sourceSecurityGroupId: ecsSecurityGroup.id
+            sourceSecurityGroupId: ecsSg.id
         });
 
-        return ecsSecurityGroup
+        return ecsSg;
     }
 
     /**
