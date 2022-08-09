@@ -61,7 +61,7 @@ class RdsResource extends Resource {
             allocatedStorage: rdsConfig.dbStorageSizeInGB,
             dbName: rdsConfig.dbName,
             username: rdsConfig.dbUserName,
-            password: rdsConfig.dbPassword,
+            password: rdsConfig.dbPassword.toString().trim(),
             availabilityZone: rdsConfig.availabilityZone,
             instanceClass: rdsConfig.dbInstanceClass,
             subnetIds: this.options.publicSubnets,
