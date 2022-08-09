@@ -36,24 +36,23 @@ class MyStack extends TerraformStack {
 
         this._setAwsProvider();
 
-        const { vpcOutput, vpcSg } = this._createVpc();
+        const { vpc, vpcSg } = this._createVpc();
 
-        const {rdsOutput, rdsSgOutput} = this._createRdsInstance(vpcOutput);
+        const { rds, rdsSg } = this._createRdsInstance(vpc);
 
-        const { alb, targetGroup } = this._createAlb(vpcOutput);
+        const { alb, targetGroup } = this._createAlb(vpc);
 
         const securityGroupId = alb.securityGroups[0];
 
         this._createEcs(
-            vpcOutput.vpcIdOutput,
-            vpcOutput.publicSubnetsOutput,
-            vpcOutput.privateSubnetsOutput,
-            vpcSg.thisSecurityGroupIdOutput,
-            rdsOutput.dbInstanceAddressOutput,
+            vpc.vpcIdOutput,
+            vpc.privateSubnetsOutput,
+            vpcSg.id,
+            rds.dbInstanceAddressOutput,
             securityGroupId,
             targetGroup.arn,
             alb.dnsName,
-            rdsSgOutput.id
+            rdsSg.id
         );
     }
 
@@ -82,27 +81,26 @@ class MyStack extends TerraformStack {
     /**
      * Create aws rds instance in private subnet.
      *
-     * @param vpcOutput
+     * @param vpc
      * @private
      */
-    _createRdsInstance(vpcOutput: Vpc) {
+    _createRdsInstance(vpc: Vpc) {
         return new RdsResource(this, "plg-gh-rds", {
-            vpcId: vpcOutput.vpcIdOutput,
-            privateSubnets: Fn.tolist(vpcOutput.privateSubnetsOutput)
+            vpcId: vpc.vpcIdOutput,
+            privateSubnets: Fn.tolist(vpc.privateSubnetsOutput)
         }).perform();
     }
 
     /**
      * Create application load balancer
      *
-     * @param vpcOutput
+     * @param vpc
      * @private
      */
-    _createAlb(vpcOutput: Vpc) {
-         // TODO: change arguments - read from config.json
+    _createAlb(vpc: Vpc) {
         return new AlbResource(this, "plg-gh-alb", {
-            vpcId: vpcOutput.vpcIdOutput,
-            publicSubnets: Fn.tolist(vpcOutput.publicSubnetsOutput),
+            vpcId: vpc.vpcIdOutput,
+            publicSubnets: Fn.tolist(vpc.publicSubnetsOutput),
             isExistingAlb: false,
             listenerArn: "",
             isConfiguredDomain: ""
@@ -113,18 +111,18 @@ class MyStack extends TerraformStack {
      * Create ECS container, cluster, task-definition, service and task in EC2-ECS optimised instance
      *
      * @param vpcId
-     * @param publicSubnets
+     * @param subnets
      * @param securityGroupId
      * @param dbInstanceAddress
      * @param albSecurityGroupId
      * @param targetGroupArn
      * @param albDnsName
+     * @param rdsSecurityGroupId
      * @private
      */
     _createEcs(
         vpcId: string,
-        publicSubnets: string,
-        privateSubnets: string,
+        subnets: string,
         securityGroupId: string,
         dbInstanceAddress: string,
         albSecurityGroupId: string,
@@ -134,8 +132,7 @@ class MyStack extends TerraformStack {
     ) {
         return new EcsResource(this, "plg-gh-ecs", {
             vpcId,
-            publicSubnets: Fn.tolist(publicSubnets),
-            privateSubnets: Fn.tolist(privateSubnets),
+            subnets: Fn.tolist(subnets),
             vpcSecurityGroupId: securityGroupId,
             dbInstanceEndpoint: dbInstanceAddress,
             albSecurityGroupId,

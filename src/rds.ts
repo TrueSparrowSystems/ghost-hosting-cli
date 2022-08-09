@@ -1,6 +1,6 @@
 import { Resource} from "cdktf";
 import { Construct } from "constructs";
-import { Rds } from "../gen/modules/rds";
+import { Rds } from "../.gen/modules/rds";
 import { SecurityGroup } from "../.gen/providers/aws/vpc";
 const rdsConfig = require("../config/rds.json");
 
@@ -33,7 +33,7 @@ class RdsResource extends Resource {
     perform() {
         const nameIdentifier = 'plg-ghost';
 
-        const rdsSgOutput = new SecurityGroup(this, "rds_sg", {
+        const rdsSg = new SecurityGroup(this, "rds_sg", {
             name: nameIdentifier,
             vpcId: this.options.vpcId,
             egress: [
@@ -74,9 +74,9 @@ class RdsResource extends Resource {
             skipFinalBackup: true
         };
 
-        const rdsOutput =  new Rds(this, 'rds', rdsOptions);
+        const rds =  new Rds(this, 'rds', rdsOptions);
 
-        return {rdsOutput, rdsSgOutput}
+        return { rds, rdsSg }
     }
 }
 

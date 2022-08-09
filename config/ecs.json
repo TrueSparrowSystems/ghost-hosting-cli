@@ -1,6 +1,6 @@
 {
-  "containerPort": 2368,
   "nameIdentifier":"plg-ghost",
+  "containerPort": 2368,
   "logGroupName": "plg/ghost",
   "logGroupRegion": "us-east-1",
   "logStreamPrefix": "ecs",

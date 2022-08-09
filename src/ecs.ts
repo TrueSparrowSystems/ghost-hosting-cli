@@ -1,8 +1,8 @@
 import { Resource, Fn } from "cdktf";
 import { Construct } from "constructs";
-import { IamInstanceProfile, IamPolicy, IamRole, IamRolePolicyAttachment} from "../gen/providers/aws/iam";
+import { IamInstanceProfile, IamPolicy, IamRole, IamRolePolicyAttachment} from "../.gen/providers/aws/iam";
 import { DataAwsAmi, Instance } from "../.gen/providers/aws/ec2";
-import { EcsCluster, EcsService, EcsTaskDefinition } from "../gen/providers/aws/ecs";
+import { EcsCluster, EcsService, EcsTaskDefinition } from "../.gen/providers/aws/ecs";
 import { SecurityGroup, SecurityGroupRule } from "../.gen/providers/aws/vpc";
 import { CloudwatchLogGroup } from "../.gen/providers/aws/cloudwatch";
 
@@ -15,8 +15,7 @@ const plgTags = {
 
 interface Options {
     vpcId: string,
-    publicSubnets: string[],
-    privateSubnets: string[],
+    subnets: string[],
     vpcSecurityGroupId: string,
     dbInstanceEndpoint: string,
     albSecurityGroupId: string,
@@ -121,7 +120,7 @@ class EcsResource extends Resource {
      *
      * @private
      */
-    _createSecurityGroup() {
+    _createSecurityGroup(): SecurityGroup {
         const ecsSecurityGroup = new SecurityGroup(this, "plg-gh-ecs", {
             name: "plg-gh-ecs-security-group",
             description: "Firewall for ECS traffic",
@@ -176,7 +175,7 @@ class EcsResource extends Resource {
             }]
         });
 
-        const privateSubnetId = Fn.element(this.options.privateSubnets, 0);
+        const privateSubnetId = Fn.element(this.options.subnets, 0);
         return new Instance(this, "ec2-ecs-instance", {
             ami: dataAwsAmiOutput.id,
             subnetId: privateSubnetId,
@@ -208,7 +207,7 @@ class EcsResource extends Resource {
      *
      * @private
      */
-    _createAndAttachEcsExecutionRole() {
+    _createAndAttachEcsExecutionRole(): IamRole {
         const ecsExecutionRole = new IamRole(this, "plg-gh-ecs-execution-role", {
             name: "plg-gh-ecs-execution-role",
             assumeRolePolicy: Fn.jsonencode({
@@ -241,7 +240,7 @@ class EcsResource extends Resource {
      *
      * @private
      */
-    _createAndAttachEcsTaskRole() {
+    _createAndAttachEcsTaskRole(): IamRole {
         const taskPolicy = new IamPolicy(this, "plg-gh-task-policy", {
             name: "plg-gh-task",
             policy: Fn.jsonencode(
@@ -302,7 +301,7 @@ class EcsResource extends Resource {
      *
      * @private
      */
-    _createLogGroup() {
+    _createLogGroup(): void {
         new CloudwatchLogGroup(this, "plg-gh-log-group", {
             name: ecsConfig.logGroupName
         });
@@ -494,7 +493,7 @@ class EcsResource extends Resource {
             networkConfiguration: {
                 assignPublicIp: false,
                 securityGroups: [ecsSecurityGroup.id],
-                subnets: this.options.privateSubnets
+                subnets: this.options.subnets
             }
         });
     }

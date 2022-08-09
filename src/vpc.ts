@@ -1,7 +1,7 @@
 import { Fn, Resource, TerraformOutput } from "cdktf";
 import { Construct } from "constructs";
 import { Vpc } from "../.gen/modules/vpc";
-import { SecurityGroup } from "../gen/modules/security-group";
+import { SecurityGroup } from "../.gen/providers/aws/vpc";
 import { DataAwsAvailabilityZones } from "../.gen/providers/aws/datasources";
 
 const vpcConfig = require("../config/vpc.json");
@@ -35,7 +35,7 @@ class VpcResource extends Resource {
      *
      * @private
      */
-    _getSubnetCidr() {
+    _getSubnetCidr(): string[] {
         return getPrivateSubnetCidrBlocks(
             vpcConfig.cidrPrefix,
             vpcConfig.numberOfPrivateSubnets,
@@ -48,7 +48,7 @@ class VpcResource extends Resource {
      *
      * @private
      */
-    _getZones() {
+    _getZones(): DataAwsAvailabilityZones {
         const zones = new DataAwsAvailabilityZones(this, 'zones', {
             state: 'available'
         });
@@ -71,7 +71,11 @@ class VpcResource extends Resource {
      * @param zones
      * @private
      */
-    _createVpc(privateSubnetCidrBlocks: string[], zones: DataAwsAvailabilityZones) {
+    _createVpc(
+        privateSubnetCidrBlocks: string[],
+        zones: DataAwsAvailabilityZones
+    ): { vpc: Vpc, vpcSg: SecurityGroup }
+    {
         const vpcOptions = {
             name: vpcConfig.nameLabel,
             azs: [Fn.element(zones.names, 0), Fn.element(zones.names, 1)],
@@ -91,19 +95,28 @@ class VpcResource extends Resource {
 
         const vpc = new Vpc(this, vpcConfig.nameIdentifier, vpcOptions);
 
-        const securityGroupOutput = new SecurityGroup(this, 'vpc_sg', {
-            name: "PLG Ghost VPC Security Group",
-            description: "Security Group managed by Terraform",
+        const vpcSg = new SecurityGroup(this, "vpc_sg", {
+            name: "plg-gh-vpc-security-group",
             vpcId: vpc.vpcIdOutput,
-            useNamePrefix: false,
-            ingressCidrBlocks: ["0.0.0.0/0"],
-            ingressRules: [
-                "ssh-tcp"
+            ingress: [
+                {
+                    fromPort: 22,
+                    toPort: 22,
+                    protocol: "tcp",
+                    cidrBlocks: ["0.0.0.0/0"],
+                }
             ],
-            egressRules: ["all-all"]
+            egress: [
+                {
+                    fromPort: 0,
+                    toPort: 0,
+                    protocol: "-1",
+                    cidrBlocks: ["0.0.0.0/0"]
+                }
+            ]
         });
 
-        return { vpcOutput: vpc, vpcSg: securityGroupOutput};
+        return { vpc, vpcSg };
     }
 }
 
