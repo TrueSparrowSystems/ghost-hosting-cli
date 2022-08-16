@@ -8,6 +8,14 @@
       "name": "aws",
       "source": "registry.terraform.io/hashicorp/aws",
       "version": "4.25.0"
+    },
+    {
+      "name": "random",
+      "source": "hashicorp/random"
+    },
+    {
+      "name": "local",
+      "source": "hashicorp/local"
     }
   ],
   "terraformModules": [

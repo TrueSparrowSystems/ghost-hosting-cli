@@ -3,12 +3,25 @@ import { App, TerraformStack, Fn } from "cdktf";
 import { AwsProvider } from "@cdktf/provider-aws";
 import { Vpc } from "../.gen/modules/vpc";
 
+import * as fs from "fs";
+
 import { VpcResource } from "./vpc";
 import { RdsResource } from "./rds";
 import { EcsResource} from "./ecs";
 import { AlbResource } from "./alb";
+import { S3Resource } from "./s3";
+import { IamResource } from "./iam";
+
+import { Rds } from "../.gen/modules/rds";
 
 import { readInput } from "../lib/readInput";
+import { AlbTargetGroup } from "../.gen/providers/aws/elb";
+import { S3Bucket, S3BucketObject } from "../.gen/providers/aws/s3";
+import { RandomProvider } from "../.gen/providers/random";
+import { File, LocalProvider } from "../.gen/providers/local";
+
+const rdsConfig = require("../config/rds.json");
+const ecsConfig = require("../config/ecs.json");
 
 /**
  * Terraform stack
@@ -34,13 +47,30 @@ class MyStack extends TerraformStack {
     async perform() {
         this.userInput = readInput();
 
-        this._setAwsProvider();
+        this._setProviders();
 
         const { vpc, vpcSg } = this._createVpc();
 
-        const { rds, rdsSg } = this._createRdsInstance(vpc);
+        const { rds, rdsSg, rdsPassword } = this._createRdsInstance(vpc);
 
         const { alb, targetGroup } = this._createAlb(vpc);
+
+        const { blogBucket, staticBucket, configsBucket } = this._createS3Buckets();
+
+        const { ecsEnvUploadS3, nginxEnvUploadS3 } = this._s3EnvUpload(
+            rds,
+            rdsPassword,
+            blogBucket,
+            configsBucket,
+            staticBucket,
+            alb.dnsName
+        );
+
+        const { customExecutionRole, customTaskRole } = this._createIamRolePolicies(
+            blogBucket,
+            staticBucket,
+            configsBucket
+        );
 
         const albSecurityGroupId = alb.securityGroups[0];
 
@@ -50,22 +80,38 @@ class MyStack extends TerraformStack {
             vpcSg.id,
             rds.dbInstanceAddressOutput,
             albSecurityGroupId,
-            targetGroup.arn,
+            targetGroup,
             alb.dnsName,
-            rdsSg.id
+            rdsSg.id,
+            customExecutionRole.arn,
+            customTaskRole.arn,
+            configsBucket,
+            ecsEnvUploadS3,
+            nginxEnvUploadS3
         );
     }
 
     /**
-     * Set aws provider for provided access key and secret key.
+     * Set required providers.
      *
      * @private
      */
-    _setAwsProvider() {
+    _setProviders() {
+        // AWS provider
         new AwsProvider(this, "AWS", {
             region: this.userInput.aws.awsDefaultRegion,
             accessKey: this.userInput.aws.awsAccessKeyId,
             secretKey: this.userInput.aws.awsSecretAccessKey
+        });
+
+        // Random provider
+        new RandomProvider(this, "random-provider", {
+            alias: "random-provider"
+        });
+
+        // Local provider
+        new LocalProvider(this, "local", {
+            alias: "local-provider"
         });
     }
 
@@ -109,6 +155,69 @@ class MyStack extends TerraformStack {
     }
 
     /**
+     * Create required s3 buckets
+     *
+     * @private
+     */
+    _createS3Buckets() {
+        return new S3Resource(this, "plg-gh-s3", {}).perform();
+    }
+
+    _s3EnvUpload(
+        rds: Rds,
+        rdsPassword: string,
+        blogBucket: S3Bucket,
+        configsBucket: S3Bucket,
+        staticBucket: S3Bucket,
+        albDnsName: string
+    ) {
+
+        // upload ecs env
+        const ecsEnvFileContent = `database__client=mysql\ndatabase__connection__host=${rds.dbInstanceAddressOutput}\ndatabase__connection__user=${rdsConfig.dbUserName}\ndatabase__connection__password=${rds.password}\ndatabase__connection__database=${rdsConfig.dbName}\nstorage__active=s3\nstorage__s3__accessKeyId=${this.userInput.aws.awsAccessKeyId}\nstorage__s3__secretAccessKey=${this.userInput.aws.awsSecretAccessKey}\nstorage__s3__region=${this.userInput.aws.awsDefaultRegion}\nstorage__s3__bucket=${blogBucket.bucket}\nstorage__s3__pathPrefix=blog/images\nstorage__s3__acl=public-read\nstorage__s3__forcePathStyle=true\nurl=${"http://" + albDnsName}`;
+
+        const ecsEnvFile = new File(this, "plg-gh-ecs-configs", {
+            filename: "ecs.env",
+            content: ecsEnvFileContent
+        });
+
+        const ecsEnvUploadS3 = new S3BucketObject(this, "plg-gh-ecs-env", {
+            key: "ecs.env",
+            bucket: configsBucket.bucket,
+            acl: "private",
+            source: "./ecs.env",
+            dependsOn: [ecsEnvFile]
+        });
+
+        // upload nginx env
+        // const s3StaticHost = "https://" + staticBucket.bucketDomainName;
+        const nginxEnvFileContent = `GHOST_SERVER_NAME=ghost\nGHOST_STATIC_SERVER_NAME=ghost-static\nPROXY_PASS_HOST=127.0.0.1\nPROXY_PASS_PORT=${ecsConfig.ghostContainerPort}\nS3_STATIC_BUCKET_HOST=${staticBucket.bucketDomainName}\nS3_STATIC_BUCKET=${staticBucket.bucket}`;
+
+
+        const nginxEnvFile = new File(this, "plg-gh-nginx-configs", {
+            filename: "nginx.env",
+            content: nginxEnvFileContent
+        });
+
+        const nginxEnvUploadS3 = new S3BucketObject(this, "plg-gh-nginx-env", {
+            key: "nginx.env",
+            bucket: configsBucket.bucket,
+            acl: "private",
+            source: "./nginx.env",
+            dependsOn: [nginxEnvFile]
+        });
+
+        return { ecsEnvUploadS3, nginxEnvUploadS3 };
+    }
+
+    _createIamRolePolicies(blogBucket: S3Bucket, staticBucket: S3Bucket, configsBucket: S3Bucket) {
+        return new IamResource(this, "plg-gh-iam", {
+            blogBucket,
+            staticBucket,
+            configsBucket
+        }).perform();
+    }
+
+    /**
      * Create ECS container, cluster, task-definition, service and task in EC2-ECS optimised instance
      *
      * @param vpcId
@@ -116,9 +225,14 @@ class MyStack extends TerraformStack {
      * @param securityGroupId
      * @param dbInstanceAddress
      * @param albSecurityGroupId
-     * @param targetGroupArn
+     * @param targetGroup
      * @param albDnsName
      * @param rdsSecurityGroupId
+     * @param customExecutionRoleArn
+     * @param customTaskRoleArn
+     * @param configBucket
+     * @param ecsEnvUploadS3
+     * @param nginxEnvUploadS3
      * @private
      */
     _createEcs(
@@ -127,9 +241,14 @@ class MyStack extends TerraformStack {
         securityGroupId: string,
         dbInstanceAddress: string,
         albSecurityGroupId: string,
-        targetGroupArn: string,
+        targetGroup: AlbTargetGroup,
         albDnsName: string,
-        rdsSecurityGroupId: string
+        rdsSecurityGroupId: string,
+        customExecutionRoleArn: string,
+        customTaskRoleArn: string,
+        configBucket: S3Bucket,
+        ecsEnvUploadS3: S3BucketObject,
+        nginxEnvUploadS3: S3BucketObject
     ) {
         return new EcsResource(this, "plg-gh-ecs", {
             vpcId,
@@ -137,9 +256,14 @@ class MyStack extends TerraformStack {
             vpcSecurityGroupId: securityGroupId,
             dbInstanceEndpoint: dbInstanceAddress,
             albSecurityGroupId,
-            targetGroupArn,
+            targetGroup,
             albDnsName,
-            rdsSecurityGroupId
+            rdsSecurityGroupId,
+            customExecutionRoleArn,
+            customTaskRoleArn,
+            configBucket,
+            ecsEnvUploadS3,
+            nginxEnvUploadS3
         }).perform();
     }
 }

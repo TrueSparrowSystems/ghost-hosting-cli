@@ -1,0 +1,7 @@
+{
+  "configsS3BucketName": "plg-ghost-configs",
+  "blogContentS3BucketName": "ghost-blog-assets",
+  "blogStaticS3BucketName": "ghost-static-assets",
+  "storagePathPrefix": "blog-content/development/images",
+  "storageRegion": "us-east-1"
+}

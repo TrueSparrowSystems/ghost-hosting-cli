@@ -89,9 +89,10 @@ class AlbResource extends Resource {
             healthCheck: {
                 protocol: "HTTP",
                 path: "/",
-                timeout: 3,
-                matcher: "200",
-                unhealthyThreshold: 2
+                timeout: 10,
+                matcher: "200,202,301",
+                healthyThreshold: 2,
+                interval: 12
             },
             tags: plgTags
         });

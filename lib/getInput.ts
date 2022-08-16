@@ -42,15 +42,17 @@ export class GetInput {
     }
 
     perform() {
+        // TODO: if file already exists, consider values from file otherwise ask for input
+
         this._parseArguments();
 
         this._getAwsCredentials();
 
         this._validateAWSCredentials();
 
-        this._getBlogManagementRequirements();
+        // this._getBlogManagementRequirements();
 
-        this._getAlbRequirements();
+        // this._getAlbRequirements();
 
         this._validateInput();
 
@@ -99,11 +101,13 @@ export class GetInput {
     }
 
     _getBlogManagementRequirements() {
-        options.blogManagementHostDomain = readlineSyc.question("Blog management host domain : ");
+        options.blogManagementHostDomain = readlineSyc.question("Blog management host url : ");
+        // TODO: Validation for HTTPS only
 
         options.hostStaticPages = readlineSyc.question("Do you want to host static pages site? (y/n) : ");
         if (options.hostStaticPages === yes) {
-            options.staticPageSiteDomain = readlineSyc.question("Static pages site domain : ");
+            // TODO: create static bucket
+            options.staticPageSiteDomain = readlineSyc.question("Static pages site url : ");
             options.staticPageSiteRootPath = readlineSyc.question("Static pages site root path : ");
         } else if (options.hostStaticPages === no) {
             // Do nothing

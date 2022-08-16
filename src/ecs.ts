@@ -1,13 +1,19 @@
-import { Resource, Fn } from "cdktf";
+import {Resource, Fn, TerraformOutput} from "cdktf";
 import { Construct } from "constructs";
 import { IamInstanceProfile, IamPolicy, IamRole, IamRolePolicyAttachment} from "../.gen/providers/aws/iam";
 import { DataAwsAmi, Instance } from "../.gen/providers/aws/ec2";
-import { EcsCluster, EcsService, EcsTaskDefinition } from "../.gen/providers/aws/ecs";
+import {
+    EcsCluster,
+    EcsClusterCapacityProviders,
+    EcsService,
+    EcsTaskDefinition
+} from "../.gen/providers/aws/ecs";
 import { SecurityGroup, SecurityGroupRule } from "../.gen/providers/aws/vpc";
 import { CloudwatchLogGroup } from "../.gen/providers/aws/cloudwatch";
+import { AlbTargetGroup } from "../.gen/providers/aws/elb";
+import {S3Bucket, S3BucketObject} from "../.gen/providers/aws/s3";
 
 const ecsConfig = require("../config/ecs.json");
-const rdsConfig = require("../config/rds.json");
 
 const plgTags = {
     Name: "PLG Ghost"
@@ -19,9 +25,14 @@ interface Options {
     vpcSecurityGroupId: string,
     dbInstanceEndpoint: string,
     albSecurityGroupId: string,
-    targetGroupArn: string,
+    targetGroup: AlbTargetGroup,
     albDnsName: string,
-    rdsSecurityGroupId: string
+    rdsSecurityGroupId: string,
+    customExecutionRoleArn: string,
+    customTaskRoleArn: string
+    configBucket: S3Bucket,
+    ecsEnvUploadS3: S3BucketObject,
+    nginxEnvUploadS3: S3BucketObject
 }
 
 /**
@@ -50,11 +61,13 @@ class EcsResource extends Resource {
 
         const ecsCluster = this._createEcsCluster();
 
-        const executionRole = this._createAndAttachEcsExecutionRole();
+        // const executionRole = this._createAndAttachEcsExecutionRole();
 
-        const taskRole = this._createAndAttachEcsTaskRole();
+        // const taskRole = this._createAndAttachEcsTaskRole();
 
-        const ecsTaskDefinition = this._createEcsTaskDefinition(executionRole, taskRole);
+        this._addCapacityProvider();
+
+        const ecsTaskDefinition = this._createEcsTaskDefinition();
 
         this._createEcsService(ecsCluster, ecsTaskDefinition, ecsSg);
     }
@@ -128,8 +141,8 @@ class EcsResource extends Resource {
             ingress: [
                 {
                     description: "Traffic to ECS",
-                    fromPort: ecsConfig.containerPort,
-                    toPort: ecsConfig.containerPort,
+                    fromPort: ecsConfig.nginxContainerPort,
+                    toPort: ecsConfig.nginxContainerPort,
                     protocol: "tcp",
                     securityGroups: [this.options.albSecurityGroupId]
                 }
@@ -228,7 +241,7 @@ class EcsResource extends Resource {
 
         new IamRolePolicyAttachment(this, 'execution-role-attachment', {
             role: ecsExecutionRole.name,
-            policyArn: ecsConfig.executionPolicyArn,
+            policyArn: ecsConfig.amazonECSTaskExecutionRolePolicy,
         });
 
         return ecsExecutionRole;
@@ -296,13 +309,20 @@ class EcsResource extends Resource {
         return taskRole;
     }
 
+    _addCapacityProvider() {
+        new EcsClusterCapacityProviders(this, "plg-gh-capacity-provider", {
+           clusterName: ecsConfig.clusterName,
+            capacityProviders: ["FARGATE", "FARGATE_SPOT"]
+        });
+    }
+
     /**
      * Create log group for ecs tasks.
      *
      * @private
      */
-    _createLogGroup(): void {
-        new CloudwatchLogGroup(this, "plg-gh-log-group", {
+    _createLogGroup() {
+        return new CloudwatchLogGroup(this, "plg-gh-log-group", {
             name: ecsConfig.logGroupName
         });
     }
@@ -312,7 +332,7 @@ class EcsResource extends Resource {
      *
      * @private
      */
-    _createEcsTaskDefinition(executionRole: IamRole, taskRole: IamRole): EcsTaskDefinition {
+    _createEcsTaskDefinition(): EcsTaskDefinition {
         return new EcsTaskDefinition(this, "ecs-task-definition", {
             family: "ghost-task",
             memory: ecsConfig.taskDefinition.memory,
@@ -322,29 +342,37 @@ class EcsResource extends Resource {
                 operatingSystemFamily: "LINUX"
             },
             requiresCompatibilities: ["FARGATE"],
-            executionRoleArn: executionRole.arn,
-            taskRoleArn: taskRole.arn,
+            executionRoleArn: this.options.customExecutionRoleArn,
+            taskRoleArn: this.options.customTaskRoleArn,
             containerDefinitions: Fn.jsonencode(
                 [
-                    this._getGhostContainerDefinition()
+                    this._getGhostContainerDefinition(),
+                    this._getNginxContainerDefinition()
                 ]
             ),
             volume: [
                 {
                     name: "ghost"
                 }
-            ]
+            ],
+            dependsOn: [this.options.ecsEnvUploadS3, this.options.nginxEnvUploadS3]
         });
     }
 
     _getGhostContainerDefinition() {
+        const envFileArn = `arn:aws:s3:::${this.options.configBucket.bucket}/ecs.env`;
+
+        new TerraformOutput(this, "ecs-env-file-arn", {
+            value: envFileArn
+        });
+
         return {
-            "name": "ghost",
+            "name": ecsConfig.ghostContainerName,
             "image": ecsConfig.ghostImageUri,
             "essential": true,
             "portMappings": [
                 {
-                    "containerPort": ecsConfig.containerPort
+                    "containerPort": ecsConfig.ghostContainerPort
                 }
             ],
             "mountPoints": [
@@ -353,56 +381,12 @@ class EcsResource extends Resource {
                     "sourceVolume": "ghost"
                 }
             ],
-            "environment": [
+            "environmentFiles": [
                 {
-                    "name": "database__client",
-                    "value": "mysql"
-                },
-                {
-                    "name": "database__connection__database",
-                    "value": rdsConfig.dbName
-                },
-                {
-                    "name": "database__connection__host",
-                    "value": this.options.dbInstanceEndpoint
-                },
-                {
-                    "name": "database__connection__password",
-                    "value": rdsConfig.dbPassword
-                },
-                {
-                    "name": "database__connection__user",
-                    "value": rdsConfig.dbUserName
-                },
-                {
-                    "name": "storage__active",
-                    "value": "s3"
-                },
-                {
-                    "name": "storage__s3__acl",
-                    "value": "public-read"
-                },
-                {
-                    "name": "storage__s3__bucket",
-                    "value": ecsConfig.s3BucketName
-                },
-                {
-                    "name": "storage__s3__forcePathStyle",
-                    "value": "true"
-                },
-                {
-                    "name": "storage__s3__pathPrefix",
-                    "value": ecsConfig.s3StoragePathPrefix
-                },
-                {
-                    "name": "storage__s3__region",
-                    "value": ecsConfig.s3StorageRegion
-                },
-                {
-                    "name": "url",
-                    "value": "http://" + this.options.albDnsName
+                    "value": envFileArn,
+                    "type": "s3"
                 }
-             ],
+            ],
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "secretOptions": null,
@@ -415,18 +399,29 @@ class EcsResource extends Resource {
         };
     }
 
+    /**
+     * Nginx server task definition.
+     *
+     * @private
+     */
     _getNginxContainerDefinition() {
+        const envFileArn = `arn:aws:s3:::${this.options.configBucket.bucket}/nginx.env`;
+
+        new TerraformOutput(this, "nginx-env-file-arn", {
+            value: envFileArn
+        });
+
         return {
-            "name": "nginx",
+            "name": ecsConfig.nginxContainerName,
             "image": ecsConfig.nginxImageUri,
             "cpu": 0,
             "memory": null,
             "essential": true,
             "portMappings": [
                 {
-                    "hostPort": 0,
+                    "hostPort": ecsConfig.nginxContainerPort,
                     "protocol": "tcp",
-                    "containerPort": 8080
+                    "containerPort": ecsConfig.nginxContainerPort
                 }
             ],
             "dependsOn": [
@@ -435,21 +430,10 @@ class EcsResource extends Resource {
                     "condition": "START"
                 }
             ],
-            "links": [
-                "ghost"
-            ],
-            "environment": [
+            "environmentFiles": [
                 {
-                    "name": "GHOST_CONTAINER_NAME",
-                    "value": "ghost"
-                },
-                {
-                    "name": "GHOST_CONTAINER_PORT",
-                    "value": ecsConfig.containerPort
-                },
-                {
-                    "name": "S3_STATIC_BUCKET",
-                    "value": "plg-ghost"
+                    "value": envFileArn,
+                    "type": "s3"
                 }
             ],
             "logConfiguration": {
@@ -472,7 +456,7 @@ class EcsResource extends Resource {
      * @param ecsSecurityGroup
      * @private
      */
-    _createEcsService(
+    _createEcsService (
         ecsCluster: EcsCluster,
         ecsTaskDefinition: EcsTaskDefinition,
         ecsSecurityGroup: SecurityGroup
@@ -481,15 +465,26 @@ class EcsResource extends Resource {
             name: "plg-gh-ecs-service",
             cluster: ecsCluster.arn,
             taskDefinition: ecsTaskDefinition.arn,
-            launchType: "FARGATE",
             desiredCount: 1,
-            loadBalancer: [
+            capacityProviderStrategy: [
                 {
-                    containerName: "ghost",
-                    containerPort: ecsConfig.containerPort,
-                    targetGroupArn: this.options.targetGroupArn
+                    capacityProvider: "FARGATE_SPOT",
+                    base: 1,
+                    weight: 1
+                },
+                {
+                    capacityProvider: "FARGATE",
+                    weight: 1
                 }
             ],
+            loadBalancer: [
+                {
+                    containerName: ecsConfig.nginxContainerName,
+                    containerPort: ecsConfig.nginxContainerPort,
+                    targetGroupArn: this.options.targetGroup.arn
+                }
+            ],
+            dependsOn: [this.options.targetGroup],
             networkConfiguration: {
                 assignPublicIp: false,
                 securityGroups: [ecsSecurityGroup.id],

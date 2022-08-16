@@ -2,6 +2,8 @@ import { Resource} from "cdktf";
 import { Construct } from "constructs";
 import { Rds } from "../.gen/modules/rds";
 import { SecurityGroup } from "../.gen/providers/aws/vpc";
+import { Password } from "../.gen/providers/random";
+
 const rdsConfig = require("../config/rds.json");
 
 interface Options {
@@ -52,6 +54,12 @@ class RdsResource extends Resource {
             tags: plgTags
         });
 
+        const dbRandomPassword = Math.random()
+            .toString(36)
+            .substring(2, 16)
+            .trim();
+
+        console.log('Random db password: ', dbRandomPassword);
         const rdsOptions = {
             identifier: nameIdentifier,
             family: "mysql8.0",
@@ -61,7 +69,7 @@ class RdsResource extends Resource {
             allocatedStorage: rdsConfig.dbStorageSizeInGB,
             dbName: rdsConfig.dbName,
             username: rdsConfig.dbUserName,
-            password: rdsConfig.dbPassword.toString().trim(),
+            password: dbRandomPassword,
             availabilityZone: rdsConfig.availabilityZone,
             instanceClass: rdsConfig.dbInstanceClass,
             subnetIds: this.options.publicSubnets,
@@ -73,6 +81,7 @@ class RdsResource extends Resource {
             dbSubnetGroupUseNamePrefix: false,
             parameterGroupUseNamePrefix: false,
             optionGroupUseNamePrefix: false,
+            createRandomPassword: false,
             skipFinalSnapshot: true,
             skipFinalBackup: true,
             publiclyAccessible: true,
@@ -81,7 +90,7 @@ class RdsResource extends Resource {
 
         const rds =  new Rds(this, 'rds', rdsOptions);
 
-        return { rds, rdsSg }
+        return { rds, rdsSg, rdsPassword: dbRandomPassword }
     }
 }
 
