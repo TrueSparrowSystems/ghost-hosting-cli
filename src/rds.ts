@@ -1,4 +1,4 @@
-import { Resource} from "cdktf";
+import { Resource } from "cdktf";
 import { Construct } from "constructs";
 import { Rds } from "../.gen/modules/rds";
 import { SecurityGroup } from "../.gen/providers/aws/vpc";
@@ -35,7 +35,7 @@ class RdsResource extends Resource {
     }
 
     /**
-     * Main performer.
+     * Main performer of the class.
      */
     perform() {
         const nameIdentifier = 'plg-ghost';
@@ -54,12 +54,18 @@ class RdsResource extends Resource {
             tags: plgTags
         });
 
-        const dbRandomPassword = Math.random()
-            .toString(36)
-            .substring(2, 16)
-            .trim();
+        const password = new Password(this, "rds-pw", {
+            length: 8,
+            special: true,
+            minLower: 4,
+            minUpper: 2,
+            minNumeric: 1,
+            overrideSpecial: "@#",
+            keepers: {
+                "vpc_id": this.options.vpcId
+            }
+        });
 
-        console.log('Random db password: ', dbRandomPassword);
         const rdsOptions = {
             identifier: nameIdentifier,
             family: "mysql8.0",
@@ -69,7 +75,7 @@ class RdsResource extends Resource {
             allocatedStorage: rdsConfig.dbStorageSizeInGB,
             dbName: rdsConfig.dbName,
             username: rdsConfig.dbUserName,
-            password: dbRandomPassword,
+            password: password.result,
             availabilityZone: rdsConfig.availabilityZone,
             instanceClass: rdsConfig.dbInstanceClass,
             subnetIds: this.options.publicSubnets,
@@ -90,7 +96,7 @@ class RdsResource extends Resource {
 
         const rds =  new Rds(this, 'rds', rdsOptions);
 
-        return { rds, rdsSg, rdsPassword: dbRandomPassword }
+        return { rds, rdsSg }
     }
 }
 

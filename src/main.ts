@@ -3,8 +3,6 @@ import { App, TerraformStack, Fn } from "cdktf";
 import { AwsProvider } from "@cdktf/provider-aws";
 import { Vpc } from "../.gen/modules/vpc";
 
-import * as fs from "fs";
-
 import { VpcResource } from "./vpc";
 import { RdsResource } from "./rds";
 import { EcsResource} from "./ecs";
@@ -51,15 +49,14 @@ class MyStack extends TerraformStack {
 
         const { vpc, vpcSg } = this._createVpc();
 
-        const { rds, rdsSg, rdsPassword } = this._createRdsInstance(vpc);
+        const { rds, rdsSg } = this._createRdsInstance(vpc);
 
         const { alb, targetGroup } = this._createAlb(vpc);
 
-        const { blogBucket, staticBucket, configsBucket } = this._createS3Buckets();
+        const { blogBucket, staticBucket, configsBucket } = this._createS3Buckets(vpc);
 
         const { ecsEnvUploadS3, nginxEnvUploadS3 } = this._s3EnvUpload(
             rds,
-            rdsPassword,
             blogBucket,
             configsBucket,
             staticBucket,
@@ -159,19 +156,17 @@ class MyStack extends TerraformStack {
      *
      * @private
      */
-    _createS3Buckets() {
-        return new S3Resource(this, "plg-gh-s3", {}).perform();
+    _createS3Buckets(vpc: Vpc) {
+        return new S3Resource(this, "plg-gh-s3", { vpcId: vpc.vpcIdOutput }).perform();
     }
 
     _s3EnvUpload(
         rds: Rds,
-        rdsPassword: string,
         blogBucket: S3Bucket,
         configsBucket: S3Bucket,
         staticBucket: S3Bucket,
         albDnsName: string
     ) {
-
         // upload ecs env
         const ecsEnvFileContent = `database__client=mysql\ndatabase__connection__host=${rds.dbInstanceAddressOutput}\ndatabase__connection__user=${rdsConfig.dbUserName}\ndatabase__connection__password=${rds.password}\ndatabase__connection__database=${rdsConfig.dbName}\nstorage__active=s3\nstorage__s3__accessKeyId=${this.userInput.aws.awsAccessKeyId}\nstorage__s3__secretAccessKey=${this.userInput.aws.awsSecretAccessKey}\nstorage__s3__region=${this.userInput.aws.awsDefaultRegion}\nstorage__s3__bucket=${blogBucket.bucket}\nstorage__s3__pathPrefix=blog/images\nstorage__s3__acl=public-read\nstorage__s3__forcePathStyle=true\nurl=${"http://" + albDnsName}`;
 

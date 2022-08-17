@@ -1,26 +1,32 @@
-import { Resource } from "cdktf";
+import { Resource, TerraformOutput } from "cdktf";
 import { Construct } from "constructs";
-import { S3Bucket, S3BucketWebsiteConfiguration } from "../.gen/providers/aws/s3";
+import { S3Bucket, S3BucketAcl, S3BucketWebsiteConfiguration } from "../.gen/providers/aws/s3";
 import { StringResource } from "../.gen/providers/random";
 
 const s3Config = require("../config/s3.json");
+
+interface Options {
+    vpcId: string
+}
 
 /**
  * Class to create required s3 buckets.
  */
 class S3Resource extends Resource {
-    options: {};
+    options: Options;
 
-    constructor(scope: Construct, name: string, options: any) {
+    constructor(scope: Construct, name: string, options: Options) {
         super(scope, name);
 
         this.options = options;
     }
 
+    /**
+     * Main performer of the class.
+     */
     perform() {
-        // const randomString = this._generateRandomSuffix();
+        const randomString = this._generateRandomSuffix();
 
-        const randomString = Math.random().toString(36).substring(2, 10);
         const blogBucket = this._createBlogAssetBucket(randomString);
 
         const staticBucket = this._createStaticAssetBucket(randomString);
@@ -30,17 +36,36 @@ class S3Resource extends Resource {
         return { blogBucket, staticBucket, configsBucket };
     }
 
+    /**
+     * Generate random suffix string to attach to bucket names.
+     * @private
+     */
     _generateRandomSuffix() {
-        const random = new StringResource(this, "random-string-suffix", {
+        const stringResource = new StringResource(this, "random_string", {
             length: 8,
+            lower: true,
+            upper: false,
             special: false,
-            numeric: false,
-            upper: false
+            numeric: true,
+            minNumeric: 2,
+            keepers: {
+                "vpc_id": this.options.vpcId
+            }
         });
 
-        return random.toString();
+        new TerraformOutput(this, "random_string_s3", {
+            value: stringResource.result,
+        });
+
+        return stringResource.result;
     }
 
+    /**
+     * Create bucket to store blog assets.
+     *
+     * @param randomSuffix
+     * @private
+     */
     _createBlogAssetBucket(randomSuffix: string) {
         const blogContentS3BucketName =  s3Config.blogContentS3BucketName.concat("-", randomSuffix);
 
@@ -49,12 +74,22 @@ class S3Resource extends Resource {
         });
     }
 
+    /**
+     * Create bucket to store static assets.
+     *
+     * @param randomSuffix
+     * @private
+     */
     _createStaticAssetBucket(randomSuffix: string) {
         const blogStaticS3BucketName = s3Config.blogStaticS3BucketName.concat("-", randomSuffix);
 
         const staticBucket = new S3Bucket(this, "plg-gh-static-assets", {
             bucket: blogStaticS3BucketName,
-            acl: "public-read"
+        });
+
+        new S3BucketAcl(this, "plg-gh-static-assets-acl", {
+           acl: "public-read",
+           bucket: staticBucket.bucket
         });
 
         new S3BucketWebsiteConfiguration(this, "plg-gh-website-configuration", {
@@ -70,6 +105,12 @@ class S3Resource extends Resource {
         return staticBucket;
     }
 
+    /**
+     * Create bucket to store configuration files.
+     *
+     * @param randomSuffix
+     * @private
+     */
     _createConfigsBucket(randomSuffix: string) {
         const configsBucket = s3Config.configsS3BucketName.concat("-", randomSuffix);
 
