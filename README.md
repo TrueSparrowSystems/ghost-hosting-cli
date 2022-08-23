@@ -14,9 +14,4 @@ $ cd ghost-hosting-cli
 npm install
 ```
 
-## Use cdktf-cli to fetch required terraform providers and modules
-```
-npm run get
-```
-
-Now you can use `plg-gh` to orchestrate your ghost-aws infrastructure
+Run `./bin/installer` to setup Ghost server in AWS Cloud

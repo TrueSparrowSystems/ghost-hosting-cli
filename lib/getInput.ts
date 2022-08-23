@@ -6,6 +6,14 @@ const command = new Command();
 const yes = 'y';
 const no = 'n';
 const ALLOW_ALB_CUSTOM_CONFIGURATION = false;
+const USER_CONFIGS = {
+    aws: {},
+    ghostHostingUrl: '',
+    hostStaticWebsite: false,
+    staticWebsiteUrl: '',
+    alb: {},
+    rds: {}
+};
 
 interface Options {
     awsAccessKeyId: string,
@@ -52,6 +60,11 @@ export class GetInput {
 
     perform() {
         // TODO: if file already exists, consider values from file otherwise ask for input
+        if(this._hasPreviousConfigInFile()){
+            if(this._usePrviousConfigData()){
+                return;
+            }
+        }
 
         this._parseArguments();
 
@@ -66,6 +79,35 @@ export class GetInput {
         this._validateInput();
 
         this._createConfig();
+    }
+
+    _hasPreviousConfigInFile(): boolean {
+        let configData: any;
+        try {
+            configData = require('../config.json');
+        } catch(err){
+        } finally {
+            configData ||= {};
+        }
+
+        let pass = true;
+        for(let key in configData){
+            if(!['hostStaticWebsite', 'staticWebsiteUrl'].includes(key)){
+                if(!configData.hasOwnProperty(key)){
+                    pass = false;
+                    break;
+                }
+            }
+        }
+
+        return Object.keys(configData).length > 0 && pass;
+    }
+
+    _usePrviousConfigData(): boolean {
+        let useExistingConfig = readlineSyc.question("Previous installation \"config.json\" file found, Would you like to use the existing configuration options? [Else it will start from the scratch] (Y/n) : ", {defaultInput: yes});
+        this._validateInputBooleanOption(useExistingConfig);
+
+        return useExistingConfig === yes;
     }
 
     _parseArguments() {
@@ -145,7 +187,7 @@ export class GetInput {
         if (options.useExistingAlb === yes) {
             options.listenerArn = readlineSyc.question("Please provide listener ARN : ");
         } else {
-            options.isConfiguredDomain = readlineSyc.question("Do you have Route53 configured for the domain in the same AWS account? (Else the SSL certification verification will fail) (Y/n) : ", {defaultInput: yes});
+            options.isConfiguredDomain = readlineSyc.question("Do you have Route53 configured for the domain in the same AWS account? [Else the SSL certification verification will fail] (Y/n) : ", {defaultInput: yes});
             this._validateInputBooleanOption(options.isConfiguredDomain);
 
             if (options.isConfiguredDomain === no) {
@@ -204,48 +246,40 @@ export class GetInput {
     }
 
     _createConfig() {
-        const userConfig = {
-            aws: {},
-            ghostHostingUrl: '',
-            hostStaticWebsite: false,
-            staticWebsiteUrl: '',
-            alb: {},
-            rds: {}
-        };
 
         // Add AWS credentials
-        userConfig[`aws`] = {
+        USER_CONFIGS[`aws`] = {
             awsAccessKeyId: options.awsAccessKeyId,
             awsSecretAccessKey: options.awsSecretAccessKey,
             awsDefaultRegion: options.awsDefaultRegion
         };
 
-        userConfig.ghostHostingUrl = options.ghostHostingUrl;
-        userConfig.hostStaticWebsite = options.hostStaticWebsite === yes;
+        USER_CONFIGS.ghostHostingUrl = options.ghostHostingUrl;
+        USER_CONFIGS.hostStaticWebsite = options.hostStaticWebsite === yes;
         // Add static page site data
         if (options.hostStaticWebsite === yes) {
-            userConfig.staticWebsiteUrl = options.staticWebsiteUrl;
+            USER_CONFIGS.staticWebsiteUrl = options.staticWebsiteUrl;
         }
 
         // Add alb inputs
-        userConfig[`alb`] = {
+        USER_CONFIGS[`alb`] = {
             useExistingAlb: options.useExistingAlb === yes,
             isConfiguredDomain: options.isConfiguredDomain === yes
         };
 
         if(options.useExistingAlb === yes){
-            Object.assign(userConfig[`alb`], {
+            Object.assign(USER_CONFIGS[`alb`], {
                 listenerArn: options.listenerArn
             });
         }
 
         // Add rds inputs
-        userConfig[`rds`] = {
+        USER_CONFIGS[`rds`] = {
             useExistingRds: options.useExistingRds === yes
         }
 
         if(options.useExistingRds === yes){
-            Object.assign(userConfig[`rds`], {
+            Object.assign(USER_CONFIGS[`rds`], {
                 rdsHost: options.rdsHost,
                 rdsDbUserName: options.rdsDbUserName,
                 rdsDbName: options.rdsDbName,
@@ -253,7 +287,7 @@ export class GetInput {
             });
         }
 
-        fs.writeFileSync('config.json', JSON.stringify(userConfig, null, 4));
+        fs.writeFileSync('config.json', JSON.stringify(USER_CONFIGS, null, 4));
     }
 }
 

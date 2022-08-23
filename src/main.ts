@@ -263,7 +263,7 @@ class MyStack extends TerraformStack {
 }
 
 const app = new App();
-new MyStack(app, "plg-gh")
+new MyStack(app, "plg-ghost")
     .perform()
     .then()
     .catch();
