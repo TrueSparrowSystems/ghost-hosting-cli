@@ -15,7 +15,7 @@ interface Options {
     ghostHostingUrl: string,
     hostStaticWebsite: string,
     listenerArn: string,
-    isExistingAlb: string,
+    useExistingAlb: string,
     isConfiguredDomain: string,
     staticWebsiteUrl: string,
     urlSuffix: string,
@@ -33,7 +33,7 @@ const options: Options = {
     ghostHostingUrl: '',
     hostStaticWebsite: '',
     listenerArn: '',
-    isExistingAlb: '',
+    useExistingAlb: '',
     isConfiguredDomain: '',
     staticWebsiteUrl: '',
     urlSuffix: '',
@@ -138,14 +138,14 @@ export class GetInput {
 
     _getAlbRequirements() {
         if(ALLOW_ALB_CUSTOM_CONFIGURATION){
-            options.isExistingAlb = readlineSyc.question("Do you have existing ALB? (y/N) : ", {defaultInput: no});
-            this._validateInputBooleanOption(options.isExistingAlb);
+            options.useExistingAlb = readlineSyc.question("Do you have existing ALB? (y/N) : ", {defaultInput: no});
+            this._validateInputBooleanOption(options.useExistingAlb);
         }
 
-        if (options.isExistingAlb === yes) {
+        if (options.useExistingAlb === yes) {
             options.listenerArn = readlineSyc.question("Please provide listener ARN : ");
         } else {
-            options.isConfiguredDomain = readlineSyc.question("Do you have Route53 configured for the domain in the samwe AWS account? (Else the SSL certification verification will fail) (Y/n) : ", {defaultInput: yes});
+            options.isConfiguredDomain = readlineSyc.question("Do you have Route53 configured for the domain in the same AWS account? (Else the SSL certification verification will fail) (Y/n) : ", {defaultInput: yes});
             this._validateInputBooleanOption(options.isConfiguredDomain);
 
             if (options.isConfiguredDomain === no) {
@@ -229,11 +229,11 @@ export class GetInput {
 
         // Add alb inputs
         userConfig[`alb`] = {
-            isExistingAlb: options.isExistingAlb === yes,
+            useExistingAlb: options.useExistingAlb === yes,
             isConfiguredDomain: options.isConfiguredDomain === yes
         };
 
-        if(options.isExistingAlb === yes){
+        if(options.useExistingAlb === yes){
             Object.assign(userConfig[`alb`], {
                 listenerArn: options.listenerArn
             });
@@ -241,7 +241,7 @@ export class GetInput {
 
         // Add rds inputs
         userConfig[`rds`] = {
-            isExistingRds: options.useExistingRds === yes
+            useExistingRds: options.useExistingRds === yes
         }
 
         if(options.useExistingRds === yes){
