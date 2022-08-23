@@ -7,7 +7,6 @@ const ecsConfig = require("../config/ecs.json");
 
 interface Options {
     blogBucket: S3Bucket,
-    staticBucket: S3Bucket,
     configsBucket: S3Bucket
 }
 

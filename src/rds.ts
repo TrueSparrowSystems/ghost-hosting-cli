@@ -66,6 +66,7 @@ class RdsResource extends Resource {
             }
         });
 
+        // TODO: ask user for - whether existing RDS instance or use from rds config
         const rdsOptions = {
             identifier: nameIdentifier,
             family: "mysql8.0",

@@ -31,14 +31,17 @@ class AlbResource extends Resource {
      * Main performer.
      */
     perform() {
+        // TODO: alb conditions
         const securityGroup = this._createAlbSecurityGroup();
 
         const targetGroup = this._createTargetGroup();
 
         const alb = this._createAlb(securityGroup);
 
+        // TODO: forward to HTTPS
         this._addHttpListener(alb, targetGroup);
 
+        // TODO: create cert for domain
         this._addHttpsListener(alb, targetGroup);
 
         return { alb, targetGroup };
@@ -133,10 +136,6 @@ class AlbResource extends Resource {
     }
 
     _addHttpsListener(alb: Alb, targetGroup: AlbTargetGroup) {
-        if (!this.options.isConfiguredDomain) {
-            return;
-        }
-
         return new AlbListener(this, "plg-gh-https-listener", {
             port: 443,
             protocol: "HTTPS",

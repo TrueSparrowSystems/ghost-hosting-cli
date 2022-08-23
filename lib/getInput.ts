@@ -10,28 +10,36 @@ interface Options {
     awsAccessKeyId: string,
     awsSecretAccessKey: string,
     awsDefaultRegion: string,
-    useExistingRDSInstance: boolean,
-    blogManagementHostDomain: string,
+    isExistingRds: string,
+    ghostHostingUrl: string,
     hostStaticPages: string,
     listenerArn: string,
     isExistingAlb: string,
     isConfiguredDomain: string,
-    staticPageSiteDomain: string,
-    staticPageSiteRootPath: string
+    staticWebsiteUrl: string,
+    staticPageSiteRootPath: string,
+    rdsDbName: string,
+    rdsHost: string,
+    rdsDbUserName: string,
+    rdsDbPassword: string
 }
 
 const options: Options = {
     awsAccessKeyId: '',
     awsSecretAccessKey: '',
     awsDefaultRegion: '',
-    useExistingRDSInstance: false,
-    blogManagementHostDomain: '',
+    isExistingRds: '',
+    ghostHostingUrl: '',
     hostStaticPages: '',
     listenerArn: '',
     isExistingAlb: '',
     isConfiguredDomain: '',
-    staticPageSiteDomain: '',
-    staticPageSiteRootPath: ''
+    staticWebsiteUrl: '',
+    staticPageSiteRootPath: '',
+    rdsDbName: '',
+    rdsHost: '',
+    rdsDbUserName: '',
+    rdsDbPassword: ''
 };
 
 console.log(process.argv);
@@ -48,11 +56,11 @@ export class GetInput {
 
         this._getAwsCredentials();
 
-        this._validateAWSCredentials();
+        this._getBlogManagementRequirements();
 
-        // this._getBlogManagementRequirements();
+        this._getRdsRequirements();
 
-        // this._getAlbRequirements();
+        this._getAlbRequirements();
 
         this._validateInput();
 
@@ -96,23 +104,30 @@ export class GetInput {
         }
     }
 
-    _validateAWSCredentials() {
-        // Validate aws creds
-    }
-
     _getBlogManagementRequirements() {
-        options.blogManagementHostDomain = readlineSyc.question("Blog management host url : ");
+        options.ghostHostingUrl = readlineSyc.question("Ghost hosting url : ");
         // TODO: Validation for HTTPS only
 
         options.hostStaticPages = readlineSyc.question("Do you want to host static pages site? (y/n) : ");
         if (options.hostStaticPages === yes) {
             // TODO: create static bucket
-            options.staticPageSiteDomain = readlineSyc.question("Static pages site url : ");
-            options.staticPageSiteRootPath = readlineSyc.question("Static pages site root path : ");
+            options.staticWebsiteUrl = readlineSyc.question("Static website url : ");
+            // TODO: validate website url/ extract path suffix
         } else if (options.hostStaticPages === no) {
             // Do nothing
         } else {
             throw new Error('Invalid choice.');
+        }
+    }
+
+    _getRdsRequirements() {
+        options.isExistingRds = readlineSyc.question("Do you want to use existing RDS instance? (y/n) : ");
+
+        if (options.isExistingRds === yes) {
+            options.rdsHost = readlineSyc.question("RDS database host : ");
+            options.rdsDbUserName = readlineSyc.question("RDS database user name : ");
+            options.rdsDbName = readlineSyc.question("RDS database name : ");
+            options.rdsDbPassword = readlineSyc.question("RDS database password : ");
         }
     }
 
@@ -123,6 +138,12 @@ export class GetInput {
             options.listenerArn = readlineSyc.question("Please provide listener ARN : ");
         } else {
             options.isConfiguredDomain = readlineSyc.question("Do you have Route53 configured for domain? (Else the SSL certification verification will fail) (y/n) : ");
+
+            // TODO: if options.isConfiguredDomain is NO then stop processing
+            if (options.isConfiguredDomain === no) {
+                console.log('Cannot proceed further!');
+                process.exit(0);
+            }
         }
     }
 
@@ -134,7 +155,8 @@ export class GetInput {
         const userConfig = {
             aws: {},
             staticPageSite: {},
-            alb: {}
+            alb: {},
+            rds: {}
         };
 
         // Add AWS credentials
@@ -147,16 +169,25 @@ export class GetInput {
         // Add static page site data
         if (options.hostStaticPages === yes) {
             userConfig[`staticPageSite`] = {
-                staticPageSiteDomain: options.staticPageSiteDomain,
+                staticWebsiteUrl: options.staticWebsiteUrl,
                 staticPageSiteRootPath: options.staticPageSiteRootPath
             };
         }
 
         // Add alb inputs
         userConfig[`alb`] = {
-            isExistingAlb: options.isExistingAlb,
+            isExistingAlb: options.isExistingAlb === yes,
             listenerArn: options.listenerArn,
-            isConfiguredDomain: options.isConfiguredDomain
+            isConfiguredDomain: options.isConfiguredDomain === yes
+        };
+
+        // Add rds inputs
+        userConfig[`rds`] = {
+            isExistingRds: options.isExistingRds === yes,
+            rdsHost: options.rdsHost,
+            rdsDbUserName: options.rdsDbUserName,
+            rdsDbName: options.rdsDbName,
+            rdsDbPassword: options.rdsDbPassword
         };
 
         fs.writeFileSync('config.json', JSON.stringify(userConfig, null, 4));

@@ -65,7 +65,6 @@ class MyStack extends TerraformStack {
 
         const { customExecutionRole, customTaskRole } = this._createIamRolePolicies(
             blogBucket,
-            staticBucket,
             configsBucket
         );
 
@@ -172,7 +171,8 @@ class MyStack extends TerraformStack {
 
         const ecsEnvFile = new File(this, "plg-gh-ecs-configs", {
             filename: "ecs.env",
-            content: ecsEnvFileContent
+            content: ecsEnvFileContent,
+            dependsOn: [configsBucket]
         });
 
         const ecsEnvUploadS3 = new S3BucketObject(this, "plg-gh-ecs-env", {
@@ -187,10 +187,10 @@ class MyStack extends TerraformStack {
         // const s3StaticHost = "https://" + staticBucket.bucketDomainName;
         const nginxEnvFileContent = `GHOST_SERVER_NAME=ghost\nGHOST_STATIC_SERVER_NAME=ghost-static\nPROXY_PASS_HOST=127.0.0.1\nPROXY_PASS_PORT=${ecsConfig.ghostContainerPort}\nS3_STATIC_BUCKET_HOST=${staticBucket.bucketDomainName}\nS3_STATIC_BUCKET=${staticBucket.bucket}`;
 
-
         const nginxEnvFile = new File(this, "plg-gh-nginx-configs", {
             filename: "nginx.env",
-            content: nginxEnvFileContent
+            content: nginxEnvFileContent,
+            dependsOn: [configsBucket, staticBucket]
         });
 
         const nginxEnvUploadS3 = new S3BucketObject(this, "plg-gh-nginx-env", {
@@ -204,10 +204,9 @@ class MyStack extends TerraformStack {
         return { ecsEnvUploadS3, nginxEnvUploadS3 };
     }
 
-    _createIamRolePolicies(blogBucket: S3Bucket, staticBucket: S3Bucket, configsBucket: S3Bucket) {
+    _createIamRolePolicies(blogBucket: S3Bucket, configsBucket: S3Bucket) {
         return new IamResource(this, "plg-gh-iam", {
             blogBucket,
-            staticBucket,
             configsBucket
         }).perform();
     }
