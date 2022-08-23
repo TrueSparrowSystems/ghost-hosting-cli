@@ -5,19 +5,20 @@ const command = new Command();
 
 const yes = 'y';
 const no = 'n';
+const ALLOW_ALB_CUSTOM_CONFIGURATION = false;
 
 interface Options {
     awsAccessKeyId: string,
     awsSecretAccessKey: string,
     awsDefaultRegion: string,
-    isExistingRds: string,
+    useExistingRds: string,
     ghostHostingUrl: string,
-    hostStaticPages: string,
+    hostStaticWebsite: string,
     listenerArn: string,
     isExistingAlb: string,
     isConfiguredDomain: string,
     staticWebsiteUrl: string,
-    staticPageSiteRootPath: string,
+    urlSuffix: string,
     rdsDbName: string,
     rdsHost: string,
     rdsDbUserName: string,
@@ -28,14 +29,14 @@ const options: Options = {
     awsAccessKeyId: '',
     awsSecretAccessKey: '',
     awsDefaultRegion: '',
-    isExistingRds: '',
+    useExistingRds: '',
     ghostHostingUrl: '',
-    hostStaticPages: '',
+    hostStaticWebsite: '',
     listenerArn: '',
     isExistingAlb: '',
     isConfiguredDomain: '',
     staticWebsiteUrl: '',
-    staticPageSiteRootPath: '',
+    urlSuffix: '',
     rdsDbName: '',
     rdsHost: '',
     rdsDbUserName: '',
@@ -93,37 +94,41 @@ export class GetInput {
     _getAwsCredentials() {
         if (!options.awsAccessKeyId) {
             options.awsAccessKeyId = readlineSyc.question("AWS access key id? ");
+            this._validateInputStringOption(options.awsAccessKeyId);
         }
 
         if (!options.awsSecretAccessKey) {
             options.awsSecretAccessKey = readlineSyc.question("AWS secret access key? ");
+            this._validateInputStringOption(options.awsSecretAccessKey);
         }
 
         if (!options.awsDefaultRegion) {
             options.awsDefaultRegion = readlineSyc.question("Default AWS region? ");
+            this._validateInputStringOption(options.awsDefaultRegion);
         }
     }
 
     _getBlogManagementRequirements() {
         options.ghostHostingUrl = readlineSyc.question("Ghost hosting url : ");
+        this._validateInputStringOption(options.ghostHostingUrl);
         // TODO: Validation for HTTPS only
 
-        options.hostStaticPages = readlineSyc.question("Do you want to host static pages site? (y/n) : ");
-        if (options.hostStaticPages === yes) {
+        options.hostStaticWebsite = readlineSyc.question("Do you want to host static website? (Y/n) : ", {defaultInput: yes});
+        this._validateInputBooleanOption(options.hostStaticWebsite);
+
+        if (options.hostStaticWebsite === yes) {
             // TODO: create static bucket
             options.staticWebsiteUrl = readlineSyc.question("Static website url : ");
+            this._validateInputStringOption(options.staticWebsiteUrl);
             // TODO: validate website url/ extract path suffix
-        } else if (options.hostStaticPages === no) {
-            // Do nothing
-        } else {
-            throw new Error('Invalid choice.');
         }
     }
 
     _getRdsRequirements() {
-        options.isExistingRds = readlineSyc.question("Do you want to use existing RDS instance? (y/n) : ");
+        options.useExistingRds = readlineSyc.question("Do you want to use existing RDS instance? (y/N) : ", {defaultInput: no});
+        this._validateInputBooleanOption(options.useExistingRds);
 
-        if (options.isExistingRds === yes) {
+        if (options.useExistingRds === yes) {
             options.rdsHost = readlineSyc.question("RDS database host : ");
             options.rdsDbUserName = readlineSyc.question("RDS database user name : ");
             options.rdsDbName = readlineSyc.question("RDS database name : ");
@@ -132,14 +137,17 @@ export class GetInput {
     }
 
     _getAlbRequirements() {
-        options.isExistingAlb = readlineSyc.question("Do you have existing ALB? (y/n) : ");
+        if(ALLOW_ALB_CUSTOM_CONFIGURATION){
+            options.isExistingAlb = readlineSyc.question("Do you have existing ALB? (y/N) : ", {defaultInput: no});
+            this._validateInputBooleanOption(options.isExistingAlb);
+        }
 
         if (options.isExistingAlb === yes) {
             options.listenerArn = readlineSyc.question("Please provide listener ARN : ");
         } else {
-            options.isConfiguredDomain = readlineSyc.question("Do you have Route53 configured for domain? (Else the SSL certification verification will fail) (y/n) : ");
+            options.isConfiguredDomain = readlineSyc.question("Do you have Route53 configured for the domain in the samwe AWS account? (Else the SSL certification verification will fail) (Y/n) : ", {defaultInput: yes});
+            this._validateInputBooleanOption(options.isConfiguredDomain);
 
-            // TODO: if options.isConfiguredDomain is NO then stop processing
             if (options.isConfiguredDomain === no) {
                 console.log('Cannot proceed further!');
                 process.exit(0);
@@ -148,13 +156,59 @@ export class GetInput {
     }
 
     _validateInput() {
-        // Validate input here
+        // Validate URLs and domains
+        const hostingUrlParts = options.ghostHostingUrl.replace(/\/+$/, '').split('://');
+        const staticUrlParts = options.staticWebsiteUrl.replace(/\/+$/, '').split('://');
+        const hostStaticWebsite = options.hostStaticWebsite === yes;
+
+        if(hostingUrlParts[0] !== 'https' || (hostStaticWebsite && staticUrlParts[0] !== 'https')){
+            this._validateInputStringOption('', 'Invalid url scheme! It has to be "https"');
+        }
+
+        const hostingDomainParts = (hostingUrlParts[1] || '').split('/');
+        const staticDomainParts = (staticUrlParts[1] || '').split('/');
+
+        if(hostStaticWebsite && hostingDomainParts.slice(1).join('/') !== staticDomainParts.slice(1).join('/')){
+            this._validateInputStringOption('', 'URL path should be same for Ghost hosting url and Static website url.');
+        }
+        options.urlSuffix = hostingDomainParts.slice(1).join('/');
+
+        const ghostHostingDomain = hostingDomainParts[0];
+        const staticHostingDomain = staticDomainParts[0];
+
+        if(ghostHostingDomain === '' || (hostStaticWebsite && staticHostingDomain === '')){
+            this._validateInputStringOption('', 'Domain name should be valid for Ghost hosting url and Static website url.');
+        }
+
+        if(
+            hostStaticWebsite &&
+            !(ghostHostingDomain.split(staticHostingDomain)[1] === '' || 
+            staticHostingDomain.split(ghostHostingDomain)[1] === '')
+        ){
+            this._validateInputStringOption('', 'Different domain names for Ghost hosting url and Static website url are not allowed.');
+        }
+    }
+
+    _validateInputBooleanOption(bool: String) {
+        if(![yes, no].includes(bool.toLowerCase())){
+            console.error(new Error('Invalid option!'));
+            process.exit(1);
+        }
+    }
+
+    _validateInputStringOption(str: String, msg = '') {
+        if(str === undefined || str == ''){
+            console.error(new Error(msg || 'Invalid option!'));
+            process.exit(1);
+        }
     }
 
     _createConfig() {
         const userConfig = {
             aws: {},
-            staticPageSite: {},
+            ghostHostingUrl: '',
+            hostStaticWebsite: false,
+            staticWebsiteUrl: '',
             alb: {},
             rds: {}
         };
@@ -166,33 +220,41 @@ export class GetInput {
             awsDefaultRegion: options.awsDefaultRegion
         };
 
+        userConfig.ghostHostingUrl = options.ghostHostingUrl;
+        userConfig.hostStaticWebsite = options.hostStaticWebsite === yes;
         // Add static page site data
-        if (options.hostStaticPages === yes) {
-            userConfig[`staticPageSite`] = {
-                staticWebsiteUrl: options.staticWebsiteUrl,
-                staticPageSiteRootPath: options.staticPageSiteRootPath
-            };
+        if (options.hostStaticWebsite === yes) {
+            userConfig.staticWebsiteUrl = options.staticWebsiteUrl;
         }
 
         // Add alb inputs
         userConfig[`alb`] = {
             isExistingAlb: options.isExistingAlb === yes,
-            listenerArn: options.listenerArn,
             isConfiguredDomain: options.isConfiguredDomain === yes
         };
 
+        if(options.isExistingAlb === yes){
+            Object.assign(userConfig[`alb`], {
+                listenerArn: options.listenerArn
+            });
+        }
+
         // Add rds inputs
         userConfig[`rds`] = {
-            isExistingRds: options.isExistingRds === yes,
-            rdsHost: options.rdsHost,
-            rdsDbUserName: options.rdsDbUserName,
-            rdsDbName: options.rdsDbName,
-            rdsDbPassword: options.rdsDbPassword
-        };
+            isExistingRds: options.useExistingRds === yes
+        }
+
+        if(options.useExistingRds === yes){
+            Object.assign(userConfig[`rds`], {
+                rdsHost: options.rdsHost,
+                rdsDbUserName: options.rdsDbUserName,
+                rdsDbName: options.rdsDbName,
+                rdsDbPassword: options.rdsDbPassword
+            });
+        }
 
         fs.writeFileSync('config.json', JSON.stringify(userConfig, null, 4));
     }
-
 }
 
 module.exports = GetInput;
