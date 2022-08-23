@@ -28,13 +28,13 @@
   },
   "homepage": "https://github.com/PLG-Works/ghost-hosting-cli#readme",
   "dependencies": {
-    "@cdktf/provider-aws": "^8.0.12",
-    "cdktf": "^0.11.2",
-    "cdktf-cli": "^0.11.2",
-    "commander": "^9.3.0",
-    "constructs": "^10.1.37",
-    "readline-sync": "^1.4.10",
-    "shelljs": "^0.8.5"
+    "@cdktf/provider-aws": "8.0.12",
+    "cdktf": "0.11.2",
+    "cdktf-cli": "0.11.2",
+    "commander": "9.3.0",
+    "constructs": "10.1.37",
+    "readline-sync": "1.4.10",
+    "shelljs": "0.8.5"
   },
   "devDependencies": {
     "@types/commander": "^2.12.2",

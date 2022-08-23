@@ -16,12 +16,7 @@ npm install
 
 ## Use cdktf-cli to fetch required terraform providers and modules
 ```
-cdktf get
-```
-
-## Create a sym-link for the project
-```
-npm link
+npm run get
 ```
 
 Now you can use `plg-gh` to orchestrate your ghost-aws infrastructure
