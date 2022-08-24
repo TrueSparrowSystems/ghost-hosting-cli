@@ -9,6 +9,7 @@ import { EcsResource} from "./ecs";
 import { AlbResource } from "./alb";
 import { S3Resource } from "./s3";
 import { IamResource } from "./iam";
+import { AcmResource } from "./acm";
 
 import { Rds } from "../.gen/modules/rds";
 
@@ -54,6 +55,8 @@ class GhostStack extends TerraformStack {
         const { alb, targetGroup } = this._createAlb(vpc);
 
         const { blogBucket, staticBucket, configsBucket } = this._createS3Buckets(vpc);
+
+        this._createAcmCertificate();
 
         const { ecsEnvUploadS3, nginxEnvUploadS3 } = this._s3EnvUpload(
             rds,
@@ -164,6 +167,12 @@ class GhostStack extends TerraformStack {
     _createS3Buckets(vpc: Vpc) {
         return new S3Resource(this, "plg-gh-s3", {
             vpcId: vpc.vpcIdOutput,
+            ghostHostingUrl: this.userInput.ghostHostingUrl
+        }).perform();
+    }
+
+    _createAcmCertificate() {
+        return new AcmResource(this, "plg-gh-acm", {
             ghostHostingUrl: this.userInput.ghostHostingUrl
         }).perform();
     }

@@ -221,27 +221,27 @@ export class GetInput {
         const ghostHostingDomain = hostingDomainParts[0];
         const staticHostingDomain = staticDomainParts[0];
 
-        if(ghostHostingDomain === '' || (hostStaticWebsite && staticHostingDomain === '')){
+        if(ghostHostingDomain === '' || (hostStaticWebsite && staticHostingDomain === '')) {
             this._validateInputStringOption('', 'Domain name should be valid for Ghost hosting url and Static website url.');
         }
 
-        if(
+        if (
             hostStaticWebsite &&
             !(ghostHostingDomain.split(staticHostingDomain)[1] === '' ||
             staticHostingDomain.split(ghostHostingDomain)[1] === '')
-        ){
+        ) {
             this._validateInputStringOption('', 'Different domain names for Ghost hosting url and Static website url are not allowed.');
         }
     }
 
-    _validateInputBooleanOption(bool) {
+    _validateInputBooleanOption(bool: string) {
         if(![yes, no].includes(bool.toLowerCase())){
             console.error(new Error('Invalid option!'));
             process.exit(1);
         }
     }
 
-    _validateInputStringOption(str, msg = '') {
+    _validateInputStringOption(str: string, msg = '') {
         if(str === undefined || str === ''){
             console.error(new Error(msg || 'Invalid option!'));
             process.exit(1);
