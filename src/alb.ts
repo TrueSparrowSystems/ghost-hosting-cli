@@ -8,7 +8,8 @@ interface Options {
     publicSubnets: string[],
     isExistingAlb: boolean,
     listenerArn: string,
-    isConfiguredDomain: string
+    isConfiguredDomain: string,
+    ghostHostingUrl: string
 }
 
 const plgTags = {
@@ -140,6 +141,7 @@ class AlbResource extends Resource {
             port: 443,
             protocol: "HTTPS",
             loadBalancerArn: alb.arn,
+            certificateArn: '',
             sslPolicy: "ELBSecurityPolicy-TLS-1-2-2017-01",
             defaultAction: [
                 {

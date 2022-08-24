@@ -146,7 +146,8 @@ class MyStack extends TerraformStack {
             publicSubnets: Fn.tolist(vpc.publicSubnetsOutput),
             isExistingAlb: false,
             listenerArn: "",
-            isConfiguredDomain: ""
+            isConfiguredDomain: "",
+            ghostHostingUrl: this.userInput.alb.ghostHostingUrl
         }).perform();
     }
 
