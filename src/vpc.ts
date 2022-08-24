@@ -1,7 +1,7 @@
 import { Fn, Resource, TerraformOutput } from "cdktf";
 import { Construct } from "constructs";
 import { Vpc } from "../.gen/modules/vpc";
-import { SecurityGroup } from "../.gen/providers/aws/vpc";
+import { SecurityGroup, DataAwsSubnet } from "../.gen/providers/aws/vpc";
 import { DataAwsAvailabilityZones } from "../.gen/providers/aws/datasources";
 
 const vpcConfig = require("../config/vpc.json");
@@ -9,7 +9,7 @@ import { getPrivateSubnetCidrBlocks, getPublicSubnetCidrBlocks } from "../lib/ut
 
 interface Options {
     useExistingVpc: boolean,
-    privateSubnets: string[] | undefined
+    vpcSubnets: string[]
 }
 
 /**
@@ -32,7 +32,7 @@ class VpcResource extends Resource {
 
         const zones = this._getZones();
 
-        return this._createVpc(privateSubnetCidrBlocks, zones);
+        return this._getOrCreateVpc(privateSubnetCidrBlocks, zones);
     }
 
     /**
@@ -41,6 +41,11 @@ class VpcResource extends Resource {
      * @private
      */
     _getSubnetCidr(): string[] {
+
+        if(this.options.useExistingVpc){
+            return [];
+        }
+
         return getPrivateSubnetCidrBlocks(
             vpcConfig.cidrPrefix,
             vpcConfig.numberOfPrivateSubnets,
@@ -70,58 +75,54 @@ class VpcResource extends Resource {
     }
 
     /**
-     * Create VPC and the VPC security group.
+     * Get or Create VPC
      *
      * @param privateSubnetCidrBlocks
      * @param zones
      * @private
      */
-    _createVpc(
+     _getOrCreateVpc(
         privateSubnetCidrBlocks: string[],
         zones: DataAwsAvailabilityZones
-    ): { vpc: Vpc, vpcSg: SecurityGroup }
-    {
-        const vpcOptions = {
-            name: vpcConfig.nameLabel,
-            azs: [Fn.element(zones.names, 0), Fn.element(zones.names, 1)],
-            cidr: vpcConfig.cidrPrefix,
-            publicSubnets: getPublicSubnetCidrBlocks(vpcConfig.cidrPrefix),
-            publicSubnetTags: {
-                "Name": vpcConfig.nameLabel + " public"
-            },
-            privateSubnets: privateSubnetCidrBlocks,
-            privateSubnetTags: {
-                "Name": vpcConfig.nameLabel + " private"
-            },
-            enableNatGateway: true,
-            singleNatGateway: true,
-            enableDnsHostnames: true
+    ): {vpcId: string, vpcSubnets: string[], vpcPublicSubnets: string[]} {
+        let vpcId, vpcSubnets, vpcPublicSubnets: string[];
+        if(this.options.useExistingVpc){
+            const subnetData = new DataAwsSubnet(this, 'subnet', {
+                id: this.options.vpcSubnets[0]
+            });
+            vpcId = subnetData.vpcId;
+            vpcSubnets = this.options.vpcSubnets;
+            vpcPublicSubnets = [];
+        } else {
+            const vpcOptions = {
+                name: vpcConfig.nameLabel,
+                azs: [Fn.element(zones.names, 0), Fn.element(zones.names, 1)],
+                cidr: vpcConfig.cidrPrefix,
+                publicSubnets: getPublicSubnetCidrBlocks(vpcConfig.cidrPrefix),
+                publicSubnetTags: {
+                    "Name": vpcConfig.nameLabel + " public"
+                },
+                privateSubnets: privateSubnetCidrBlocks,
+                privateSubnetTags: {
+                    "Name": vpcConfig.nameLabel + " private"
+                },
+                enableNatGateway: true,
+                singleNatGateway: true,
+                enableDnsHostnames: true
+            };
+    
+            const vpc = new Vpc(this, vpcConfig.nameIdentifier, vpcOptions);
+
+            vpcId = vpc.vpcIdOutput;
+            vpcSubnets = Fn.tolist(vpc.privateSubnetsOutput);
+            vpcPublicSubnets = Fn.tolist(vpc.publicSubnetsOutput);
+        }
+
+        return {
+            vpcId: vpcId,
+            vpcSubnets: vpcSubnets,
+            vpcPublicSubnets: vpcPublicSubnets
         };
-
-        const vpc = new Vpc(this, vpcConfig.nameIdentifier, vpcOptions);
-
-        const vpcSg = new SecurityGroup(this, "vpc_sg", {
-            name: "plg-gh-vpc-security-group",
-            vpcId: vpc.vpcIdOutput,
-            ingress: [
-                {
-                    fromPort: 22,
-                    toPort: 22,
-                    protocol: "tcp",
-                    cidrBlocks: ["0.0.0.0/0"],
-                }
-            ],
-            egress: [
-                {
-                    fromPort: 0,
-                    toPort: 0,
-                    protocol: "-1",
-                    cidrBlocks: ["0.0.0.0/0"]
-                }
-            ]
-        });
-
-        return { vpc, vpcSg };
     }
 }
 

@@ -1,7 +1,6 @@
 import { Construct } from "constructs";
-import { App, TerraformStack, Fn } from "cdktf";
+import { App, TerraformStack, Fn, TerraformOutput } from "cdktf";
 import { AwsProvider } from "@cdktf/provider-aws";
-import { Vpc } from "../.gen/modules/vpc";
 
 import { VpcResource } from "./vpc";
 import { RdsResource } from "./rds";
@@ -11,15 +10,12 @@ import { S3Resource } from "./s3";
 import { IamResource } from "./iam";
 import { AcmResource } from "./acm";
 
-import { Rds } from "../.gen/modules/rds";
-
 import { readInput } from "../lib/readInput";
 import { AlbTargetGroup } from "../.gen/providers/aws/elb";
 import { S3Bucket, S3BucketObject } from "../.gen/providers/aws/s3";
 import { RandomProvider } from "../.gen/providers/random";
 import { File, LocalProvider } from "../.gen/providers/local";
 
-const rdsConfig = require("../config/rds.json");
 const ecsConfig = require("../config/ecs.json");
 
 /**
@@ -27,6 +23,14 @@ const ecsConfig = require("../config/ecs.json");
  */
 class GhostStack extends TerraformStack {
     userInput: any;
+    vpcId: string;
+    vpcSubnets: string[];
+    vpcPublicSubnets: string[];
+    rdsHost: string;
+    rdsDbUserName: string;
+    rdsDbPassword: string;
+    rdsDbName: string;
+    rdsSecurityGroupId: string;
 
     /**
      * Constructor for the terraform stack
@@ -38,6 +42,16 @@ class GhostStack extends TerraformStack {
         super(scope, name);
 
         this.userInput = {};
+
+        this.vpcId = '';
+        this.vpcSubnets = [];
+        this.vpcPublicSubnets = [];
+        this.rdsHost = '';
+        this.rdsDbUserName = '';
+        this.rdsDbPassword = '';
+        this.rdsDbName = '';
+        this.rdsSecurityGroupId = '';
+
     }
 
     /**
@@ -48,18 +62,17 @@ class GhostStack extends TerraformStack {
 
         this._setProviders();
 
-        const { vpc, vpcSg } = this._createVpc();
+        this._createVpc();
 
-        const { rds, rdsSg } = this._createRdsInstance(vpc);
+        this._createRdsInstance();
 
-        const { alb, targetGroup } = this._createAlb(vpc);
+        const { alb, targetGroup } = this._createAlb();
 
-        const { blogBucket, staticBucket, configsBucket } = this._createS3Buckets(vpc);
+        const { blogBucket, staticBucket, configsBucket } = this._createS3Buckets();
 
         this._createAcmCertificate();
 
         const { ecsEnvUploadS3, nginxEnvUploadS3 } = this._s3EnvUpload(
-            rds,
             blogBucket,
             configsBucket,
             staticBucket
@@ -73,13 +86,8 @@ class GhostStack extends TerraformStack {
         const albSecurityGroupId = alb.securityGroups[0];
 
         this._createEcs(
-            vpc.vpcIdOutput,
-            vpc.privateSubnetsOutput,
-            vpcSg.id,
-            rds.dbInstanceAddressOutput,
             albSecurityGroupId,
             targetGroup,
-            rdsSg.id,
             customExecutionRole.arn,
             customTaskRole.arn,
             configsBucket,
@@ -118,41 +126,48 @@ class GhostStack extends TerraformStack {
      * @private
      */
     _createVpc() {
-        return new VpcResource(this, "plg-gh-vpc", {
+        const { vpcId, vpcSubnets, vpcPublicSubnets } = new VpcResource(this, "plg-gh-vpc", {
             useExistingVpc: this.userInput.vpc.useExistingVpc,
-            privateSubnets: this.userInput.vpc.privateSubnets
+            vpcSubnets: this.userInput.vpc.vpcSubnets,
         }).perform();
+
+        this.vpcId = vpcId;
+        this.vpcSubnets = vpcSubnets;
+        this.vpcPublicSubnets = vpcPublicSubnets;
     }
 
     /**
      * Create aws rds instance in private subnet.
      *
-     * @param vpc
      * @private
      */
-    _createRdsInstance(vpc: Vpc) {
-        return new RdsResource(this, "plg-gh-rds", {
-            vpcId: vpc.vpcIdOutput,
-            privateSubnets: Fn.tolist(vpc.privateSubnetsOutput),
-            publicSubnets: Fn.tolist(vpc.publicSubnetsOutput),
+    _createRdsInstance() {
+        const { rdsHost, rdsDbUserName, rdsDbPassword, rdsDbName, rdsSecurityGroupId } = new RdsResource(this, "plg-gh-rds", {
+            vpcId: this.vpcId,
+            vpcSubnets: this.vpcSubnets,
             useExistingRds: this.userInput.rds.useExistingRds,
             rdsHost: this.userInput.rds.rdsHost,
             rdsDbUserName: this.userInput.rds.rdsDbUserName,
             rdsDbPassword: this.userInput.rds.rdsDbPassword,
             rdsDbName: this.userInput.rds.rdsDbName,
         }).perform();
+
+        this.rdsHost = rdsHost;
+        this.rdsDbUserName = rdsDbUserName;
+        this.rdsDbPassword = rdsDbPassword;
+        this.rdsDbName = rdsDbName;
+        this.rdsSecurityGroupId = rdsSecurityGroupId;
     }
 
     /**
      * Create application load balancer
      *
-     * @param vpc
      * @private
      */
-    _createAlb(vpc: Vpc) {
+    _createAlb() {
         return new AlbResource(this, "plg-gh-alb", {
-            vpcId: vpc.vpcIdOutput,
-            publicSubnets: Fn.tolist(vpc.publicSubnetsOutput),
+            vpcId: this.vpcId,
+            publicSubnets: this.vpcPublicSubnets,
             useExistingAlb: this.userInput.alb.useExistingAlb,
             isConfiguredDomain: this.userInput.alb.isConfiguredDomain,
             listenerArn: this.userInput.alb.listenerArn
@@ -164,9 +179,9 @@ class GhostStack extends TerraformStack {
      *
      * @private
      */
-    _createS3Buckets(vpc: Vpc) {
+    _createS3Buckets() {
         return new S3Resource(this, "plg-gh-s3", {
-            vpcId: vpc.vpcIdOutput,
+            vpcId: this.vpcId,
             ghostHostingUrl: this.userInput.ghostHostingUrl
         }).perform();
     }
@@ -178,13 +193,12 @@ class GhostStack extends TerraformStack {
     }
 
     _s3EnvUpload(
-        rds: Rds,
         blogBucket: S3Bucket,
         configsBucket: S3Bucket,
         staticBucket: S3Bucket
     ) {
         // upload ecs env
-        const ecsEnvFileContent = `database__client=mysql\ndatabase__connection__host=${rds.dbInstanceAddressOutput}\ndatabase__connection__user=${rdsConfig.dbUserName}\ndatabase__connection__password=${rds.password}\ndatabase__connection__database=${rdsConfig.dbName}\nstorage__active=s3\nstorage__s3__region=${this.userInput.aws.awsDefaultRegion}\nstorage__s3__bucket=${blogBucket.bucket}\nstorage__s3__pathPrefix=blog/images\nstorage__s3__acl=public-read\nstorage__s3__forcePathStyle=true\nurl=${this.userInput.ghostHostingUrl}`;
+        const ecsEnvFileContent = `database__client=mysql\ndatabase__connection__host=${this.rdsHost}\ndatabase__connection__user=${this.rdsDbUserName}\ndatabase__connection__password=${this.rdsDbPassword}\ndatabase__connection__database=${this.rdsDbName}\nstorage__active=s3\nstorage__s3__region=${this.userInput.aws.awsDefaultRegion}\nstorage__s3__bucket=${blogBucket.bucket}\nstorage__s3__pathPrefix=blog/images\nstorage__s3__acl=public-read\nstorage__s3__forcePathStyle=true\nurl=${this.userInput.ghostHostingUrl}`;
 
         const ecsEnvFile = new File(this, "plg-gh-ecs-configs", {
             filename: "ecs.env",
@@ -231,13 +245,8 @@ class GhostStack extends TerraformStack {
     /**
      * Create ECS container, cluster, task-definition, service and task in EC2-ECS optimised instance
      *
-     * @param vpcId
-     * @param subnets
-     * @param securityGroupId
-     * @param dbInstanceAddress
      * @param albSecurityGroupId
      * @param targetGroup
-     * @param rdsSecurityGroupId
      * @param customExecutionRoleArn
      * @param customTaskRoleArn
      * @param configBucket
@@ -246,13 +255,8 @@ class GhostStack extends TerraformStack {
      * @private
      */
     _createEcs(
-        vpcId: string,
-        subnets: string,
-        securityGroupId: string,
-        dbInstanceAddress: string,
         albSecurityGroupId: string,
         targetGroup: AlbTargetGroup,
-        rdsSecurityGroupId: string,
         customExecutionRoleArn: string,
         customTaskRoleArn: string,
         configBucket: S3Bucket,
@@ -260,13 +264,12 @@ class GhostStack extends TerraformStack {
         nginxEnvUploadS3: S3BucketObject
     ) {
         return new EcsResource(this, "plg-gh-ecs", {
-            vpcId,
-            subnets: Fn.tolist(subnets),
-            vpcSecurityGroupId: securityGroupId,
-            dbInstanceEndpoint: dbInstanceAddress,
+            vpcId: this.vpcId,
+            subnets: this.vpcSubnets,
+            dbInstanceEndpoint: this.rdsHost,
             albSecurityGroupId,
             targetGroup,
-            rdsSecurityGroupId,
+            rdsSecurityGroupId: this.rdsSecurityGroupId,
             customExecutionRoleArn,
             customTaskRoleArn,
             configBucket,

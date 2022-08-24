@@ -8,8 +8,7 @@ const rdsConfig = require("../config/rds.json");
 
 interface Options {
     vpcId: string,
-    privateSubnets: string[],
-    publicSubnets: string[],
+    vpcSubnets: string[],
     useExistingRds: boolean,
     rdsHost: string | undefined,
     rdsDbUserName: string | undefined,
@@ -42,67 +41,83 @@ class RdsResource extends Resource {
     /**
      * Main performer of the class.
      */
-    perform() {
-        const nameIdentifier = 'plg-ghost';
-
-        const rdsSg = new SecurityGroup(this, "rds_sg", {
-            name: nameIdentifier + "rds-sg",
-            vpcId: this.options.vpcId,
-            egress: [
-                {
-                    fromPort: 0,
-                    toPort: 0,
-                    protocol: "-1",
-                    cidrBlocks: ["0.0.0.0/0"]
-                }
-            ],
-            tags: plgTags
-        });
-
-        const password = new Password(this, "rds-pw", {
-            length: 8,
-            special: true,
-            minLower: 4,
-            minUpper: 2,
-            minNumeric: 1,
-            overrideSpecial: "@#",
-            keepers: {
-                "vpc_id": this.options.vpcId
-            }
-        });
-
-        // TODO: ask user for - whether existing RDS instance or use from rds config
-        const rdsOptions = {
-            identifier: nameIdentifier,
-            family: "mysql8.0",
-            engine: "mysql",
-            engineVersion: "8.0",
-            majorEngineVersion: "8.0",
-            allocatedStorage: rdsConfig.dbStorageSizeInGB,
-            dbName: rdsConfig.dbName,
-            username: rdsConfig.dbUserName,
-            password: password.result,
-            availabilityZone: rdsConfig.availabilityZone,
-            instanceClass: rdsConfig.dbInstanceClass,
-            subnetIds: this.options.publicSubnets,
-            parameterGroupName: nameIdentifier,
-            optionGroupName: nameIdentifier,
-            dbSubnetGroupName: nameIdentifier,
-            vpcSecurityGroupIds: [rdsSg.id],
-            createDbSubnetGroup: true,
-            dbSubnetGroupUseNamePrefix: false,
-            parameterGroupUseNamePrefix: false,
-            optionGroupUseNamePrefix: false,
-            createRandomPassword: false,
-            skipFinalSnapshot: true,
-            skipFinalBackup: true,
-            publiclyAccessible: true,
-            tags: plgTags
+    perform(): any {
+        let responseData = {
+            rdsHost: this.options.rdsHost,
+            rdsDbUserName: this.options.rdsDbUserName,
+            rdsDbPassword: this.options.rdsDbPassword,
+            rdsDbName: this.options.rdsDbName,
+            rdsSecurityGroupId: ''
         };
 
-        const rds =  new Rds(this, 'rds', rdsOptions);
+        if(!this.options.useExistingRds){
+            const nameIdentifier = 'plg-ghost';
 
-        return { rds, rdsSg }
+            const rdsSg = new SecurityGroup(this, "rds_sg", {
+                name: nameIdentifier + "rds-sg",
+                vpcId: this.options.vpcId,
+                egress: [
+                    {
+                        fromPort: 0,
+                        toPort: 0,
+                        protocol: "-1",
+                        cidrBlocks: ["0.0.0.0/0"]
+                    }
+                ],
+                tags: plgTags
+            });
+
+            const password = new Password(this, "rds-pw", {
+                length: 8,
+                special: true,
+                minLower: 4,
+                minUpper: 2,
+                minNumeric: 1,
+                overrideSpecial: "@#",
+                keepers: {
+                    "vpc_id": this.options.vpcId
+                }
+            });
+
+            // TODO: ask user for - whether existing RDS instance or use from rds config
+            const rdsOptions = {
+                identifier: nameIdentifier,
+                family: "mysql8.0",
+                engine: "mysql",
+                engineVersion: "8.0",
+                majorEngineVersion: "8.0",
+                allocatedStorage: rdsConfig.dbStorageSizeInGB,
+                dbName: rdsConfig.dbName,
+                username: rdsConfig.dbUserName,
+                password: password.result,
+                availabilityZone: rdsConfig.availabilityZone,
+                instanceClass: rdsConfig.dbInstanceClass,
+                subnetIds: this.options.vpcSubnets,
+                parameterGroupName: nameIdentifier,
+                optionGroupName: nameIdentifier,
+                dbSubnetGroupName: nameIdentifier,
+                vpcSecurityGroupIds: [rdsSg.id],
+                createDbSubnetGroup: true,
+                dbSubnetGroupUseNamePrefix: false,
+                parameterGroupUseNamePrefix: false,
+                optionGroupUseNamePrefix: false,
+                createRandomPassword: false,
+                skipFinalSnapshot: true,
+                skipFinalBackup: true,
+                publiclyAccessible: true,
+                tags: plgTags
+            };
+
+            const rds =  new Rds(this, 'rds', rdsOptions);
+
+            responseData.rdsHost = rds.dbInstanceAddressOutput;
+            responseData.rdsDbUserName = rdsConfig.dbUserName;
+            responseData.rdsDbPassword = password.result;
+            responseData.rdsDbName = rdsConfig.dbName
+            responseData.rdsSecurityGroupId = rdsSg.id
+        }
+
+        return responseData
     }
 }
 

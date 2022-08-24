@@ -24,7 +24,7 @@ interface Options {
     hostStaticWebsite: string,
     staticWebsiteUrl: string,
     useExistingVpc: string,
-    privateSubnets: string,
+    vpcSubnets: string,
     useExistingAlb: string,
     isConfiguredDomain: string,
     listenerArn: string,
@@ -40,7 +40,7 @@ const options: Options = {
     awsSecretAccessKey: '',
     awsDefaultRegion: '',
     useExistingVpc: '',
-    privateSubnets: '',
+    vpcSubnets: '',
     useExistingRds: '',
     ghostHostingUrl: '',
     hostStaticWebsite: '',
@@ -72,6 +72,8 @@ export class GetInput {
         this._parseArguments();
 
         this._getAwsCredentials();
+
+        this._getVpcConfigurations();
 
         this._getBlogManagementRequirements();
 
@@ -135,6 +137,16 @@ export class GetInput {
         options.awsAccessKeyId = command.opts().awsAccessKeyId;
         options.awsSecretAccessKey = command.opts().awsSecretAccessKey;
         options.awsDefaultRegion = command.opts().awsDefaultRegion;
+    }
+
+    _getVpcConfigurations(): void {
+        options.useExistingVpc = readlineSyc.question("Use existing VPC? (y/N) : ", {defaultInput: no});
+        this._validateInputBooleanOption(options.useExistingVpc);
+
+        if (options.useExistingVpc === yes) {
+            options.vpcSubnets = readlineSyc.question("Provide VPC subnets [comma separated values] : ");
+            this._validateInputStringOption(options.vpcSubnets, 'Invalid VPC Subnets.');
+        }
     }
 
     _getAwsCredentials() {
@@ -203,8 +215,10 @@ export class GetInput {
 
     _validateInput() {
         // Validate URLs and domains
-        const hostingUrlParts = options.ghostHostingUrl.replace(/\/+$/, '').split('://');
-        const staticUrlParts = options.staticWebsiteUrl.replace(/\/+$/, '').split('://');
+        options.ghostHostingUrl = options.ghostHostingUrl.replace(/\/+$/, '');
+        options.staticWebsiteUrl = options.staticWebsiteUrl.replace(/\/+$/, '');
+        const hostingUrlParts = options.ghostHostingUrl.split('://');
+        const staticUrlParts = options.staticWebsiteUrl.split('://');
         const hostStaticWebsite = options.hostStaticWebsite === yes;
 
         if(hostingUrlParts[0] !== 'https' || (hostStaticWebsite && staticUrlParts[0] !== 'https')){
@@ -261,9 +275,11 @@ export class GetInput {
         USER_CONFIGS[`vpc`] = {
             useExistingVpc: options.useExistingVpc === yes
         };
+
         if(options.useExistingVpc === yes){
+            const subnetIds = options.vpcSubnets.split(',');
             Object.assign(USER_CONFIGS[`vpc`], {
-                privateSubnets: options.privateSubnets
+                vpcSubnets: subnetIds
             });
         }
 

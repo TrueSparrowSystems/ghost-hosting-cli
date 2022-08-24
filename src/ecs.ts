@@ -22,7 +22,6 @@ const plgTags = {
 interface Options {
     vpcId: string,
     subnets: string[],
-    vpcSecurityGroupId: string,
     dbInstanceEndpoint: string,
     albSecurityGroupId: string,
     targetGroup: AlbTargetGroup,

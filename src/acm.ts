@@ -4,6 +4,8 @@ import { Construct } from "constructs";
 import { AcmCertificate, AcmCertificateValidation } from "../.gen/providers/aws/acm";
 import { DataAwsRoute53Zone, Route53Record } from "../.gen/providers/aws/route53";
 
+import { parseDomain, fromUrl } from "parse-domain";
+
 interface Options {
     ghostHostingUrl: string
 }
@@ -44,14 +46,11 @@ class AcmResource extends Resource {
      * @private
      */
     _extractDomainFromUrl() {
-        const hostingUrlParts = this.options.ghostHostingUrl
-            .replace(/\/+$/, '')
-            .split('://');
+        // const hostingDomain = this.options.ghostHostingUrl.split('://')[1].split('/')[0]
 
-        const hostingDomainParts = (hostingUrlParts[1] || '')
-            .split('/');
-
-        return hostingDomainParts[0];
+        const parseResult = parseDomain(fromUrl(this.options.ghostHostingUrl));
+        const { domain, topLevelDomains } = parseResult;
+        return `${domain}.${topLevelDomains.join('.')}`;
     }
 
     /**
