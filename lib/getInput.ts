@@ -224,7 +224,7 @@ export class GetInput {
 
         if(
             hostStaticWebsite &&
-            !(ghostHostingDomain.split(staticHostingDomain)[1] === '' || 
+            !(ghostHostingDomain.split(staticHostingDomain)[1] === '' ||
             staticHostingDomain.split(ghostHostingDomain)[1] === '')
         ){
             this._validateInputStringOption('', 'Different domain names for Ghost hosting url and Static website url are not allowed.');
