@@ -6,9 +6,10 @@ import { Alb, AlbListener, AlbTargetGroup } from "../.gen/providers/aws/elb";
 interface Options {
     vpcId: string,
     publicSubnets: string[],
-    isExistingAlb: boolean,
-    listenerArn: string,
-    isConfiguredDomain: string
+    useExistingAlb: boolean,
+    isConfiguredDomain: boolean,
+    listenerArn: string | undefined,
+    
 }
 
 const plgTags = {

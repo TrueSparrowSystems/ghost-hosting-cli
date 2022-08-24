@@ -24,7 +24,7 @@ const ecsConfig = require("../config/ecs.json");
 /**
  * Terraform stack
  */
-class MyStack extends TerraformStack {
+class GhostStack extends TerraformStack {
     userInput: any;
 
     /**
@@ -59,8 +59,7 @@ class MyStack extends TerraformStack {
             rds,
             blogBucket,
             configsBucket,
-            staticBucket,
-            alb.dnsName
+            staticBucket
         );
 
         const { customExecutionRole, customTaskRole } = this._createIamRolePolicies(
@@ -77,7 +76,6 @@ class MyStack extends TerraformStack {
             rds.dbInstanceAddressOutput,
             albSecurityGroupId,
             targetGroup,
-            alb.dnsName,
             rdsSg.id,
             customExecutionRole.arn,
             customTaskRole.arn,
@@ -117,7 +115,10 @@ class MyStack extends TerraformStack {
      * @private
      */
     _createVpc() {
-        return new VpcResource(this, "plg-gh-vpc", {}).perform();
+        return new VpcResource(this, "plg-gh-vpc", {
+            useExistingVpc: this.userInput.vpc.useExistingVpc,
+            privateSubnets: this.userInput.vpc.privateSubnets
+        }).perform();
     }
 
     /**
@@ -130,7 +131,12 @@ class MyStack extends TerraformStack {
         return new RdsResource(this, "plg-gh-rds", {
             vpcId: vpc.vpcIdOutput,
             privateSubnets: Fn.tolist(vpc.privateSubnetsOutput),
-            publicSubnets: Fn.tolist(vpc.publicSubnetsOutput)
+            publicSubnets: Fn.tolist(vpc.publicSubnetsOutput),
+            useExistingRds: this.userInput.rds.useExistingRds,
+            rdsHost: this.userInput.rds.rdsHost,
+            rdsDbUserName: this.userInput.rds.rdsDbUserName,
+            rdsDbPassword: this.userInput.rds.rdsDbPassword,
+            rdsDbName: this.userInput.rds.rdsDbName,
         }).perform();
     }
 
@@ -144,9 +150,9 @@ class MyStack extends TerraformStack {
         return new AlbResource(this, "plg-gh-alb", {
             vpcId: vpc.vpcIdOutput,
             publicSubnets: Fn.tolist(vpc.publicSubnetsOutput),
-            isExistingAlb: false,
-            listenerArn: "",
-            isConfiguredDomain: ""
+            useExistingAlb: this.userInput.alb.useExistingAlb,
+            isConfiguredDomain: this.userInput.alb.isConfiguredDomain,
+            listenerArn: this.userInput.alb.listenerArn
         }).perform();
     }
 
@@ -156,18 +162,20 @@ class MyStack extends TerraformStack {
      * @private
      */
     _createS3Buckets(vpc: Vpc) {
-        return new S3Resource(this, "plg-gh-s3", { vpcId: vpc.vpcIdOutput }).perform();
+        return new S3Resource(this, "plg-gh-s3", {
+            vpcId: vpc.vpcIdOutput,
+            ghostHostingUrl: this.userInput.ghostHostingUrl
+        }).perform();
     }
 
     _s3EnvUpload(
         rds: Rds,
         blogBucket: S3Bucket,
         configsBucket: S3Bucket,
-        staticBucket: S3Bucket,
-        albDnsName: string
+        staticBucket: S3Bucket
     ) {
         // upload ecs env
-        const ecsEnvFileContent = `database__client=mysql\ndatabase__connection__host=${rds.dbInstanceAddressOutput}\ndatabase__connection__user=${rdsConfig.dbUserName}\ndatabase__connection__password=${rds.password}\ndatabase__connection__database=${rdsConfig.dbName}\nstorage__active=s3\nstorage__s3__accessKeyId=${this.userInput.aws.awsAccessKeyId}\nstorage__s3__secretAccessKey=${this.userInput.aws.awsSecretAccessKey}\nstorage__s3__region=${this.userInput.aws.awsDefaultRegion}\nstorage__s3__bucket=${blogBucket.bucket}\nstorage__s3__pathPrefix=blog/images\nstorage__s3__acl=public-read\nstorage__s3__forcePathStyle=true\nurl=${"http://" + albDnsName}`;
+        const ecsEnvFileContent = `database__client=mysql\ndatabase__connection__host=${rds.dbInstanceAddressOutput}\ndatabase__connection__user=${rdsConfig.dbUserName}\ndatabase__connection__password=${rds.password}\ndatabase__connection__database=${rdsConfig.dbName}\nstorage__active=s3\nstorage__s3__region=${this.userInput.aws.awsDefaultRegion}\nstorage__s3__bucket=${blogBucket.bucket}\nstorage__s3__pathPrefix=blog/images\nstorage__s3__acl=public-read\nstorage__s3__forcePathStyle=true\nurl=${this.userInput.ghostHostingUrl}`;
 
         const ecsEnvFile = new File(this, "plg-gh-ecs-configs", {
             filename: "ecs.env",
@@ -176,10 +184,10 @@ class MyStack extends TerraformStack {
         });
 
         const ecsEnvUploadS3 = new S3BucketObject(this, "plg-gh-ecs-env", {
-            key: "ecs.env",
+            key: "ghost.env",
             bucket: configsBucket.bucket,
             acl: "private",
-            source: "./ecs.env",
+            source: "./ghost.env",
             dependsOn: [ecsEnvFile]
         });
 
@@ -220,7 +228,6 @@ class MyStack extends TerraformStack {
      * @param dbInstanceAddress
      * @param albSecurityGroupId
      * @param targetGroup
-     * @param albDnsName
      * @param rdsSecurityGroupId
      * @param customExecutionRoleArn
      * @param customTaskRoleArn
@@ -236,7 +243,6 @@ class MyStack extends TerraformStack {
         dbInstanceAddress: string,
         albSecurityGroupId: string,
         targetGroup: AlbTargetGroup,
-        albDnsName: string,
         rdsSecurityGroupId: string,
         customExecutionRoleArn: string,
         customTaskRoleArn: string,
@@ -251,7 +257,6 @@ class MyStack extends TerraformStack {
             dbInstanceEndpoint: dbInstanceAddress,
             albSecurityGroupId,
             targetGroup,
-            albDnsName,
             rdsSecurityGroupId,
             customExecutionRoleArn,
             customTaskRoleArn,
@@ -263,9 +268,12 @@ class MyStack extends TerraformStack {
 }
 
 const app = new App();
-new MyStack(app, "plg-ghost")
+new GhostStack(app, "plg-ghost")
     .perform()
     .then()
-    .catch();
+    .catch(function (err) {
+        console.error('GhostStack Error: ', err);
+        process.exit(1);
+    });
 
 app.synth();

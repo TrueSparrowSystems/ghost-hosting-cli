@@ -25,7 +25,7 @@ function _installProvidersAndModules(): void {
 function _applyPlanChanges(): void {
     if(shell.exec(`${cdktfExec} diff`).code !== 0){
         shell.echo('Error: cdktf exec failed');
-        process.exit(1)
+        shell.exit(1)
     }
 
     console.log('Please review the diff output above for the ghost hosting.');

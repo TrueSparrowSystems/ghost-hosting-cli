@@ -11,6 +11,7 @@ const USER_CONFIGS = {
     ghostHostingUrl: '',
     hostStaticWebsite: false,
     staticWebsiteUrl: '',
+    vpc: {},
     alb: {},
     rds: {}
 };
@@ -19,14 +20,15 @@ interface Options {
     awsAccessKeyId: string,
     awsSecretAccessKey: string,
     awsDefaultRegion: string,
-    useExistingRds: string,
     ghostHostingUrl: string,
     hostStaticWebsite: string,
-    listenerArn: string,
+    staticWebsiteUrl: string,
+    useExistingVpc: string,
+    privateSubnets: string,
     useExistingAlb: string,
     isConfiguredDomain: string,
-    staticWebsiteUrl: string,
-    urlSuffix: string,
+    listenerArn: string,
+    useExistingRds: string,
     rdsDbName: string,
     rdsHost: string,
     rdsDbUserName: string,
@@ -37,6 +39,8 @@ const options: Options = {
     awsAccessKeyId: '',
     awsSecretAccessKey: '',
     awsDefaultRegion: '',
+    useExistingVpc: '',
+    privateSubnets: '',
     useExistingRds: '',
     ghostHostingUrl: '',
     hostStaticWebsite: '',
@@ -44,7 +48,6 @@ const options: Options = {
     useExistingAlb: '',
     isConfiguredDomain: '',
     staticWebsiteUrl: '',
-    urlSuffix: '',
     rdsDbName: '',
     rdsHost: '',
     rdsDbUserName: '',
@@ -213,7 +216,6 @@ export class GetInput {
         if(hostStaticWebsite && hostingDomainParts.slice(1).join('/') !== staticDomainParts.slice(1).join('/')){
             this._validateInputStringOption('', 'URL path should be same for Ghost hosting url and Static website url.');
         }
-        options.urlSuffix = hostingDomainParts.slice(1).join('/');
 
         const ghostHostingDomain = hostingDomainParts[0];
         const staticHostingDomain = staticDomainParts[0];
@@ -253,6 +255,16 @@ export class GetInput {
             awsSecretAccessKey: options.awsSecretAccessKey,
             awsDefaultRegion: options.awsDefaultRegion
         };
+
+        // Add VPC configurations
+        USER_CONFIGS[`vpc`] = {
+            useExistingVpc: options.useExistingVpc === yes
+        };
+        if(options.useExistingVpc === yes){
+            Object.assign(USER_CONFIGS[`vpc`], {
+                privateSubnets: options.privateSubnets
+            });
+        }
 
         USER_CONFIGS.ghostHostingUrl = options.ghostHostingUrl;
         USER_CONFIGS.hostStaticWebsite = options.hostStaticWebsite === yes;

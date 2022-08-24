@@ -9,7 +9,12 @@ const rdsConfig = require("../config/rds.json");
 interface Options {
     vpcId: string,
     privateSubnets: string[],
-    publicSubnets: string[]
+    publicSubnets: string[],
+    useExistingRds: boolean,
+    rdsHost: string | undefined,
+    rdsDbUserName: string | undefined,
+    rdsDbPassword: string | undefined,
+    rdsDbName: string | undefined
 }
 
 const plgTags = {

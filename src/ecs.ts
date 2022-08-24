@@ -26,7 +26,6 @@ interface Options {
     dbInstanceEndpoint: string,
     albSecurityGroupId: string,
     targetGroup: AlbTargetGroup,
-    albDnsName: string,
     rdsSecurityGroupId: string,
     customExecutionRoleArn: string,
     customTaskRoleArn: string

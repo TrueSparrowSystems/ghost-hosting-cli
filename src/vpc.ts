@@ -7,13 +7,18 @@ import { DataAwsAvailabilityZones } from "../.gen/providers/aws/datasources";
 const vpcConfig = require("../config/vpc.json");
 import { getPrivateSubnetCidrBlocks, getPublicSubnetCidrBlocks } from "../lib/util";
 
+interface Options {
+    useExistingVpc: boolean,
+    privateSubnets: string[] | undefined
+}
+
 /**
  * Class to create VPC and subnets.
  */
 class VpcResource extends Resource {
-    options: {};
+    options: Options;
 
-    constructor(scope: Construct, name: string, options: any) {
+    constructor(scope: Construct, name: string, options: Options) {
         super(scope, name);
 
         this.options = options;

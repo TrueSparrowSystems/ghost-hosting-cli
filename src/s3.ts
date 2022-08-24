@@ -7,6 +7,7 @@ const s3Config = require("../config/s3.json");
 
 interface Options {
     vpcId: string
+    ghostHostingUrl: string
 }
 
 /**
