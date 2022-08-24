@@ -141,6 +141,7 @@ class AlbResource extends Resource {
             port: 443,
             protocol: "HTTPS",
             loadBalancerArn: alb.arn,
+            certificateArn: '',
             sslPolicy: "ELBSecurityPolicy-TLS-1-2-2017-01",
             defaultAction: [
                 {

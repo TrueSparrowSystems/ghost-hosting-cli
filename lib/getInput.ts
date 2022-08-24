@@ -64,7 +64,7 @@ export class GetInput {
     perform() {
         // TODO: if file already exists, consider values from file otherwise ask for input
         if(this._hasPreviousConfigInFile()){
-            if(this._usePrviousConfigData()){
+            if(this._usePreviousConfigData()){
                 return;
             }
         }
@@ -88,13 +88,14 @@ export class GetInput {
         let configData: any;
         try {
             configData = require('../config.json');
-        } catch(err){
+        } catch(err) {
+            console.log('Error: ', err);
         } finally {
-            configData ||= {};
+            configData = configData || {};
         }
 
         let pass = true;
-        for(let key in configData){
+        for (const key in configData) {
             if(!['hostStaticWebsite', 'staticWebsiteUrl'].includes(key)){
                 if(!configData.hasOwnProperty(key)){
                     pass = false;
@@ -106,8 +107,8 @@ export class GetInput {
         return Object.keys(configData).length > 0 && pass;
     }
 
-    _usePrviousConfigData(): boolean {
-        let useExistingConfig = readlineSyc.question("Previous installation \"config.json\" file found, Would you like to use the existing configuration options? [Else it will start from the scratch] (Y/n) : ", {defaultInput: yes});
+    _usePreviousConfigData(): boolean {
+        const useExistingConfig = readlineSyc.question("Previous installation \"config.json\" file found, Would you like to use the existing configuration options? [Else it will start from the scratch] (Y/n) : ", {defaultInput: yes});
         this._validateInputBooleanOption(useExistingConfig);
 
         return useExistingConfig === yes;
@@ -226,22 +227,22 @@ export class GetInput {
 
         if(
             hostStaticWebsite &&
-            !(ghostHostingDomain.split(staticHostingDomain)[1] === '' || 
+            !(ghostHostingDomain.split(staticHostingDomain)[1] === '' ||
             staticHostingDomain.split(ghostHostingDomain)[1] === '')
         ){
             this._validateInputStringOption('', 'Different domain names for Ghost hosting url and Static website url are not allowed.');
         }
     }
 
-    _validateInputBooleanOption(bool: String) {
+    _validateInputBooleanOption(bool) {
         if(![yes, no].includes(bool.toLowerCase())){
             console.error(new Error('Invalid option!'));
             process.exit(1);
         }
     }
 
-    _validateInputStringOption(str: String, msg = '') {
-        if(str === undefined || str == ''){
+    _validateInputStringOption(str, msg = '') {
+        if(str === undefined || str === ''){
             console.error(new Error(msg || 'Invalid option!'));
             process.exit(1);
         }
