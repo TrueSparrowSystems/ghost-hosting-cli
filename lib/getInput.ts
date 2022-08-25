@@ -152,17 +152,17 @@ export class GetInput {
 
     _getAwsCredentials() {
         if (!options.awsAccessKeyId) {
-            options.awsAccessKeyId = readlineSyc.question("AWS access key id? ");
+            options.awsAccessKeyId = readlineSyc.question("AWS access key id : ");
             this._validateInputStringOption(options.awsAccessKeyId);
         }
 
         if (!options.awsSecretAccessKey) {
-            options.awsSecretAccessKey = readlineSyc.question("AWS secret access key? ");
+            options.awsSecretAccessKey = readlineSyc.question("AWS secret access key : ");
             this._validateInputStringOption(options.awsSecretAccessKey);
         }
 
         if (!options.awsDefaultRegion) {
-            options.awsDefaultRegion = readlineSyc.question("Default AWS region? ");
+            options.awsDefaultRegion = readlineSyc.question("Default AWS region : ");
             this._validateInputStringOption(options.awsDefaultRegion);
         }
     }
@@ -184,20 +184,28 @@ export class GetInput {
     }
 
     _getRdsRequirements() {
-        options.useExistingRds = readlineSyc.question("Do you want to use existing RDS instance? (y/N) : ", {defaultInput: no});
+        options.useExistingRds = readlineSyc.question("Do you want to use existing RDS MySQL instance? (y/N) : ", {defaultInput: no});
         this._validateInputBooleanOption(options.useExistingRds);
 
         if (options.useExistingRds === yes) {
-            options.rdsHost = readlineSyc.question("RDS database host : ");
-            options.rdsDbUserName = readlineSyc.question("RDS database user name : ");
-            options.rdsDbName = readlineSyc.question("RDS database name : ");
-            options.rdsDbPassword = readlineSyc.question("RDS database password : ");
+            options.rdsHost = readlineSyc.question("MySQL host : ");
+            this._validateInputStringOption(options.rdsHost);
+            options.rdsDbUserName = readlineSyc.question("MySQL user name : ");
+            this._validateInputStringOption(options.rdsDbUserName);
+            options.rdsDbPassword = readlineSyc.question("MySQL user password : ", {
+                hideEchoBack: true
+            });
+            this._validateInputStringOption(options.rdsDbPassword);
+            options.rdsDbName = readlineSyc.question("MySQL database name : ");
+            this._validateInputStringOption(options.rdsDbName);
         }
     }
 
     _getAlbRequirements() {
-        options.useExistingAlb = readlineSyc.question("Do you have existing ALB? (y/N) : ", {defaultInput: no});
-        this._validateInputBooleanOption(options.useExistingAlb);
+        if(options.useExistingVpc === yes){
+            options.useExistingAlb = readlineSyc.question("Do you have existing ALB? (y/N) : ", {defaultInput: no});
+            this._validateInputBooleanOption(options.useExistingAlb);
+        }
 
         if (options.useExistingAlb === yes) {
             options.listenerArn = readlineSyc.question("Please provide listener ARN : ");

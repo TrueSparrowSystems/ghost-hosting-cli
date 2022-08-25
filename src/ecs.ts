@@ -157,14 +157,16 @@ class EcsResource extends Resource {
         });
 
         // Allow DB connection
-        new SecurityGroupRule(this, "rds_sg_rule", {
-            type: "ingress",
-            fromPort: 3306,
-            toPort: 3306,
-            protocol: "tcp",
-            securityGroupId: this.options.rdsSecurityGroupId,
-            sourceSecurityGroupId: ecsSg.id
-        });
+        if(this.options.rdsSecurityGroupId){
+            new SecurityGroupRule(this, "rds_sg_rule", {
+                type: "ingress",
+                fromPort: 3306,
+                toPort: 3306,
+                protocol: "tcp",
+                securityGroupId: this.options.rdsSecurityGroupId,
+                sourceSecurityGroupId: ecsSg.id
+            });
+        }
 
         return ecsSg;
     }
@@ -358,7 +360,7 @@ class EcsResource extends Resource {
     }
 
     _getGhostContainerDefinition() {
-        const envFileArn = `arn:aws:s3:::${this.options.configBucket.bucket}/ecs.env`;
+        const envFileArn = `arn:aws:s3:::${this.options.configBucket.bucket}/ghost.env`;
 
         new TerraformOutput(this, "ecs-env-file-arn", {
             value: envFileArn

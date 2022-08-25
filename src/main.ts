@@ -165,7 +165,12 @@ class GhostStack extends TerraformStack {
      *
      * @private
      */
-    _createAlb(certificateArn: string) {
+    _createAlb(certificateArn: string | undefined) {
+
+        if(this.userInput.alb.useExistingAlb){
+            return;
+        }
+
         return new AlbResource(this, "plg-gh-alb", {
             vpcId: this.vpcId,
             publicSubnets: this.vpcPublicSubnets,
@@ -189,6 +194,10 @@ class GhostStack extends TerraformStack {
     }
 
     _createAcmCertificate() {
+        if (this.userInput.alb.useExistingAlb) {
+            return;
+        }
+
         return new AcmResource(this, "plg-gh-acm", {
             ghostHostingUrl: this.userInput.ghostHostingUrl
         }).perform();
