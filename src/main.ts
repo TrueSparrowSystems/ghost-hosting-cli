@@ -128,7 +128,8 @@ class GhostStack extends TerraformStack {
     _createVpc() {
         const { vpcId, vpcSubnets, vpcPublicSubnets } = new VpcResource(this, "plg-gh-vpc", {
             useExistingVpc: this.userInput.vpc.useExistingVpc,
-            vpcSubnets: this.userInput.vpc.vpcSubnets,
+            vpcSubnets: this.userInput.vpc.vpcSubnets || [],
+            vpcPublicSubnets: this.userInput.vpc.vpcPublicSubnets || []
         }).perform();
 
         this.vpcId = vpcId;

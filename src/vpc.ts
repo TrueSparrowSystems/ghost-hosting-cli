@@ -10,7 +10,8 @@ const vpcConfig = require("../config/vpc.json");
 
 interface Options {
     useExistingVpc: boolean,
-    vpcSubnets: string[]
+    vpcSubnets: string[],
+    vpcPublicSubnets: string[]
 }
 
 /**
@@ -93,7 +94,7 @@ class VpcResource extends Resource {
             });
             vpcId = subnetData.vpcId;
             vpcSubnets = this.options.vpcSubnets;
-            vpcPublicSubnets = [];
+            vpcPublicSubnets = this.options.vpcPublicSubnets;
         } else {
             const vpcOptions = {
                 name: vpcConfig.nameLabel,

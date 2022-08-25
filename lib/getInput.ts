@@ -289,14 +289,13 @@ export class GetInput {
         };
 
         if(options.useExistingVpc === yes){
-            const subnetIds = options.vpcSubnets.split(',');
             Object.assign(USER_CONFIGS[`vpc`], {
-                vpcSubnets: subnetIds
+                vpcSubnets: options.vpcSubnets.split(',')
             });
 
             if(options.useExistingAlb === no){
                 Object.assign(USER_CONFIGS[`vpc`], {
-                    vpcPublic: subnetIds
+                    vpcPublicSubnets: options.vpcPublicSubnets.split(',')
                 });
             }
         }
