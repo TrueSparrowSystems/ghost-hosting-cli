@@ -30,8 +30,8 @@ export function getPrivateSubnetCidrBlocks(
         privateSubnetCidrBlocks[index] = Fn.cidrsubnet(
             cidrPrefix,
             8,
-            netNumStart + index)
-        ;
+            netNumStart + index
+        );
     }
 
     return privateSubnetCidrBlocks;
