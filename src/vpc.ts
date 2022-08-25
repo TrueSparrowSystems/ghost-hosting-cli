@@ -1,11 +1,12 @@
 import { Fn, Resource, TerraformOutput } from "cdktf";
 import { Construct } from "constructs";
+
 import { Vpc } from "../.gen/modules/vpc";
-import { SecurityGroup, DataAwsSubnet } from "../.gen/providers/aws/vpc";
+import { DataAwsSubnet } from "../.gen/providers/aws/vpc";
 import { DataAwsAvailabilityZones } from "../.gen/providers/aws/datasources";
 
-const vpcConfig = require("../config/vpc.json");
 import { getPrivateSubnetCidrBlocks, getPublicSubnetCidrBlocks } from "../lib/util";
+const vpcConfig = require("../config/vpc.json");
 
 interface Options {
     useExistingVpc: boolean,
@@ -110,7 +111,7 @@ class VpcResource extends Resource {
                 singleNatGateway: true,
                 enableDnsHostnames: true
             };
-    
+
             const vpc = new Vpc(this, vpcConfig.nameIdentifier, vpcOptions);
 
             vpcId = vpc.vpcIdOutput;
@@ -118,11 +119,7 @@ class VpcResource extends Resource {
             vpcPublicSubnets = Fn.tolist(vpc.publicSubnetsOutput);
         }
 
-        return {
-            vpcId: vpcId,
-            vpcSubnets: vpcSubnets,
-            vpcPublicSubnets: vpcPublicSubnets
-        };
+        return { vpcId, vpcSubnets, vpcPublicSubnets };
     }
 }
 
