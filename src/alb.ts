@@ -1,7 +1,7 @@
-import { Resource } from "cdktf";
+import { Resource, Fn } from "cdktf";
 import { Construct } from "constructs";
 import { SecurityGroup } from "../.gen/providers/aws/vpc";
-import { Alb, AlbListener, AlbTargetGroup } from "../.gen/providers/aws/elb";
+import { Alb, AlbListener, DataAwsLb, DataAwsLbListener } from "../.gen/providers/aws/elb";
 
 interface Options {
     vpcId: string,
@@ -32,20 +32,32 @@ class AlbResource extends Resource {
      * Main performer.
      */
     perform() {
-        // TODO: alb conditions
-        const securityGroup = this._createAlbSecurityGroup();
+        let listenerArn: string;
+        if (this.options.listenerArn) {
+            listenerArn = this.options.listenerArn;
 
-        const targetGroup = this._createTargetGroup();
+            const dataAwsLbListenerDefaultAction = new DataAwsLbListener(
+                this,
+                "listener",
+                { arn: listenerArn}
+                );
+
+            const dataAwsLb = new DataAwsLb(this, "lb", {
+                  arn: dataAwsLbListenerDefaultAction.loadBalancerArn
+            });
+
+            return { albSecurityGroups: Fn.tolist(dataAwsLb.securityGroups), listenerArn };
+        }
+
+        const securityGroup = this._createAlbSecurityGroup();
 
         const alb = this._createAlb(securityGroup);
 
-        // TODO: forward to HTTPS
-        this._addHttpListener(alb, targetGroup);
+        this._addHttpListener(alb);
 
-        // TODO: create cert for domain
-        this._addHttpsListener(alb, targetGroup);
+        listenerArn = this._addHttpsListener(alb);
 
-        return { alb, targetGroup };
+        return { albSecurityGroups: Fn.tolist(alb.securityGroups), listenerArn };
     }
 
     _createAlbSecurityGroup() {
@@ -79,27 +91,6 @@ class AlbResource extends Resource {
             ],
             tags: plgTags
         });
-
-    }
-
-    _createTargetGroup() {
-        return new AlbTargetGroup(this, "plg-gh-alb-tg", {
-            name: "plg-gh-alb-tg",
-            port: 80,
-            protocol: "HTTP",
-            targetType: "ip",
-            vpcId: this.options.vpcId,
-            protocolVersion: "HTTP1",
-            healthCheck: {
-                protocol: "HTTP",
-                path: "/",
-                timeout: 10,
-                matcher: "200,202,301",
-                healthyThreshold: 2,
-                interval: 12
-            },
-            tags: plgTags
-        });
     }
 
     _createAlb(securityGroup: SecurityGroup) {
@@ -115,20 +106,18 @@ class AlbResource extends Resource {
         });
     }
 
-    _addHttpListener(alb: Alb, targetGroup: AlbTargetGroup) {
+    _addHttpListener(alb: Alb) {
         return new AlbListener(this, "plg-gh-http-listener", {
             port: 80,
             protocol: "HTTP",
             loadBalancerArn: alb.arn,
             defaultAction: [
                 {
-                    type: "forward",
-                    forward: {
-                        targetGroup: [
-                            {
-                                arn: targetGroup.arn
-                            }
-                        ]
+                    type: "redirect",
+                    redirect: {
+                        port: "443",
+                        protocol: "HTTPS",
+                        statusCode: "HTTP_301"
                     }
                 }
             ],
@@ -136,8 +125,8 @@ class AlbResource extends Resource {
         });
     }
 
-    _addHttpsListener(alb: Alb, targetGroup: AlbTargetGroup) {
-        return new AlbListener(this, "plg-gh-https-listener", {
+    _addHttpsListener(alb: Alb) {
+        const albListener = new AlbListener(this, "plg-gh-https-listener", {
             port: 443,
             protocol: "HTTPS",
             loadBalancerArn: alb.arn,
@@ -145,18 +134,18 @@ class AlbResource extends Resource {
             sslPolicy: "ELBSecurityPolicy-TLS-1-2-2017-01",
             defaultAction: [
                 {
-                    type: "forward",
-                    forward: {
-                        targetGroup: [
-                            {
-                                arn: targetGroup.arn
-                            }
-                        ]
+                    type: "fixed-response",
+                    fixedResponse: {
+                        contentType: "text/html",
+                        messageBody: "Not Found",
+                        statusCode: "404"
                     }
                 }
             ],
             tags: plgTags
         });
+
+        return albListener.arn;
     }
 }
 

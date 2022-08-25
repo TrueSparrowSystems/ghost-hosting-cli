@@ -1,4 +1,5 @@
 import { Fn } from "cdktf";
+import * as Psl from "psl";
 
 /**
  * @dev Get public subnet cidr blocks for the cidr prefix provided
@@ -35,4 +36,14 @@ export function getPrivateSubnetCidrBlocks(
     }
 
     return privateSubnetCidrBlocks;
+}
+
+export function getDomainFromUrl(url: string) {
+    const domain = url.split('://')[1].split('/')[0];
+    return Psl.get(domain);
+}
+
+export function getPathSuffixFromUrl(url: string) {
+    const urlParts = url.split('://')[1].split('/');
+    return "/" + urlParts.slice(1).join("/");
 }

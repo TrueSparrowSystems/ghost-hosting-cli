@@ -11,7 +11,6 @@ import { IamResource } from "./iam";
 import { AcmResource } from "./acm";
 import { S3Upload } from "./s3_upload";
 
-import { AlbTargetGroup } from "../.gen/providers/aws/elb";
 import { S3Bucket, S3BucketObject } from "../.gen/providers/aws/s3";
 import { RandomProvider } from "../.gen/providers/random";
 import { LocalProvider } from "../.gen/providers/local";
@@ -76,18 +75,16 @@ class GhostStack extends TerraformStack {
             staticBucket
         );
 
-        const { alb, targetGroup } = this._createAlb(certificateArn);
+        const { albSecurityGroups, listenerArn } = this._createAlb(certificateArn);
 
         const { customExecutionRole, customTaskRole } = this._createIamRolePolicies(
             blogBucket,
             configsBucket
         );
 
-        const albSecurityGroupId = alb.securityGroups[0];
-
         this._createEcs(
-            albSecurityGroupId,
-            targetGroup,
+            albSecurityGroups,
+            listenerArn,
             customExecutionRole.arn,
             customTaskRole.arn,
             configsBucket,
@@ -166,11 +163,6 @@ class GhostStack extends TerraformStack {
      * @private
      */
     _createAlb(certificateArn: string | undefined) {
-
-        if(this.userInput.alb.useExistingAlb){
-            return;
-        }
-
         return new AlbResource(this, "plg-gh-alb", {
             vpcId: this.vpcId,
             publicSubnets: this.vpcPublicSubnets,
@@ -232,8 +224,8 @@ class GhostStack extends TerraformStack {
     /**
      * Create ECS container, cluster, task-definition, service and task in EC2-ECS optimised instance
      *
-     * @param albSecurityGroupId
-     * @param targetGroup
+     * @param albSecurityGroups
+     * @param listenerArn
      * @param customExecutionRoleArn
      * @param customTaskRoleArn
      * @param configBucket
@@ -242,8 +234,8 @@ class GhostStack extends TerraformStack {
      * @private
      */
     _createEcs(
-        albSecurityGroupId: string,
-        targetGroup: AlbTargetGroup,
+        albSecurityGroups: string[],
+        listenerArn: string,
         customExecutionRoleArn: string,
         customTaskRoleArn: string,
         configBucket: S3Bucket,
@@ -254,14 +246,16 @@ class GhostStack extends TerraformStack {
             vpcId: this.vpcId,
             subnets: this.vpcSubnets,
             dbInstanceEndpoint: this.rdsHost,
-            albSecurityGroupId,
-            targetGroup,
+            albSecurityGroups,
+            listenerArn,
             rdsSecurityGroupId: this.rdsSecurityGroupId,
             customExecutionRoleArn,
             customTaskRoleArn,
             configBucket,
             ghostEnvUpload,
-            nginxEnvUpload
+            nginxEnvUpload,
+            ghostHostingUrl: this.userInput.ghostHostingUrl,
+            staticWebsiteUrl: this.userInput.staticWebsiteUrl
         }).perform();
     }
 }

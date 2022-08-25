@@ -10,8 +10,9 @@ import {
 } from "../.gen/providers/aws/ecs";
 import { SecurityGroup, SecurityGroupRule } from "../.gen/providers/aws/vpc";
 import { CloudwatchLogGroup } from "../.gen/providers/aws/cloudwatch";
-import { AlbTargetGroup } from "../.gen/providers/aws/elb";
-import {S3Bucket, S3BucketObject} from "../.gen/providers/aws/s3";
+import { AlbListenerRule, AlbTargetGroup } from "../.gen/providers/aws/elb";
+import { S3Bucket, S3BucketObject } from "../.gen/providers/aws/s3";
+import { getDomainFromUrl, getPathSuffixFromUrl } from "../lib/util";
 
 const ecsConfig = require("../config/ecs.json");
 
@@ -20,17 +21,19 @@ const plgTags = {
 };
 
 interface Options {
-    vpcId: string,
-    subnets: string[],
-    dbInstanceEndpoint: string,
-    albSecurityGroupId: string,
-    targetGroup: AlbTargetGroup,
-    rdsSecurityGroupId: string,
-    customExecutionRoleArn: string,
+    vpcId: string
+    subnets: string[]
+    dbInstanceEndpoint: string
+    albSecurityGroups: string[]
+    listenerArn: string
+    rdsSecurityGroupId: string
+    customExecutionRoleArn: string
     customTaskRoleArn: string
-    configBucket: S3Bucket,
-    ghostEnvUpload: S3BucketObject,
+    configBucket: S3Bucket
+    ghostEnvUpload: S3BucketObject
     nginxEnvUpload: S3BucketObject
+    ghostHostingUrl: string
+    staticWebsiteUrl: string | undefined
 }
 
 /**
@@ -55,6 +58,8 @@ class EcsResource extends Resource {
 
         const ecsSg = this._createSecurityGroup();
 
+        const targetGroup = this._createTargetGroup();
+
         // const ec2Instance = this._createEC2ECSInstance(instanceProfile, ecsSecurityGroup);
 
         const ecsCluster = this._createEcsCluster();
@@ -67,7 +72,7 @@ class EcsResource extends Resource {
 
         const ecsTaskDefinition = this._createEcsTaskDefinition();
 
-        this._createEcsService(ecsCluster, ecsTaskDefinition, ecsSg);
+        this._createEcsService(ecsCluster, ecsTaskDefinition, ecsSg, targetGroup);
     }
 
     /**
@@ -126,6 +131,54 @@ class EcsResource extends Resource {
         });
     }
 
+    _createTargetGroup(): AlbTargetGroup {
+        const targetGroup = new AlbTargetGroup(this, "plg-gh-alb-tg", {
+            name: "plg-gh-alb-tg",
+            port: 80,
+            protocol: "HTTP",
+            targetType: "ip",
+            vpcId: this.options.vpcId,
+            protocolVersion: "HTTP1",
+            healthCheck: {
+                protocol: "HTTP",
+                path: "/",
+                timeout: 10,
+                matcher: "200,202,301",
+                healthyThreshold: 2,
+                interval: 12
+            },
+            tags: plgTags
+        });
+
+        // Attach target group to the listener
+        const pathSuffixes = [ getPathSuffixFromUrl(this.options.ghostHostingUrl) ];
+        const hostDomains = [ getDomainFromUrl(this.options.ghostHostingUrl) ];
+        if (this.options.staticWebsiteUrl) {
+            hostDomains.push(getDomainFromUrl(this.options.staticWebsiteUrl));
+        }
+        new AlbListenerRule(this, "listener_rule", {
+            listenerArn: this.options.listenerArn,
+            condition: [
+                {
+                    pathPattern: {
+                        values: Fn.tolist(pathSuffixes)
+                    },
+                    hostHeader: {
+                        values: Fn.tolist(hostDomains)
+                    }
+                }
+            ],
+            action: [
+                {
+                    type: "forward",
+                    targetGroupArn: targetGroup.arn
+                }
+            ]
+        });
+
+        return targetGroup;
+    }
+
     /**
      * Create security group for ecs - this will allow traffic to ECS from ALB only.
      *
@@ -142,7 +195,7 @@ class EcsResource extends Resource {
                     fromPort: ecsConfig.nginxContainerPort,
                     toPort: ecsConfig.nginxContainerPort,
                     protocol: "tcp",
-                    securityGroups: [this.options.albSecurityGroupId]
+                    securityGroups: this.options.albSecurityGroups
                 }
             ],
             egress: [
@@ -454,12 +507,14 @@ class EcsResource extends Resource {
      * @param ecsCluster
      * @param ecsTaskDefinition
      * @param ecsSecurityGroup
+     * @param targetGroup
      * @private
      */
     _createEcsService (
         ecsCluster: EcsCluster,
         ecsTaskDefinition: EcsTaskDefinition,
-        ecsSecurityGroup: SecurityGroup
+        ecsSecurityGroup: SecurityGroup,
+        targetGroup: AlbTargetGroup
     ): EcsService {
         return new EcsService(this, "plg-gh-ecs-service", {
             name: "plg-gh-ecs-service",
@@ -481,10 +536,10 @@ class EcsResource extends Resource {
                 {
                     containerName: ecsConfig.nginxContainerName,
                     containerPort: ecsConfig.nginxContainerPort,
-                    targetGroupArn: this.options.targetGroup.arn
+                    targetGroupArn: targetGroup.arn
                 }
             ],
-            dependsOn: [this.options.targetGroup],
+            dependsOn: [targetGroup],
             networkConfiguration: {
                 assignPublicIp: false,
                 securityGroups: [ecsSecurityGroup.id],
