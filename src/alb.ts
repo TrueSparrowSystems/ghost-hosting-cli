@@ -9,7 +9,7 @@ interface Options {
     useExistingAlb: boolean,
     isConfiguredDomain: boolean,
     listenerArn: string | undefined,
-    
+    certificateArn: string | undefined
 }
 
 const plgTags = {
@@ -141,7 +141,7 @@ class AlbResource extends Resource {
             port: 443,
             protocol: "HTTPS",
             loadBalancerArn: alb.arn,
-            certificateArn: '',
+            certificateArn: this.options.certificateArn,
             sslPolicy: "ELBSecurityPolicy-TLS-1-2-2017-01",
             defaultAction: [
                 {

@@ -66,11 +66,11 @@ class GhostStack extends TerraformStack {
 
         this._createRdsInstance();
 
-        const { alb, targetGroup } = this._createAlb();
+        const certificateArn = this._createAcmCertificate();
+
+        const { alb, targetGroup } = this._createAlb(certificateArn);
 
         const { blogBucket, staticBucket, configsBucket } = this._createS3Buckets();
-
-        this._createAcmCertificate();
 
         const { ecsEnvUploadS3, nginxEnvUploadS3 } = this._s3EnvUpload(
             blogBucket,
@@ -164,13 +164,14 @@ class GhostStack extends TerraformStack {
      *
      * @private
      */
-    _createAlb() {
+    _createAlb(certificateArn: string) {
         return new AlbResource(this, "plg-gh-alb", {
             vpcId: this.vpcId,
             publicSubnets: this.vpcPublicSubnets,
             useExistingAlb: this.userInput.alb.useExistingAlb,
             isConfiguredDomain: this.userInput.alb.isConfiguredDomain,
-            listenerArn: this.userInput.alb.listenerArn
+            listenerArn: this.userInput.alb.listenerArn,
+            certificateArn: certificateArn
         }).perform();
     }
 
@@ -210,7 +211,7 @@ class GhostStack extends TerraformStack {
             key: "ghost.env",
             bucket: configsBucket.bucket,
             acl: "private",
-            source: "./ghost.env",
+            source: "ghost.env",
             dependsOn: [ecsEnvFile]
         });
 
@@ -228,7 +229,7 @@ class GhostStack extends TerraformStack {
             key: "nginx.env",
             bucket: configsBucket.bucket,
             acl: "private",
-            source: "./nginx.env",
+            source: "nginx.env",
             dependsOn: [nginxEnvFile]
         });
 
