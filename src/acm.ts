@@ -4,7 +4,7 @@ import { Construct } from "constructs";
 import { AcmCertificate, AcmCertificateValidation } from "../.gen/providers/aws/acm";
 import { DataAwsRoute53Zone, Route53Record } from "../.gen/providers/aws/route53";
 
-import * as Psl from "psl";
+import { getRootDomainFromUrl } from "../lib/util";
 
 interface Options {
     ghostHostingUrl: string
@@ -30,26 +30,17 @@ class AcmResource extends Resource {
      * @dev Main performer of the class
      */
     perform() {
-        const ghostHostingDomain = this._extractDomainFromUrl() || '';
+        const rootDomain = getRootDomainFromUrl(this.options.ghostHostingUrl) || '';
 
-        const cert = this._createCertificate(ghostHostingDomain);
+        const cert = this._createCertificate(rootDomain);
 
-        const route53Zone = this._getRoute53Zone(ghostHostingDomain);
+        const route53Zone = this._getRoute53Zone(rootDomain);
 
         const fqdns = this._createRoute53Record(route53Zone, cert);
 
         this._validateAcmCertificate(cert, fqdns);
 
         return cert.arn
-    }
-
-    /**
-     * @dev Extract domain name from the ghost hosting url
-     * @private
-     */
-    _extractDomainFromUrl(): string | null {
-        const hostingDomain = this.options.ghostHostingUrl.split('://')[1].split('/')[0];
-        return  Psl.get(hostingDomain);
     }
 
     /**

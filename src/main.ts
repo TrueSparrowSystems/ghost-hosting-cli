@@ -11,7 +11,7 @@ import { IamResource } from "./iam";
 import { AcmResource } from "./acm";
 import { S3Upload } from "./s3_upload";
 
-import { S3Bucket, S3BucketObject } from "../.gen/providers/aws/s3";
+import { S3Bucket, S3Object } from "../.gen/providers/aws/s3";
 import { RandomProvider } from "../.gen/providers/random";
 import { LocalProvider } from "../.gen/providers/local";
 
@@ -101,9 +101,9 @@ class GhostStack extends TerraformStack {
     _setProviders() {
         // AWS provider
         new AwsProvider(this, "AWS", {
-            region: this.userInput.aws.awsDefaultRegion,
-            accessKey: this.userInput.aws.awsAccessKeyId,
-            secretKey: this.userInput.aws.awsSecretAccessKey
+            region: this.userInput.aws.region,
+            accessKey: this.userInput.aws.accessKeyId,
+            secretKey: this.userInput.aws.secretAccessKey
         });
 
         // Random provider
@@ -201,6 +201,7 @@ class GhostStack extends TerraformStack {
         staticBucket: S3Bucket
     ) {
         return new S3Upload(this, "s3-env-upload", {
+            region: this.userInput.aws.region,
             blogBucket,
             configsBucket,
             staticBucket,
@@ -210,7 +211,8 @@ class GhostStack extends TerraformStack {
             rdsDbName: this.rdsDbName,
             rdsSecurityGroupId: this.rdsSecurityGroupId,
             ghostHostingUrl: this.userInput.ghostHostingUrl,
-            hostStaticWebsite: this.userInput.hostStaticWebsite
+            hostStaticWebsite: this.userInput.hostStaticWebsite,
+            staticWebsiteUrl: this.userInput.staticWebsiteUrl
         }).perform();
     }
 
@@ -239,8 +241,8 @@ class GhostStack extends TerraformStack {
         customExecutionRoleArn: string,
         customTaskRoleArn: string,
         configBucket: S3Bucket,
-        ghostEnvUpload: S3BucketObject,
-        nginxEnvUpload: S3BucketObject
+        ghostEnvUpload: S3Object,
+        nginxEnvUpload: S3Object
     ) {
         return new EcsResource(this, "plg-gh-ecs", {
             vpcId: this.vpcId,

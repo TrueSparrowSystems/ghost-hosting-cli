@@ -38,12 +38,16 @@ export function getPrivateSubnetCidrBlocks(
     return privateSubnetCidrBlocks;
 }
 
-export function getDomainFromUrl(url: string) {
+export function getRootDomainFromUrl(url: string) {
     const domain = url.split('://')[1].split('/')[0];
     return Psl.get(domain);
 }
 
+export function getDomainFromUrl(url: string) {
+    return url.split('://')[1].split('/')[0];
+}
+
 export function getPathSuffixFromUrl(url: string) {
     const urlParts = url.split('://')[1].split('/');
-    return "/" + urlParts.slice(1).join("/");
+    return urlParts.slice(1).join("/");
 }

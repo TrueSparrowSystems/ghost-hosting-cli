@@ -11,7 +11,7 @@ import {
 import { SecurityGroup, SecurityGroupRule } from "../.gen/providers/aws/vpc";
 import { CloudwatchLogGroup } from "../.gen/providers/aws/cloudwatch";
 import { AlbListenerRule, AlbTargetGroup } from "../.gen/providers/aws/elb";
-import { S3Bucket, S3BucketObject } from "../.gen/providers/aws/s3";
+import { S3Bucket, S3Object } from "../.gen/providers/aws/s3";
 import { getDomainFromUrl, getPathSuffixFromUrl } from "../lib/util";
 
 const ecsConfig = require("../config/ecs.json");
@@ -30,8 +30,8 @@ interface Options {
     customExecutionRoleArn: string
     customTaskRoleArn: string
     configBucket: S3Bucket
-    ghostEnvUpload: S3BucketObject
-    nginxEnvUpload: S3BucketObject
+    ghostEnvUpload: S3Object
+    nginxEnvUpload: S3Object
     ghostHostingUrl: string
     staticWebsiteUrl: string | undefined
 }
@@ -132,6 +132,7 @@ class EcsResource extends Resource {
     }
 
     _createTargetGroup(): AlbTargetGroup {
+        const urlPath = getPathSuffixFromUrl(this.options.ghostHostingUrl);
         const targetGroup = new AlbTargetGroup(this, "plg-gh-alb-tg", {
             name: "plg-gh-alb-tg",
             port: 80,
@@ -141,28 +142,31 @@ class EcsResource extends Resource {
             protocolVersion: "HTTP1",
             healthCheck: {
                 protocol: "HTTP",
-                path: "/",
-                timeout: 10,
+                path: urlPath ? `/${urlPath}/ghost` : '/ghost',
+                timeout: 5,
                 matcher: "200,202,301",
                 healthyThreshold: 2,
-                interval: 12
+                interval: 10
             },
             tags: plgTags
         });
 
         // Attach target group to the listener
-        const pathSuffixes = [ getPathSuffixFromUrl(this.options.ghostHostingUrl) ];
+        const pathSuffixes = [ `/${getPathSuffixFromUrl(this.options.ghostHostingUrl)}*` ];
         const hostDomains = [ getDomainFromUrl(this.options.ghostHostingUrl) ];
         if (this.options.staticWebsiteUrl) {
             hostDomains.push(getDomainFromUrl(this.options.staticWebsiteUrl));
         }
         new AlbListenerRule(this, "listener_rule", {
             listenerArn: this.options.listenerArn,
+            priority: 50,
             condition: [
                 {
                     pathPattern: {
                         values: Fn.tolist(pathSuffixes)
-                    },
+                    }
+                },
+                {
                     hostHeader: {
                         values: Fn.tolist(hostDomains)
                     }

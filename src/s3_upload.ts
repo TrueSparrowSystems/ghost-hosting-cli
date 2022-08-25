@@ -1,21 +1,23 @@
 import { Resource } from "cdktf";
 import { Construct } from "constructs";
-import { S3Bucket, S3BucketObject } from "../.gen/providers/aws/s3";
-import { File } from "../.gen/providers/local";
+import { S3Bucket, S3Object } from "../.gen/providers/aws/s3";
+import { getDomainFromUrl } from "../lib/util";
 
 const ecsConfig = require("../config/ecs.json");
 
 interface Options {
-    blogBucket: S3Bucket,
-    configsBucket: S3Bucket,
-    staticBucket: S3Bucket,
-    rdsDbHost: string,
-    rdsDbUserName: string,
-    rdsDbPassword: string,
-    rdsDbName: string,
-    rdsSecurityGroupId: string,
-    ghostHostingUrl: string,
-    hostStaticWebsite: boolean
+    region: string;
+    blogBucket: S3Bucket;
+    configsBucket: S3Bucket;
+    staticBucket: S3Bucket;
+    rdsDbHost: string;
+    rdsDbUserName: string;
+    rdsDbPassword: string;
+    rdsDbName: string;
+    rdsSecurityGroupId: string;
+    ghostHostingUrl: string;
+    hostStaticWebsite: boolean;
+    staticWebsiteUrl: string | undefined;
 }
 
 const GHOST_ENV_FILE_NAME = "ghost";
@@ -39,54 +41,54 @@ class S3Upload extends Resource {
     perform() {
         const ghostEnvFileContent = this._getGhostEnvFileContent();
 
-        const ghostEnvFile = this._createLocalFile(GHOST_ENV_FILE_NAME, ghostEnvFileContent);
-
-        const ghostEnvUpload = this._uploadFileToBucket(ghostEnvFile, GHOST_ENV_FILE_NAME);
+        const ghostEnvUpload = this._uploadFileToBucket(ghostEnvFileContent, GHOST_ENV_FILE_NAME);
 
         const nginxEnvFileContent = this._getNginxEnvFileContent();
 
-        const nginxEnvFile = this._createLocalFile(NGINX_ENV_FILE_NAME, nginxEnvFileContent);
-
-        const nginxEnvUpload = this._uploadFileToBucket(nginxEnvFile, NGINX_ENV_FILE_NAME);
+        const nginxEnvUpload = this._uploadFileToBucket(nginxEnvFileContent, NGINX_ENV_FILE_NAME);
 
         return { ghostEnvUpload, nginxEnvUpload }
     }
 
     _getGhostEnvFileContent() {
-        return `database__client=mysql\ndatabase__connection__host=${this.options.rdsDbHost}\ndatabase__connection__user=${this.options.rdsDbUserName}\ndatabase__connection__password=${this.options.rdsDbPassword}\ndatabase__connection__database=${this.options.rdsDbName}\nstorage__s3__bucket=${this.options.blogBucket.bucket}\nstorage__s3__pathPrefix=blog/images\nstorage__s3__acl=public-read\nstorage__s3__forcePathStyle=true\nstorage__active=s3\nurl=${this.options.ghostHostingUrl}`;
+        return `database__client=mysql\n` + 
+        `database__connection__host=${this.options.rdsDbHost}\n`+
+        `database__connection__user=${this.options.rdsDbUserName}\n`+
+        `database__connection__password=${this.options.rdsDbPassword}\n`+
+        `database__connection__database=${this.options.rdsDbName}\n`+
+        `storage__s3__bucket=${this.options.blogBucket.bucket}\n`+
+        `storage__s3__region=${this.options.region}\n`+
+        `storage__s3__pathPrefix=blog/images\n`+
+        `storage__s3__acl=public-read\n`+
+        `storage__s3__forcePathStyle=true\n`+
+        `storage__active=s3\n`+
+        `url=${this.options.ghostHostingUrl}`;
     }
 
     _getNginxEnvFileContent() {
-        const fileContent = `GHOST_SERVER_NAME=ghost\nGHOST_STATIC_SERVER_NAME=ghost-static\nPROXY_PASS_HOST=127.0.0.1\nPROXY_PASS_PORT=${ecsConfig.ghostContainerPort}`;
+        const hostingDomain = getDomainFromUrl(this.options.ghostHostingUrl);
+        const staticWebsiteDomain = this.options.staticWebsiteUrl ? getDomainFromUrl(this.options.staticWebsiteUrl) : '127.0.0.1';
+        let fileContent = `GHOST_SERVER_NAME=${hostingDomain}\n`+
+        `GHOST_STATIC_SERVER_NAME=${staticWebsiteDomain}\n`+
+        `PROXY_PASS_HOST=127.0.0.1\n`+
+        `PROXY_PASS_PORT=${ecsConfig.ghostContainerPort}`;
 
         if (this.options.hostStaticWebsite) {
-            const s3EnvVars = `\nS3_STATIC_BUCKET_HOST=${this.options.staticBucket.bucketDomainName}\nS3_STATIC_BUCKET=${this.options.staticBucket.bucket}`;
-
-            fileContent.concat(s3EnvVars);
+            const s3EnvVars = `\nS3_STATIC_BUCKET_HOST=${this.options.staticBucket.bucketDomainName}`;
+            fileContent = fileContent.concat(s3EnvVars);
         }
 
         return fileContent;
     }
 
-    _createLocalFile(filename: string, fileContent: string) {
-        const identifier = "plg-gh-" + filename + "-file";
-
-        return new File(this, identifier, {
-            filename: filename + ".env",
-            content: fileContent,
-            dependsOn: [this.options.configsBucket]
-        });
-    }
-
-    _uploadFileToBucket(ghostEnvFile: File, filename: string) {
+    _uploadFileToBucket(fileContent: string, filename: string) {
         const identifier = "plg-gh-" + filename + "-configs";
 
-        return new S3BucketObject(this, identifier, {
+        return new S3Object(this, identifier, {
             key: filename + ".env",
             bucket: this.options.configsBucket.bucket,
             acl: "private",
-            source: filename + ".env",
-            dependsOn: [ghostEnvFile]
+            content: fileContent
         });
     }
 }

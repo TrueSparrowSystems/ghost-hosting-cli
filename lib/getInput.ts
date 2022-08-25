@@ -16,9 +16,9 @@ const USER_CONFIGS = {
 };
 
 interface Options {
-    awsAccessKeyId: string,
-    awsSecretAccessKey: string,
-    awsDefaultRegion: string,
+    accessKeyId: string,
+    secretAccessKey: string,
+    region: string,
     ghostHostingUrl: string,
     hostStaticWebsite: string,
     staticWebsiteUrl: string,
@@ -36,9 +36,9 @@ interface Options {
 }
 
 const options: Options = {
-    awsAccessKeyId: '',
-    awsSecretAccessKey: '',
-    awsDefaultRegion: '',
+    accessKeyId: '',
+    secretAccessKey: '',
+    region: '',
     useExistingVpc: '',
     vpcSubnets: '',
     vpcPublicSubnets: '',
@@ -54,8 +54,6 @@ const options: Options = {
     rdsDbUserName: '',
     rdsDbPassword: ''
 };
-
-console.log(process.argv);
 
 export class GetInput {
     constructor() {
@@ -131,13 +129,13 @@ export class GetInput {
         ).parse(process.argv);
 
         command.option(
-            '--aws-default-region <awsDefaultRegion>',
+            '--aws-region <awsRegion>',
             'AWS Default Region'
         ).parse(process.argv);
 
-        options.awsAccessKeyId = command.opts().awsAccessKeyId;
-        options.awsSecretAccessKey = command.opts().awsSecretAccessKey;
-        options.awsDefaultRegion = command.opts().awsDefaultRegion;
+        options.accessKeyId = command.opts().awsAccessKeyId;
+        options.secretAccessKey = command.opts().awsSecretAccessKey;
+        options.region = command.opts().awsRegion;
     }
 
     _getVpcConfigurations(): void {
@@ -151,19 +149,19 @@ export class GetInput {
     }
 
     _getAwsCredentials() {
-        if (!options.awsAccessKeyId) {
-            options.awsAccessKeyId = readlineSyc.question("AWS access key id : ");
-            this._validateInputStringOption(options.awsAccessKeyId);
+        if (!options.accessKeyId) {
+            options.accessKeyId = readlineSyc.question("AWS access key id : ");
+            this._validateInputStringOption(options.accessKeyId);
         }
 
-        if (!options.awsSecretAccessKey) {
-            options.awsSecretAccessKey = readlineSyc.question("AWS secret access key : ");
-            this._validateInputStringOption(options.awsSecretAccessKey);
+        if (!options.secretAccessKey) {
+            options.secretAccessKey = readlineSyc.question("AWS secret access key : ");
+            this._validateInputStringOption(options.secretAccessKey);
         }
 
-        if (!options.awsDefaultRegion) {
-            options.awsDefaultRegion = readlineSyc.question("Default AWS region : ");
-            this._validateInputStringOption(options.awsDefaultRegion);
+        if (!options.region) {
+            options.region = readlineSyc.question("AWS region : ");
+            this._validateInputStringOption(options.region);
         }
     }
 
@@ -286,9 +284,9 @@ export class GetInput {
 
         // Add AWS credentials
         USER_CONFIGS[`aws`] = {
-            awsAccessKeyId: options.awsAccessKeyId,
-            awsSecretAccessKey: options.awsSecretAccessKey,
-            awsDefaultRegion: options.awsDefaultRegion
+            accessKeyId: options.accessKeyId,
+            secretAccessKey: options.secretAccessKey,
+            region: options.region
         };
 
         // Add VPC configurations
