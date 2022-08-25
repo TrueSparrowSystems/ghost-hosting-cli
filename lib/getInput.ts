@@ -5,7 +5,6 @@ const command = new Command();
 
 const yes = 'y';
 const no = 'n';
-const ALLOW_ALB_CUSTOM_CONFIGURATION = false;
 const USER_CONFIGS = {
     aws: {},
     ghostHostingUrl: '',
@@ -25,6 +24,7 @@ interface Options {
     staticWebsiteUrl: string,
     useExistingVpc: string,
     vpcSubnets: string,
+    vpcPublicSubnets: string,
     useExistingAlb: string,
     isConfiguredDomain: string,
     listenerArn: string,
@@ -41,6 +41,7 @@ const options: Options = {
     awsDefaultRegion: '',
     useExistingVpc: '',
     vpcSubnets: '',
+    vpcPublicSubnets: '',
     useExistingRds: '',
     ghostHostingUrl: '',
     hostStaticWebsite: '',
@@ -75,11 +76,11 @@ export class GetInput {
 
         this._getVpcConfigurations();
 
+        this._getAlbRequirements();
+
         this._getBlogManagementRequirements();
 
         this._getRdsRequirements();
-
-        this._getAlbRequirements();
 
         this._validateInput();
 
@@ -144,7 +145,7 @@ export class GetInput {
         this._validateInputBooleanOption(options.useExistingVpc);
 
         if (options.useExistingVpc === yes) {
-            options.vpcSubnets = readlineSyc.question("Provide VPC subnets [comma separated values] : ");
+            options.vpcSubnets = readlineSyc.question("Provide VPC Subnets to run ECS tasks [comma separated values, atleast 2 subnets required] : ");
             this._validateInputStringOption(options.vpcSubnets, 'Invalid VPC Subnets.');
         }
     }
@@ -195,14 +196,16 @@ export class GetInput {
     }
 
     _getAlbRequirements() {
-        if(ALLOW_ALB_CUSTOM_CONFIGURATION){
-            options.useExistingAlb = readlineSyc.question("Do you have existing ALB? (y/N) : ", {defaultInput: no});
-            this._validateInputBooleanOption(options.useExistingAlb);
-        }
+        options.useExistingAlb = readlineSyc.question("Do you have existing ALB? (y/N) : ", {defaultInput: no});
+        this._validateInputBooleanOption(options.useExistingAlb);
 
         if (options.useExistingAlb === yes) {
             options.listenerArn = readlineSyc.question("Please provide listener ARN : ");
         } else {
+            if(options.useExistingVpc === yes) {
+                options.vpcPublicSubnets = readlineSyc.question("Provide VPC Public Subnets to launch ALB [comma separated values, atleast 2 subnets required] : ");
+                this._validateInputStringOption(options.vpcSubnets, 'Invalid VPC Public Subnets.');
+            }
             options.isConfiguredDomain = readlineSyc.question("Do you have Route53 configured for the domain in the same AWS account? [Else the SSL certification verification will fail] (Y/n) : ", {defaultInput: yes});
             this._validateInputBooleanOption(options.isConfiguredDomain);
 
@@ -214,6 +217,15 @@ export class GetInput {
     }
 
     _validateInput() {
+        // Validate VPC subnets
+        if(options.vpcSubnets && options.vpcSubnets.split(',').length < 2){
+            this._validateInputStringOption('', 'Atleast 2 VPC Subnets required.');
+        }
+
+        if(options.vpcPublicSubnets && options.vpcPublicSubnets.split(',').length < 2){
+            this._validateInputStringOption('', 'Atleast 2 VPC Public Subnets required.');
+        }
+
         // Validate URLs and domains
         options.ghostHostingUrl = options.ghostHostingUrl.replace(/\/+$/, '');
         options.staticWebsiteUrl = options.staticWebsiteUrl.replace(/\/+$/, '');
@@ -281,6 +293,12 @@ export class GetInput {
             Object.assign(USER_CONFIGS[`vpc`], {
                 vpcSubnets: subnetIds
             });
+
+            if(options.useExistingAlb === no){
+                Object.assign(USER_CONFIGS[`vpc`], {
+                    vpcPublic: subnetIds
+                });
+            }
         }
 
         USER_CONFIGS.ghostHostingUrl = options.ghostHostingUrl;

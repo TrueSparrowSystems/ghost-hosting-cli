@@ -30,7 +30,7 @@ class AcmResource extends Resource {
      * @dev Main performer of the class
      */
     perform() {
-        const ghostHostingDomain = this._extractDomainFromUrl();
+        const ghostHostingDomain = this._extractDomainFromUrl() || '';
 
         const cert = this._createCertificate(ghostHostingDomain);
 
@@ -47,9 +47,9 @@ class AcmResource extends Resource {
      * @dev Extract domain name from the ghost hosting url
      * @private
      */
-    _extractDomainFromUrl() {
+    _extractDomainFromUrl(): string | null {
         const hostingDomain = this.options.ghostHostingUrl.split('://')[1].split('/')[0];
-        return Psl.get(hostingDomain);
+        return  Psl.get(hostingDomain);
     }
 
     /**

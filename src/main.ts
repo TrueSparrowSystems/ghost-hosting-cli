@@ -198,11 +198,11 @@ class GhostStack extends TerraformStack {
         configsBucket: S3Bucket,
         staticBucket: S3Bucket
     ) {
-        // upload ecs env
+        // upload ghost env
         const ecsEnvFileContent = `database__client=mysql\ndatabase__connection__host=${this.rdsHost}\ndatabase__connection__user=${this.rdsDbUserName}\ndatabase__connection__password=${this.rdsDbPassword}\ndatabase__connection__database=${this.rdsDbName}\nstorage__active=s3\nstorage__s3__region=${this.userInput.aws.awsDefaultRegion}\nstorage__s3__bucket=${blogBucket.bucket}\nstorage__s3__pathPrefix=blog/images\nstorage__s3__acl=public-read\nstorage__s3__forcePathStyle=true\nurl=${this.userInput.ghostHostingUrl}`;
 
         const ecsEnvFile = new File(this, "plg-gh-ecs-configs", {
-            filename: "ecs.env",
+            filename: "ghost.env",
             content: ecsEnvFileContent,
             dependsOn: [configsBucket]
         });
@@ -216,7 +216,6 @@ class GhostStack extends TerraformStack {
         });
 
         // upload nginx env
-        // const s3StaticHost = "https://" + staticBucket.bucketDomainName;
         const nginxEnvFileContent = `GHOST_SERVER_NAME=ghost\nGHOST_STATIC_SERVER_NAME=ghost-static\nPROXY_PASS_HOST=127.0.0.1\nPROXY_PASS_PORT=${ecsConfig.ghostContainerPort}\nS3_STATIC_BUCKET_HOST=${staticBucket.bucketDomainName}\nS3_STATIC_BUCKET=${staticBucket.bucket}`;
 
         const nginxEnvFile = new File(this, "plg-gh-nginx-configs", {
