@@ -1,5 +1,5 @@
 import { Construct } from "constructs";
-import { App, TerraformStack, Fn, TerraformOutput } from "cdktf";
+import { App, TerraformStack } from "cdktf";
 import { AwsProvider } from "@cdktf/provider-aws";
 
 import { VpcResource } from "./vpc";
@@ -9,14 +9,14 @@ import { AlbResource } from "./alb";
 import { S3Resource } from "./s3";
 import { IamResource } from "./iam";
 import { AcmResource } from "./acm";
+import { S3Upload } from "./s3_upload";
 
-import { readInput } from "../lib/readInput";
 import { AlbTargetGroup } from "../.gen/providers/aws/elb";
 import { S3Bucket, S3BucketObject } from "../.gen/providers/aws/s3";
 import { RandomProvider } from "../.gen/providers/random";
-import { File, LocalProvider } from "../.gen/providers/local";
+import { LocalProvider } from "../.gen/providers/local";
 
-const ecsConfig = require("../config/ecs.json");
+import { readInput } from "../lib/readInput";
 
 /**
  * Terraform stack
@@ -51,7 +51,6 @@ class GhostStack extends TerraformStack {
         this.rdsDbPassword = '';
         this.rdsDbName = '';
         this.rdsSecurityGroupId = '';
-
     }
 
     /**
@@ -66,17 +65,18 @@ class GhostStack extends TerraformStack {
 
         this._createRdsInstance();
 
+        // TODO: conditional based on listener arn
         const certificateArn = this._createAcmCertificate();
-
-        const { alb, targetGroup } = this._createAlb(certificateArn);
 
         const { blogBucket, staticBucket, configsBucket } = this._createS3Buckets();
 
-        const { ecsEnvUploadS3, nginxEnvUploadS3 } = this._s3EnvUpload(
+        const { ghostEnvUpload, nginxEnvUpload } = this._s3Upload(
             blogBucket,
             configsBucket,
             staticBucket
         );
+
+        const { alb, targetGroup } = this._createAlb(certificateArn);
 
         const { customExecutionRole, customTaskRole } = this._createIamRolePolicies(
             blogBucket,
@@ -91,8 +91,8 @@ class GhostStack extends TerraformStack {
             customExecutionRole.arn,
             customTaskRole.arn,
             configsBucket,
-            ecsEnvUploadS3,
-            nginxEnvUploadS3
+            ghostEnvUpload,
+            nginxEnvUpload
         );
     }
 
@@ -177,7 +177,7 @@ class GhostStack extends TerraformStack {
             useExistingAlb: this.userInput.alb.useExistingAlb,
             isConfiguredDomain: this.userInput.alb.isConfiguredDomain,
             listenerArn: this.userInput.alb.listenerArn,
-            certificateArn: certificateArn
+            certificateArn
         }).perform();
     }
 
@@ -203,46 +203,23 @@ class GhostStack extends TerraformStack {
         }).perform();
     }
 
-    _s3EnvUpload(
+    _s3Upload(
         blogBucket: S3Bucket,
         configsBucket: S3Bucket,
         staticBucket: S3Bucket
     ) {
-        // upload ghost env
-        const ecsEnvFileContent = `database__client=mysql\ndatabase__connection__host=${this.rdsHost}\ndatabase__connection__user=${this.rdsDbUserName}\ndatabase__connection__password=${this.rdsDbPassword}\ndatabase__connection__database=${this.rdsDbName}\nstorage__active=s3\nstorage__s3__region=${this.userInput.aws.awsDefaultRegion}\nstorage__s3__bucket=${blogBucket.bucket}\nstorage__s3__pathPrefix=blog/images\nstorage__s3__acl=public-read\nstorage__s3__forcePathStyle=true\nurl=${this.userInput.ghostHostingUrl}`;
-
-        const ecsEnvFile = new File(this, "plg-gh-ecs-configs", {
-            filename: "ghost.env",
-            content: ecsEnvFileContent,
-            dependsOn: [configsBucket]
-        });
-
-        const ecsEnvUploadS3 = new S3BucketObject(this, "plg-gh-ecs-env", {
-            key: "ghost.env",
-            bucket: configsBucket.bucket,
-            acl: "private",
-            source: "ghost.env",
-            dependsOn: [ecsEnvFile]
-        });
-
-        // upload nginx env
-        const nginxEnvFileContent = `GHOST_SERVER_NAME=ghost\nGHOST_STATIC_SERVER_NAME=ghost-static\nPROXY_PASS_HOST=127.0.0.1\nPROXY_PASS_PORT=${ecsConfig.ghostContainerPort}\nS3_STATIC_BUCKET_HOST=${staticBucket.bucketDomainName}\nS3_STATIC_BUCKET=${staticBucket.bucket}`;
-
-        const nginxEnvFile = new File(this, "plg-gh-nginx-configs", {
-            filename: "nginx.env",
-            content: nginxEnvFileContent,
-            dependsOn: [configsBucket, staticBucket]
-        });
-
-        const nginxEnvUploadS3 = new S3BucketObject(this, "plg-gh-nginx-env", {
-            key: "nginx.env",
-            bucket: configsBucket.bucket,
-            acl: "private",
-            source: "nginx.env",
-            dependsOn: [nginxEnvFile]
-        });
-
-        return { ecsEnvUploadS3, nginxEnvUploadS3 };
+        return new S3Upload(this, "s3-env-upload", {
+            blogBucket,
+            configsBucket,
+            staticBucket,
+            rdsDbHost: this.rdsHost,
+            rdsDbUserName: this.rdsDbUserName,
+            rdsDbPassword: this.rdsDbPassword,
+            rdsDbName: this.rdsDbName,
+            rdsSecurityGroupId: this.rdsSecurityGroupId,
+            ghostHostingUrl: this.userInput.ghostHostingUrl,
+            hostStaticWebsite: this.userInput.hostStaticWebsite
+        }).perform();
     }
 
     _createIamRolePolicies(blogBucket: S3Bucket, configsBucket: S3Bucket) {
@@ -260,8 +237,8 @@ class GhostStack extends TerraformStack {
      * @param customExecutionRoleArn
      * @param customTaskRoleArn
      * @param configBucket
-     * @param ecsEnvUploadS3
-     * @param nginxEnvUploadS3
+     * @param ghostEnvUpload
+     * @param nginxEnvUpload
      * @private
      */
     _createEcs(
@@ -270,8 +247,8 @@ class GhostStack extends TerraformStack {
         customExecutionRoleArn: string,
         customTaskRoleArn: string,
         configBucket: S3Bucket,
-        ecsEnvUploadS3: S3BucketObject,
-        nginxEnvUploadS3: S3BucketObject
+        ghostEnvUpload: S3BucketObject,
+        nginxEnvUpload: S3BucketObject
     ) {
         return new EcsResource(this, "plg-gh-ecs", {
             vpcId: this.vpcId,
@@ -283,8 +260,8 @@ class GhostStack extends TerraformStack {
             customExecutionRoleArn,
             customTaskRoleArn,
             configBucket,
-            ecsEnvUploadS3,
-            nginxEnvUploadS3
+            ghostEnvUpload,
+            nginxEnvUpload
         }).perform();
     }
 }
@@ -293,7 +270,7 @@ const app = new App();
 new GhostStack(app, "plg-ghost")
     .perform()
     .then()
-    .catch(function (err) {
+    .catch((err) => {
         console.error('GhostStack Error: ', err);
         process.exit(1);
     });

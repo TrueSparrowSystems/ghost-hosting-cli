@@ -29,8 +29,8 @@ interface Options {
     customExecutionRoleArn: string,
     customTaskRoleArn: string
     configBucket: S3Bucket,
-    ecsEnvUploadS3: S3BucketObject,
-    nginxEnvUploadS3: S3BucketObject
+    ghostEnvUpload: S3BucketObject,
+    nginxEnvUpload: S3BucketObject
 }
 
 /**
@@ -355,7 +355,7 @@ class EcsResource extends Resource {
                     name: "ghost"
                 }
             ],
-            dependsOn: [this.options.ecsEnvUploadS3, this.options.nginxEnvUploadS3]
+            dependsOn: [this.options.ghostEnvUpload, this.options.nginxEnvUpload]
         });
     }
 
