@@ -27,7 +27,11 @@ export function getPrivateSubnetCidrBlocks(
     const privateSubnetCidrBlocks: string[] = [];
 
     for (let index = 0; index < privateSubnetCount; index++) {
-        privateSubnetCidrBlocks[index] = Fn.cidrsubnet(cidrPrefix, 8, netNumStart + index);
+        privateSubnetCidrBlocks[index] = Fn.cidrsubnet(
+            cidrPrefix,
+            8,
+            netNumStart + index)
+        ;
     }
 
     return privateSubnetCidrBlocks;
