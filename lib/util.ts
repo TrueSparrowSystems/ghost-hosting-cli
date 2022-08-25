@@ -1,13 +1,29 @@
 import { Fn } from "cdktf";
 
-function getPublicSubnetCidrBlocks(cidrPrefix: string) {
+/**
+ * @dev Get public subnet cidr blocks for the cidr prefix provided
+ *
+ * @param {string} cidrPrefix
+ */
+export function getPublicSubnetCidrBlocks(cidrPrefix: string) {
     return [
         Fn.cidrsubnet(cidrPrefix, 8, 0),
         Fn.cidrsubnet(cidrPrefix, 8, 1)
     ]
 }
 
-function getPrivateSubnetCidrBlocks(cidrPrefix: string, privateSubnetCount: number, netNumStart: number) {
+/**
+ * @dev Get public subnet cidr blocks for the cidr prefix provided
+ *
+ * @param {string} cidrPrefix
+ * @param {number} privateSubnetCount
+ * @param {number} netNumStart
+ */
+export function getPrivateSubnetCidrBlocks(
+    cidrPrefix: string,
+    privateSubnetCount: number,
+    netNumStart: number
+) {
     const privateSubnetCidrBlocks: string[] = [];
 
     for (let index = 0; index < privateSubnetCount; index++) {
@@ -16,5 +32,3 @@ function getPrivateSubnetCidrBlocks(cidrPrefix: string, privateSubnetCount: numb
 
     return privateSubnetCidrBlocks;
 }
-
-export { getPublicSubnetCidrBlocks, getPrivateSubnetCidrBlocks };
