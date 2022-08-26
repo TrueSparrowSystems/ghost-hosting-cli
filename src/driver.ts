@@ -5,7 +5,7 @@ const cdktfExec = './node_modules/.bin/cdktf';
 function run(): void {
     _getUserInput();
 
-    _installProvidersAndModules();
+    // _installProvidersAndModules();
 
     _applyPlanChanges();
 }

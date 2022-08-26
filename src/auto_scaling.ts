@@ -3,7 +3,7 @@ import { Construct } from "constructs";
 import { AppautoscalingPolicy, AppautoscalingTarget } from "../.gen/providers/aws/appautoscaling";
 import { EcsService } from "../.gen/providers/aws/ecs";
 
-const ecsConfig = require("../config/ecs.json");
+import ecsConfig from "../config/ecs.json";
 
 interface Options {
     autoScaleRoleArn: string,

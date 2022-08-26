@@ -12,7 +12,7 @@ import { AlbListenerRule, AlbTargetGroup } from "../.gen/providers/aws/elb";
 import { S3Bucket, S3Object } from "../.gen/providers/aws/s3";
 import { getDomainFromUrl, getPathSuffixFromUrl } from "../lib/util";
 
-const ecsConfig = require("../config/ecs.json");
+import ecsConfig from "../config/ecs.json";
 
 const plgTags = {
     Name: "PLG Ghost"

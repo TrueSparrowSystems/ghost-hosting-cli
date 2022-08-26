@@ -3,7 +3,7 @@ import { Construct } from "constructs";
 import { IamPolicy, IamRole, IamRolePolicyAttachment } from "../.gen/providers/aws/iam";
 import { S3Bucket } from "../.gen/providers/aws/s3";
 
-const ecsConfig = require("../config/ecs.json");
+import ecsConfig from "../config/ecs.json";
 
 interface Options {
     blogBucket: S3Bucket;

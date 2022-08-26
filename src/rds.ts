@@ -4,7 +4,7 @@ import { Rds } from "../.gen/modules/rds";
 import { SecurityGroup } from "../.gen/providers/aws/vpc";
 import { Password } from "../.gen/providers/random";
 
-const rdsConfig = require("../config/rds.json");
+import rdsConfig from "../config/rds.json";
 
 interface Options {
     vpcId: string;

@@ -6,7 +6,7 @@ import { DataAwsSubnet } from "../.gen/providers/aws/vpc";
 import { DataAwsAvailabilityZones } from "../.gen/providers/aws/datasources";
 
 import { getPrivateSubnetCidrBlocks, getPublicSubnetCidrBlocks } from "../lib/util";
-const vpcConfig = require("../config/vpc.json");
+import vpcConfig from "../config/vpc.json";
 
 interface Options {
     useExistingVpc: boolean;
