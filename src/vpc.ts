@@ -14,6 +14,12 @@ interface Options {
     vpcPublicSubnets: string[]
 }
 
+interface Response {
+    vpcId: string;
+    vpcSubnets: string[];
+    vpcPublicSubnets: string[];
+}
+
 /**
  * Class to create VPC and subnets.
  */
@@ -29,7 +35,7 @@ class VpcResource extends Resource {
     /**
      * Main performer.
      */
-    perform() {
+    perform() : Response {
         const privateSubnetCidrBlocks = this._getSubnetCidr();
 
         const zones = this._getZones();
@@ -86,7 +92,7 @@ class VpcResource extends Resource {
      _getOrCreateVpc(
         privateSubnetCidrBlocks: string[],
         zones: DataAwsAvailabilityZones
-    ): {vpcId: string, vpcSubnets: string[], vpcPublicSubnets: string[]} {
+    ): Response {
         let vpcId, vpcSubnets, vpcPublicSubnets: string[];
         if(this.options.useExistingVpc){
             const subnetData = new DataAwsSubnet(this, 'subnet', {

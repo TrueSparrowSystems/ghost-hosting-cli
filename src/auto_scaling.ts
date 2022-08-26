@@ -25,7 +25,7 @@ class AutoScaling extends Resource {
     /**
      * @dev Main performer of the class
      */
-    perform() {
+    perform(): void {
         const ecsTarget = this._createAppAutoScalingTarget();
 
         this._createAppAutoScalingPolicies(ecsTarget);
