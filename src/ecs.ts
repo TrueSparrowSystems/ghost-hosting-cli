@@ -1,7 +1,5 @@
 import { Resource, Fn, TerraformOutput } from "cdktf";
 import { Construct } from "constructs";
-import { IamInstanceProfile, IamPolicy, IamRole, IamRolePolicyAttachment } from "../.gen/providers/aws/iam";
-import { DataAwsAmi, Instance } from "../.gen/providers/aws/ec2";
 import {
     EcsCluster,
     EcsClusterCapacityProviders,
@@ -56,21 +54,13 @@ class EcsResource extends Resource {
      * Main performer.
      */
     perform(): Response {
-        // const instanceProfile = this._performEcsInstanceRoleAndProfile();
-
         this._createLogGroup();
 
         const ecsSg = this._createSecurityGroup();
 
         const targetGroup = this._createTargetGroup();
 
-        // const ec2Instance = this._createEC2ECSInstance(instanceProfile, ecsSecurityGroup);
-
         const ecsCluster = this._createEcsCluster();
-
-        // const executionRole = this._createAndAttachEcsExecutionRole();
-
-        // const taskRole = this._createAndAttachEcsTaskRole();
 
         this._addCapacityProvider();
 
@@ -79,62 +69,6 @@ class EcsResource extends Resource {
         const ecsService = this._createEcsService(ecsCluster, ecsTaskDefinition, ecsSg, targetGroup);
 
         return { ecsService };
-    }
-
-    /**
-     * Create ecs instance role and profile with AmazonEC2ContainerServiceforEC2Role policy,
-     *
-     * @private
-     */
-    _performEcsInstanceRoleAndProfile() {
-        const ecsInstanceRole = this._createEcsInstanceRole();
-
-        new IamRolePolicyAttachment(this, "ecs-instance-role-attachment", {
-            role: ecsInstanceRole.name,
-            policyArn: "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role",
-        });
-
-        return this._createEcsInstanceProfile(ecsInstanceRole);
-    }
-
-    /**
-     * Create role for ecs instance.
-     *
-     * @private
-     */
-    _createEcsInstanceRole() {
-        return new IamRole(this, "ecs-instance-role", {
-            name: ecsConfig.nameIdentifier + "-instance-role",
-            assumeRolePolicy: Fn.jsonencode({
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Action": "sts:AssumeRole",
-                        "Principal": {
-                            "Service": "ec2.amazonaws.com"
-                        },
-                        "Effect": "Allow",
-                        "Sid": ""
-                    }
-                ]
-            }),
-            tags: plgTags
-        });
-    }
-
-    /**
-     * Create instance profile for EC2 ECS optimised instance.
-     *
-     * @param ecsInstanceRole
-     * @private
-     */
-    _createEcsInstanceProfile(ecsInstanceRole: IamRole) {
-        return new IamInstanceProfile(this, "ecs-instance-profile", {
-            name: ecsConfig.nameIdentifier,
-            path: "/",
-            role: ecsInstanceRole.id,
-            tags: plgTags
-        });
     }
 
     _createTargetGroup(): AlbTargetGroup {
@@ -235,39 +169,6 @@ class EcsResource extends Resource {
     }
 
     /**
-     * Create EC2 ECS optimised instance for ECS container.
-     *
-     * @param instanceProfile
-     * @param ecsSecurityGroup
-     * @private
-     */
-    _createEC2ECSInstance(instanceProfile: IamInstanceProfile, ecsSecurityGroup: SecurityGroup) {
-        const dataAwsAmiOutput = new DataAwsAmi(this, "data-aws-ami", {
-            mostRecent: true,
-            owners: ["amazon"],
-            filter: [{
-                name: "name",
-                values: ["amzn2-ami-ecs-hvm-2.0.202*-x86_64-ebs"]
-            }]
-        });
-
-        const privateSubnetId = Fn.element(this.options.subnets, 0);
-        return new Instance(this, "ec2-ecs-instance", {
-            ami: dataAwsAmiOutput.id,
-            subnetId: privateSubnetId,
-            instanceType: "t3.small",
-            ebsOptimized: true,
-            securityGroups: [ecsSecurityGroup.id],
-            userData: "#!/bin/bash \n" +
-                "cat <<'EOF' >> /etc/ecs/ecs.config \n" +
-                "ECS_CLUSTER=plg-gh-ecs-cluster \n" +
-                "EOF",
-            iamInstanceProfile: instanceProfile.name,
-            tags: plgTags,
-        });
-    }
-
-    /**
      * Create ECS cluster.
      *
      * @private
@@ -276,100 +177,6 @@ class EcsResource extends Resource {
         return new EcsCluster(this, "plg-ghost", {
             name: ecsConfig.clusterName,
         });
-    }
-
-    /**
-     * Create iam role for ecs task execution and attach it to policy - AmazonECSTaskExecutionRolePolicy
-     *
-     * @private
-     */
-    _createAndAttachEcsExecutionRole(): IamRole {
-        const ecsExecutionRole = new IamRole(this, "plg-gh-ecs-execution-role", {
-            name: "plg-gh-ecs-execution-role",
-            assumeRolePolicy: Fn.jsonencode({
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Sid": "",
-                        "Effect": "Allow",
-                        "Principal": {
-                            "Service": "ecs-tasks.amazonaws.com"
-                        },
-                        "Action": "sts:AssumeRole"
-                    }
-                ]
-            }),
-            tags: plgTags
-        });
-
-        new IamRolePolicyAttachment(this, 'execution-role-attachment', {
-            role: ecsExecutionRole.name,
-            policyArn: ecsConfig.amazonECSTaskExecutionRolePolicy,
-        });
-
-        return ecsExecutionRole;
-    }
-
-    /**
-     * Create and attach ecs task role to access other aws resources.
-     * Here, allowing access to use S3
-     *
-     * @private
-     */
-    _createAndAttachEcsTaskRole(): IamRole {
-        const taskPolicy = new IamPolicy(this, "plg-gh-task-policy", {
-            name: "plg-gh-task",
-            policy: Fn.jsonencode(
-                {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Sid": "",
-                            "Effect": "Allow",
-                            "Action": "s3:ListBucket",
-                            "Resource": `arn:aws:s3:::${ecsConfig.s3BucketName}`
-                        },
-                        {
-                            "Sid": "",
-                            "Effect": "Allow",
-                            "Action": [
-                                "s3:PutObject",
-                                "s3:GetObject",
-                                "s3:PutObjectVersionAcl",
-                                "s3:DeleteObject",
-                                "s3:PutObjectAcl"
-                            ],
-                            "Resource": `arn:aws:s3:::${ecsConfig.s3BucketName}/*`
-                        }
-                    ]
-                }
-            )
-        });
-
-        const taskRole = new IamRole(this, "plg-gh-ecs-task-role", {
-            name: "plg-gh-ecs-task-role",
-            assumeRolePolicy: Fn.jsonencode({
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Sid": "",
-                        "Effect": "Allow",
-                        "Principal": {
-                            "Service": "ecs-tasks.amazonaws.com"
-                        },
-                        "Action": "sts:AssumeRole"
-                    }
-                ]
-            }),
-            tags: plgTags
-        });
-
-        new IamRolePolicyAttachment(this, 'task-role-attachment', {
-            role: taskRole.name,
-            policyArn: taskPolicy.arn,
-        });
-
-        return taskRole;
     }
 
     _addCapacityProvider(): void {
