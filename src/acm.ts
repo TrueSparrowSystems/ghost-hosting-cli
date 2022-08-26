@@ -52,7 +52,7 @@ class AcmResource extends Resource {
      * @param ghostHostingDomain
      * @private
      */
-    _createCertificate(ghostHostingDomain: string) {
+    _createCertificate(ghostHostingDomain: string): AcmCertificate {
         return new AcmCertificate(this, "cert", {
             domainName: ghostHostingDomain,
             subjectAlternativeNames: [`*.${ghostHostingDomain}`],
@@ -69,7 +69,7 @@ class AcmResource extends Resource {
      * @param ghostHostingDomain
      * @private
      */
-    _getRoute53Zone(ghostHostingDomain: string) {
+    _getRoute53Zone(ghostHostingDomain: string): DataAwsRoute53Zone {
         return new DataAwsRoute53Zone(this, "route_53_zone", {
             name: ghostHostingDomain
         });
@@ -81,7 +81,7 @@ class AcmResource extends Resource {
      * @param cert
      * @private
      */
-    _createRoute53Record(route53Zone: DataAwsRoute53Zone, cert: AcmCertificate) {
+    _createRoute53Record(route53Zone: DataAwsRoute53Zone, cert: AcmCertificate): string[] {
         const fqdns = [];
 
         const domainValidationOptions = cert.domainValidationOptions;
@@ -108,8 +108,8 @@ class AcmResource extends Resource {
      * @param fqdns
      * @private
      */
-    _validateAcmCertificate(cert: AcmCertificate, fqdns: string[]) {
-        return new AcmCertificateValidation(this, 'cert-validation', {
+    _validateAcmCertificate(cert: AcmCertificate, fqdns: string[]): void  {
+        new AcmCertificateValidation(this, 'cert-validation', {
             certificateArn: cert.arn,
             validationRecordFqdns: fqdns
         });

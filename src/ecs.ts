@@ -372,7 +372,7 @@ class EcsResource extends Resource {
         return taskRole;
     }
 
-    _addCapacityProvider() {
+    _addCapacityProvider(): void {
         new EcsClusterCapacityProviders(this, "plg-gh-capacity-provider", {
            clusterName: ecsConfig.clusterName,
             capacityProviders: ["FARGATE", "FARGATE_SPOT"]
@@ -384,8 +384,8 @@ class EcsResource extends Resource {
      *
      * @private
      */
-    _createLogGroup() {
-        return new CloudwatchLogGroup(this, "plg-gh-log-group", {
+    _createLogGroup(): void {
+        new CloudwatchLogGroup(this, "plg-gh-log-group", {
             name: ecsConfig.logGroupName
         });
     }
@@ -422,7 +422,7 @@ class EcsResource extends Resource {
         });
     }
 
-    _getGhostContainerDefinition() {
+    _getGhostContainerDefinition(): any {
         const envFileArn = `arn:aws:s3:::${this.options.configBucket.bucket}/ghost.env`;
 
         new TerraformOutput(this, "ecs-env-file-arn", {
@@ -467,7 +467,7 @@ class EcsResource extends Resource {
      *
      * @private
      */
-    _getNginxContainerDefinition() {
+    _getNginxContainerDefinition(): any {
         const envFileArn = `arn:aws:s3:::${this.options.configBucket.bucket}/nginx.env`;
 
         new TerraformOutput(this, "nginx-env-file-arn", {

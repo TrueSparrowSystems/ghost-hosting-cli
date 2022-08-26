@@ -52,7 +52,7 @@ class AutoScaling extends Resource {
      * @param ecsTarget
      * @private
      */
-    _createAppAutoScalingPolicies(ecsTarget: AppautoscalingTarget) {
+    _createAppAutoScalingPolicies(ecsTarget: AppautoscalingTarget): void {
         new AppautoscalingPolicy(this, "auto-scaling-policy-cpu", {
             name: "application-scaling-policy-cpu",
             policyType: "TargetTrackingScaling",

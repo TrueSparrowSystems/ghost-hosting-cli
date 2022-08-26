@@ -47,7 +47,7 @@ class S3Resource extends Resource {
      * Generate random suffix string to attach to bucket names.
      * @private
      */
-    _generateRandomSuffix() {
+    _generateRandomSuffix(): string {
         const stringResource = new StringResource(this, "random_string", {
             length: 8,
             lower: true,
@@ -73,7 +73,7 @@ class S3Resource extends Resource {
      * @param randomSuffix
      * @private
      */
-    _createBlogAssetBucket(randomSuffix: string) {
+    _createBlogAssetBucket(randomSuffix: string): S3Bucket {
         const blogContentS3BucketName =  s3Config.blogContentS3BucketName.concat("-", randomSuffix);
 
         return new S3Bucket(this, "plg-gh-blog-assets", {
@@ -87,7 +87,7 @@ class S3Resource extends Resource {
      * @param randomSuffix
      * @private
      */
-    _createStaticAssetBucket(randomSuffix: string) {
+    _createStaticAssetBucket(randomSuffix: string): S3Bucket {
         const blogStaticS3BucketName = s3Config.blogStaticS3BucketName.concat("-", randomSuffix);
 
         const staticBucket = new S3Bucket(this, "plg-gh-static-assets", {
@@ -118,7 +118,7 @@ class S3Resource extends Resource {
      * @param randomSuffix
      * @private
      */
-    _createConfigsBucket(randomSuffix: string) {
+    _createConfigsBucket(randomSuffix: string): S3Bucket {
         const configsBucket = s3Config.configsS3BucketName.concat("-", randomSuffix);
 
         return new S3Bucket(this, "plg-gh-configs", {

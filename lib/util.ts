@@ -6,7 +6,7 @@ import * as Psl from "psl";
  *
  * @param {string} cidrPrefix
  */
-export function getPublicSubnetCidrBlocks(cidrPrefix: string) {
+export function getPublicSubnetCidrBlocks(cidrPrefix: string): string[] {
     return [
         Fn.cidrsubnet(cidrPrefix, 8, 0),
         Fn.cidrsubnet(cidrPrefix, 8, 1)
@@ -24,7 +24,7 @@ export function getPrivateSubnetCidrBlocks(
     cidrPrefix: string,
     privateSubnetCount: number,
     netNumStart: number
-) {
+): string[] {
     const privateSubnetCidrBlocks: string[] = [];
 
     for (let index = 0; index < privateSubnetCount; index++) {
@@ -38,16 +38,16 @@ export function getPrivateSubnetCidrBlocks(
     return privateSubnetCidrBlocks;
 }
 
-export function getRootDomainFromUrl(url: string) {
+export function getRootDomainFromUrl(url: string): string | null {
     const domain = url.split('://')[1].split('/')[0];
     return Psl.get(domain);
 }
 
-export function getDomainFromUrl(url: string) {
+export function getDomainFromUrl(url: string): string {
     return url.split('://')[1].split('/')[0];
 }
 
-export function getPathSuffixFromUrl(url: string) {
+export function getPathSuffixFromUrl(url: string): string {
     const urlParts = url.split('://')[1].split('/');
     return urlParts.slice(1).join("/");
 }

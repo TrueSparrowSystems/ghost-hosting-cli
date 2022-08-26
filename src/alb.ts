@@ -65,7 +65,7 @@ class AlbResource extends Resource {
         return { albSecurityGroups: Fn.tolist(alb.securityGroups), listenerArn };
     }
 
-    _createAlbSecurityGroup() {
+    _createAlbSecurityGroup(): SecurityGroup {
         return new SecurityGroup(this, "plg-gh-alb-sg", {
             name: "alb-sg",
             description: "Firewall for internet traffic",
@@ -98,7 +98,7 @@ class AlbResource extends Resource {
         });
     }
 
-    _createAlb(securityGroup: SecurityGroup) {
+    _createAlb(securityGroup: SecurityGroup): Alb {
         return new Alb(this, "plg-gh-alb", {
             loadBalancerType: "application",
             name: "plg-gh-alb",
@@ -111,8 +111,8 @@ class AlbResource extends Resource {
         });
     }
 
-    _addHttpListener(alb: Alb) {
-        return new AlbListener(this, "plg-gh-http-listener", {
+    _addHttpListener(alb: Alb): void {
+        new AlbListener(this, "plg-gh-http-listener", {
             port: 80,
             protocol: "HTTP",
             loadBalancerArn: alb.arn,
@@ -130,7 +130,7 @@ class AlbResource extends Resource {
         });
     }
 
-    _addHttpsListener(alb: Alb) {
+    _addHttpsListener(alb: Alb): string {
         const albListener = new AlbListener(this, "plg-gh-https-listener", {
             port: 443,
             protocol: "HTTPS",

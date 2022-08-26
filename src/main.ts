@@ -105,7 +105,7 @@ class GhostStack extends TerraformStack {
      *
      * @private
      */
-    _setProviders() {
+    _setProviders(): void {
         // AWS provider
         new AwsProvider(this, "AWS", {
             region: this.userInput.aws.region,
@@ -129,7 +129,7 @@ class GhostStack extends TerraformStack {
      *
      * @private
      */
-    _createVpc() {
+    _createVpc(): void {
         const { vpcId, vpcSubnets, vpcPublicSubnets } = new VpcResource(this, "plg-gh-vpc", {
             useExistingVpc: this.userInput.vpc.useExistingVpc,
             vpcSubnets: this.userInput.vpc.vpcSubnets || [],
@@ -146,7 +146,7 @@ class GhostStack extends TerraformStack {
      *
      * @private
      */
-    _createRdsInstance() {
+    _createRdsInstance(): void {
         const { rdsHost, rdsDbUserName, rdsDbPassword, rdsDbName, rdsSecurityGroupId } = new RdsResource(this, "plg-gh-rds", {
             vpcId: this.vpcId,
             vpcSubnets: this.vpcSubnets,

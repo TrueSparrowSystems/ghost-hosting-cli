@@ -55,7 +55,7 @@ class S3Upload extends Resource {
         return { ghostEnvUpload, nginxEnvUpload }
     }
 
-    _getGhostEnvFileContent() {
+    _getGhostEnvFileContent(): string {
         return `database__client=mysql\n` +
         `database__connection__host=${this.options.rdsDbHost}\n` +
         `database__connection__user=${this.options.rdsDbUserName}\n` +
@@ -70,7 +70,7 @@ class S3Upload extends Resource {
         `url=${this.options.ghostHostingUrl}`;
     }
 
-    _getNginxEnvFileContent() {
+    _getNginxEnvFileContent(): string {
         const hostingDomain = getDomainFromUrl(this.options.ghostHostingUrl);
         const staticWebsiteDomain = this.options.staticWebsiteUrl
             ? getDomainFromUrl(this.options.staticWebsiteUrl)
@@ -88,7 +88,7 @@ class S3Upload extends Resource {
         return fileContent;
     }
 
-    _uploadFileToBucket(fileContent: string, filename: string) {
+    _uploadFileToBucket(fileContent: string, filename: string): S3Object {
         const identifier = "plg-gh-" + filename + "-configs";
 
         return new S3Object(this, identifier, {
