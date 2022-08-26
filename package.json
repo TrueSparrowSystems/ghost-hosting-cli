@@ -10,7 +10,7 @@
     "auto-deploy": "cdktf deploy --auto-approve",
     "synth": "cdktf synth",
     "compile": "tsc --pretty",
-    "watch": "tsc -w",
+    "watch": "cdktf get && tsc -w",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "upgrade": "npm i cdktf@latest cdktf-cli@latest",

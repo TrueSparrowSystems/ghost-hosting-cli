@@ -12,7 +12,6 @@ function run(): void {
 }
 
 function _getUserInput(): void {
-  // const getInput = require('../lib/getInput');
   new GetInput().perform();
 }
 
@@ -29,7 +28,7 @@ function _applyPlanChanges(): void {
     shell.exit(1);
   }
 
-  console.log('Please review the diff output above for the ghost hosting.');
+  console.log('Please review the output above for the ghost hosting.');
   const approve = readlineSync.question('Do you want to approve?(y/n) (Applies the changes outlined in the plan): ');
 
   if (approve === 'y') {
@@ -42,8 +41,6 @@ function _applyPlanChanges(): void {
   } else {
     console.log(`Invalid input! Please choose 'y' or 'n'`);
   }
-
-  // shell.exec('rm config.json');
 }
 
 export { run };

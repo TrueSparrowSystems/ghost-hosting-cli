@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as readlineSyc from "readline-sync";
-import { Command } from 'commander';
+import { Command, Argument } from 'commander';
 const command = new Command();
 
 const yes = 'y';
@@ -119,24 +119,31 @@ class GetInput {
     _parseArguments() {
         command.allowUnknownOption();
 
-        command.option(
+        command
+        .addArgument(new Argument('<name>', 'Action arguements').choices(['setup', 'deploy', 'destroy']))
+        .option(
             '--aws-access-key-id <awsAccessKeyId>',
             'AWS Access Key Id'
-        ).parse(process.argv);
-
-        command.option(
+        )
+        .option(
             '--aws-secret-access-key <awsSecretAccessKey>',
             'AWS Secret Access Key'
-        ).parse(process.argv);
-
-        command.option(
+        )
+        .option(
             '--aws-region <awsRegion>',
             'AWS Default Region'
-        ).parse(process.argv);
+        )
+        .action(function(arg, opts){
+            console.log('----------- arg: ', arg);
+            console.log('----------- opts: ', opts);
+            console.log('----------- help: ', command.helpInformation());
+            options.accessKeyId = opts.awsAccessKeyId;
+            options.secretAccessKey = opts.awsSecretAccessKey;
+            options.region = opts.awsRegion;
+        })
+        .parse();
 
-        options.accessKeyId = command.opts().awsAccessKeyId;
-        options.secretAccessKey = command.opts().awsSecretAccessKey;
-        options.region = command.opts().awsRegion;
+        console.log('----------- options: ', options);
     }
 
     _getVpcConfigurations(): void {
