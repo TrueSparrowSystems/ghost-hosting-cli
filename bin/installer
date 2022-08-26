@@ -1,6 +1,0 @@
-#!/usr/bin/env node
-
-require('ts-node').register();
-
-const { run } = require('../src/driver.ts');
-run();

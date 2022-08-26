@@ -13,7 +13,7 @@
     "test:watch": "jest --watch",
     "upgrade": "npm i cdktf@latest cdktf-cli@latest",
     "upgrade:next": "npm i cdktf@next cdktf-cli@next",
-    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
+    "format": "prettier --write \"src/*\"",
     "lint": "tslint -p tsconfig.json"
   },
   "repository": {
@@ -56,6 +56,6 @@
     "build/**/*"
   ],
   "bin": {
-    "plg-gh": "./bin/installer"
+    "plg-ghost": "./bin/run"
   }
 }

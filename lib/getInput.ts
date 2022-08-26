@@ -14,6 +14,7 @@ const USER_CONFIGS = {
     alb: {},
     rds: {}
 };
+const CONFIG_FILE = 'config.json';
 
 interface Options {
     accessKeyId: string,
@@ -88,9 +89,9 @@ export class GetInput {
     _hasPreviousConfigInFile(): boolean {
         let configData: any;
         try {
-            configData = require('../config.json');
+            configData = require(`../${CONFIG_FILE}`);
         } catch(err) {
-            console.log('Error: ', err);
+            // console.log('Error: ', err);
         } finally {
             configData = configData || {};
         }
@@ -339,7 +340,7 @@ export class GetInput {
             });
         }
 
-        fs.writeFileSync('config.json', JSON.stringify(USER_CONFIGS, null, 4));
+        fs.writeFileSync(CONFIG_FILE, JSON.stringify(USER_CONFIGS, null, 4));
     }
 }
 
