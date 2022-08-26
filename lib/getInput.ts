@@ -56,13 +56,13 @@ const options: Options = {
     rdsDbPassword: ''
 };
 
-export class GetInput {
+class GetInput {
     constructor() {
         // Do nothing
     }
 
     perform() {
-        // TODO: if file already exists, consider values from file otherwise ask for input
+        // if file already exists, consider values from file otherwise ask for input
         if(this._hasPreviousConfigInFile()){
             if(this._usePreviousConfigData()){
                 return;
@@ -98,8 +98,8 @@ export class GetInput {
 
         let pass = true;
         for (const key in configData) {
-            if(!['hostStaticWebsite', 'staticWebsiteUrl'].includes(key)){
-                if(!configData.hasOwnProperty(key)){
+            if(!['staticWebsiteUrl'].includes(key)){
+                if(!Object.prototype.hasOwnProperty.call(configData, key)){
                     pass = false;
                     break;
                 }
@@ -344,4 +344,4 @@ export class GetInput {
     }
 }
 
-module.exports = GetInput;
+export { GetInput };

@@ -1,18 +1,19 @@
 import * as shell from 'shelljs';
 import * as readlineSync from 'readline-sync';
-const cdktfExec = './node_modules/.bin/cdktf';
+// const cdktfExec = './node_modules/.bin/cdktf';
+import { GetInput } from '../lib/getInput';
 
 function run(): void {
   _getUserInput();
 
-  // _installProvidersAndModules();
+  _installProvidersAndModules();
 
   _applyPlanChanges();
 }
 
 function _getUserInput(): void {
-  const getInput = require('../lib/getInput');
-  new getInput().perform();
+  // const getInput = require('../lib/getInput');
+  new GetInput().perform();
 }
 
 function _installProvidersAndModules(): void {
@@ -23,7 +24,7 @@ function _installProvidersAndModules(): void {
 }
 
 function _applyPlanChanges(): void {
-  if (shell.exec(`${cdktfExec} diff`).code !== 0) {
+  if (shell.exec('npm run diff').code !== 0) {
     shell.echo('Error: cdktf exec failed');
     shell.exit(1);
   }
@@ -32,7 +33,7 @@ function _applyPlanChanges(): void {
   const approve = readlineSync.question('Do you want to approve?(y/n) (Applies the changes outlined in the plan): ');
 
   if (approve === 'y') {
-    if (shell.exec(`${cdktfExec} deploy --auto-approve`).code !== 0) {
+    if (shell.exec('npm run auto-deploy').code !== 0) {
       shell.echo('Error: cdktf deploy failed');
       shell.exit(1);
     }
