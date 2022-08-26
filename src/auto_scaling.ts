@@ -39,7 +39,7 @@ class AutoScaling extends Resource {
         return new AppautoscalingTarget(this, "auto-scaling-target", {
             maxCapacity: 9,
             minCapacity: 1,
-            resourceId: `service/${ecsConfig.nameIdentifier}/${ecsConfig.nameIdentifier}`,
+            resourceId: `service/${ecsConfig.clusterName}/${this.options.ecsService.name}`,
             scalableDimension: "ecs:service:DesiredCount",
             serviceNamespace: "ecs",
             roleArn: this.options.autoScaleRoleArn,
