@@ -7,7 +7,11 @@ import { DataAwsRoute53Zone, Route53Record } from "../.gen/providers/aws/route53
 import { getRootDomainFromUrl } from "../lib/util";
 
 interface Options {
-    ghostHostingUrl: string
+    ghostHostingUrl: string;
+}
+
+interface Response {
+    certificateArn: string;
 }
 
 const plgTags = {
@@ -29,7 +33,7 @@ class AcmResource extends Resource {
     /**
      * @dev Main performer of the class
      */
-    perform() {
+    perform(): Response {
         const rootDomain = getRootDomainFromUrl(this.options.ghostHostingUrl) || '';
 
         const cert = this._createCertificate(rootDomain);
@@ -40,7 +44,7 @@ class AcmResource extends Resource {
 
         this._validateAcmCertificate(cert, fqdns);
 
-        return cert.arn
+        return { certificateArn: cert.arn }
     }
 
     /**

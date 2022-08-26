@@ -20,6 +20,11 @@ interface Options {
     staticWebsiteUrl: string | undefined;
 }
 
+interface Response {
+    ghostEnvUpload: S3Object;
+    nginxEnvUpload: S3Object;
+}
+
 const GHOST_ENV_FILE_NAME = "ghost";
 const NGINX_ENV_FILE_NAME = "nginx";
 
@@ -38,7 +43,7 @@ class S3Upload extends Resource {
     /**
      * Main performer of the class.
      */
-    perform() {
+    perform(): Response {
         const ghostEnvFileContent = this._getGhostEnvFileContent();
 
         const ghostEnvUpload = this._uploadFileToBucket(ghostEnvFileContent, GHOST_ENV_FILE_NAME);
@@ -51,26 +56,28 @@ class S3Upload extends Resource {
     }
 
     _getGhostEnvFileContent() {
-        return `database__client=mysql\n` + 
-        `database__connection__host=${this.options.rdsDbHost}\n`+
-        `database__connection__user=${this.options.rdsDbUserName}\n`+
-        `database__connection__password=${this.options.rdsDbPassword}\n`+
-        `database__connection__database=${this.options.rdsDbName}\n`+
-        `storage__s3__bucket=${this.options.blogBucket.bucket}\n`+
-        `storage__s3__region=${this.options.region}\n`+
-        `storage__s3__pathPrefix=blog/images\n`+
-        `storage__s3__acl=public-read\n`+
-        `storage__s3__forcePathStyle=true\n`+
-        `storage__active=s3\n`+
+        return `database__client=mysql\n` +
+        `database__connection__host=${this.options.rdsDbHost}\n` +
+        `database__connection__user=${this.options.rdsDbUserName}\n` +
+        `database__connection__password=${this.options.rdsDbPassword}\n` +
+        `database__connection__database=${this.options.rdsDbName}\n` +
+        `storage__s3__bucket=${this.options.blogBucket.bucket}\n` +
+        `storage__s3__region=${this.options.region}\n` +
+        `storage__s3__pathPrefix=blog/images\n` +
+        `storage__s3__acl=public-read\n` +
+        `storage__s3__forcePathStyle=true\n` +
+        `storage__active=s3\n` +
         `url=${this.options.ghostHostingUrl}`;
     }
 
     _getNginxEnvFileContent() {
         const hostingDomain = getDomainFromUrl(this.options.ghostHostingUrl);
-        const staticWebsiteDomain = this.options.staticWebsiteUrl ? getDomainFromUrl(this.options.staticWebsiteUrl) : '127.0.0.1';
-        let fileContent = `GHOST_SERVER_NAME=${hostingDomain}\n`+
-        `GHOST_STATIC_SERVER_NAME=${staticWebsiteDomain}\n`+
-        `PROXY_PASS_HOST=127.0.0.1\n`+
+        const staticWebsiteDomain = this.options.staticWebsiteUrl
+            ? getDomainFromUrl(this.options.staticWebsiteUrl)
+            : '127.0.0.1';
+        let fileContent = `GHOST_SERVER_NAME=${hostingDomain}\n` +
+        `GHOST_STATIC_SERVER_NAME=${staticWebsiteDomain}\n` +
+        `PROXY_PASS_HOST=127.0.0.1\n` +
         `PROXY_PASS_PORT=${ecsConfig.ghostContainerPort}`;
 
         if (this.options.hostStaticWebsite) {

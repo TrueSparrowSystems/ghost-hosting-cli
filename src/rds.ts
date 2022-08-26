@@ -7,13 +7,21 @@ import { Password } from "../.gen/providers/random";
 const rdsConfig = require("../config/rds.json");
 
 interface Options {
-    vpcId: string,
-    vpcSubnets: string[],
-    useExistingRds: boolean,
-    rdsHost: string | undefined,
-    rdsDbUserName: string | undefined,
-    rdsDbPassword: string | undefined,
-    rdsDbName: string | undefined
+    vpcId: string;
+    vpcSubnets: string[];
+    useExistingRds: boolean;
+    rdsHost: string | undefined;
+    rdsDbUserName: string | undefined;
+    rdsDbPassword: string | undefined;
+    rdsDbName: string | undefined;
+}
+
+interface Response {
+    rdsHost: string;
+    rdsDbUserName: string;
+    rdsDbPassword: string;
+    rdsDbName: string;
+    rdsSecurityGroupId: string;
 }
 
 const plgTags = {
@@ -41,16 +49,20 @@ class RdsResource extends Resource {
     /**
      * Main performer of the class.
      */
-    perform(): any {
-        let responseData = {
-            rdsHost: this.options.rdsHost,
-            rdsDbUserName: this.options.rdsDbUserName,
-            rdsDbPassword: this.options.rdsDbPassword,
-            rdsDbName: this.options.rdsDbName,
+    perform(): Response {
+        const responseData = {
+            rdsHost: this.options.rdsHost || '',
+            rdsDbUserName: this.options.rdsDbUserName || '',
+            rdsDbPassword: this.options.rdsDbPassword || '',
+            rdsDbName: this.options.rdsDbName || '',
             rdsSecurityGroupId: ''
         };
 
-        if(!this.options.useExistingRds){
+        if (this.options.useExistingRds) {
+            return responseData;
+        }
+
+        if (!this.options.useExistingRds) {
             const nameIdentifier = 'plg-ghost';
 
             const rdsSg = new SecurityGroup(this, "rds_sg", {
@@ -79,7 +91,6 @@ class RdsResource extends Resource {
                 }
             });
 
-            // TODO: ask user for - whether existing RDS instance or use from rds config
             const rdsOptions = {
                 identifier: nameIdentifier,
                 family: "mysql8.0",
@@ -113,8 +124,8 @@ class RdsResource extends Resource {
             responseData.rdsHost = rds.dbInstanceAddressOutput;
             responseData.rdsDbUserName = rdsConfig.dbUserName;
             responseData.rdsDbPassword = password.result;
-            responseData.rdsDbName = rdsConfig.dbName
-            responseData.rdsSecurityGroupId = rdsSg.id
+            responseData.rdsDbName = rdsConfig.dbName;
+            responseData.rdsSecurityGroupId = rdsSg.id;
         }
 
         return responseData

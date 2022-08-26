@@ -4,12 +4,17 @@ import { SecurityGroup } from "../.gen/providers/aws/vpc";
 import { Alb, AlbListener, DataAwsLb, DataAwsLbListener } from "../.gen/providers/aws/elb";
 
 interface Options {
-    vpcId: string,
-    publicSubnets: string[],
-    useExistingAlb: boolean,
-    isConfiguredDomain: boolean,
-    listenerArn: string | undefined,
-    certificateArn: string | undefined
+    vpcId: string;
+    publicSubnets: string[];
+    useExistingAlb: boolean;
+    isConfiguredDomain: boolean;
+    listenerArn: string | undefined;
+    certificateArn: string | undefined;
+}
+
+interface Response {
+    albSecurityGroups: string[];
+    listenerArn: string;
 }
 
 const plgTags = {
@@ -31,7 +36,7 @@ class AlbResource extends Resource {
     /**
      * Main performer.
      */
-    perform() {
+    perform(): Response {
         let listenerArn: string;
         if (this.options.listenerArn) {
             listenerArn = this.options.listenerArn;

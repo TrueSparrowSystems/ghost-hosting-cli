@@ -6,8 +6,14 @@ import { S3Bucket } from "../.gen/providers/aws/s3";
 const ecsConfig = require("../config/ecs.json");
 
 interface Options {
-    blogBucket: S3Bucket,
-    configsBucket: S3Bucket
+    blogBucket: S3Bucket;
+    configsBucket: S3Bucket;
+}
+
+interface Response {
+    customExecutionRoleArn: string;
+    customTaskRoleArn: string;
+    ecsAutoScalingRoleArn: string;
 }
 
 /**
@@ -22,7 +28,7 @@ class IamResource extends Resource {
         this.options = options;
     }
 
-    perform() {
+    perform(): Response {
         const customExecutionRoleArn = this._ecsExecutionCustom();
 
         const customTaskRoleArn = this._ecsTaskCustom();

@@ -66,7 +66,7 @@ class GhostStack extends TerraformStack {
 
         this._createRdsInstance();
 
-        const certificateArn = this._createAcmCertificate();
+        const { certificateArn } = this._createAcmCertificate();
 
         const { blogBucket, staticBucket, configsBucket } = this._createS3Buckets();
 
@@ -87,7 +87,7 @@ class GhostStack extends TerraformStack {
             configsBucket
         );
 
-        const ecsService = this._createEcs(
+        const { ecsService } = this._createEcs(
             albSecurityGroups,
             listenerArn,
             customExecutionRoleArn,
@@ -194,7 +194,7 @@ class GhostStack extends TerraformStack {
 
     _createAcmCertificate() {
         if (this.userInput.alb.useExistingAlb) {
-            return;
+            return { certificateArn: ''};
         }
 
         return new AcmResource(this, "plg-gh-acm", {

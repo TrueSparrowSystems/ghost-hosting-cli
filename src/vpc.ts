@@ -9,9 +9,15 @@ import { getPrivateSubnetCidrBlocks, getPublicSubnetCidrBlocks } from "../lib/ut
 const vpcConfig = require("../config/vpc.json");
 
 interface Options {
-    useExistingVpc: boolean,
-    vpcSubnets: string[],
-    vpcPublicSubnets: string[]
+    useExistingVpc: boolean;
+    vpcSubnets: string[];
+    vpcPublicSubnets: string[];
+}
+
+interface Response {
+    vpcId: string;
+    vpcSubnets: string[];
+    vpcPublicSubnets: string[];
 }
 
 interface Response {
@@ -94,7 +100,8 @@ class VpcResource extends Resource {
         zones: DataAwsAvailabilityZones
     ): Response {
         let vpcId, vpcSubnets, vpcPublicSubnets: string[];
-        if(this.options.useExistingVpc){
+
+        if (this.options.useExistingVpc) {
             const subnetData = new DataAwsSubnet(this, 'subnet', {
                 id: this.options.vpcSubnets[0]
             });

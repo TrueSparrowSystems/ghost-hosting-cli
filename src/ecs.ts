@@ -1,6 +1,6 @@
-import {Resource, Fn, TerraformOutput} from "cdktf";
+import { Resource, Fn, TerraformOutput } from "cdktf";
 import { Construct } from "constructs";
-import { IamInstanceProfile, IamPolicy, IamRole, IamRolePolicyAttachment} from "../.gen/providers/aws/iam";
+import { IamInstanceProfile, IamPolicy, IamRole, IamRolePolicyAttachment } from "../.gen/providers/aws/iam";
 import { DataAwsAmi, Instance } from "../.gen/providers/aws/ec2";
 import {
     EcsCluster,
@@ -21,19 +21,23 @@ const plgTags = {
 };
 
 interface Options {
-    vpcId: string
-    subnets: string[]
-    dbInstanceEndpoint: string
-    albSecurityGroups: string[]
-    listenerArn: string
-    rdsSecurityGroupId: string
-    customExecutionRoleArn: string
-    customTaskRoleArn: string
-    configBucket: S3Bucket
-    ghostEnvUpload: S3Object
-    nginxEnvUpload: S3Object
-    ghostHostingUrl: string
-    staticWebsiteUrl: string | undefined
+    vpcId: string;
+    subnets: string[];
+    dbInstanceEndpoint: string;
+    albSecurityGroups: string[];
+    listenerArn: string;
+    rdsSecurityGroupId: string;
+    customExecutionRoleArn: string;
+    customTaskRoleArn: string;
+    configBucket: S3Bucket;
+    ghostEnvUpload: S3Object;
+    nginxEnvUpload: S3Object;
+    ghostHostingUrl: string;
+    staticWebsiteUrl: string | undefined;
+}
+
+interface Response {
+    ecsService: EcsService;
 }
 
 /**
@@ -51,7 +55,7 @@ class EcsResource extends Resource {
     /**
      * Main performer.
      */
-    perform() {
+    perform(): Response {
         // const instanceProfile = this._performEcsInstanceRoleAndProfile();
 
         this._createLogGroup();
@@ -72,7 +76,9 @@ class EcsResource extends Resource {
 
         const ecsTaskDefinition = this._createEcsTaskDefinition();
 
-        return this._createEcsService(ecsCluster, ecsTaskDefinition, ecsSg, targetGroup);
+        const ecsService = this._createEcsService(ecsCluster, ecsTaskDefinition, ecsSg, targetGroup);
+
+        return { ecsService };
     }
 
     /**

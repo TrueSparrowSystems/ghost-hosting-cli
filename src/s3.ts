@@ -6,8 +6,14 @@ import { StringResource } from "../.gen/providers/random";
 const s3Config = require("../config/s3.json");
 
 interface Options {
-    vpcId: string
-    ghostHostingUrl: string
+    vpcId: string;
+    ghostHostingUrl: string;
+}
+
+interface Response {
+    blogBucket: S3Bucket;
+    staticBucket: S3Bucket;
+    configsBucket: S3Bucket;
 }
 
 /**
@@ -25,7 +31,7 @@ class S3Resource extends Resource {
     /**
      * Main performer of the class.
      */
-    perform() {
+    perform(): Response {
         const randomString = this._generateRandomSuffix();
 
         const blogBucket = this._createBlogAssetBucket(randomString);
