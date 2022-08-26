@@ -23,14 +23,16 @@ class IamResource extends Resource {
     }
 
     perform() {
-        const customExecutionRole: IamRole = this._ecsExecutionCustom();
+        const customExecutionRoleArn = this._ecsExecutionCustom();
 
-        const customTaskRole: IamRole = this._ecsTaskCustom();
+        const customTaskRoleArn = this._ecsTaskCustom();
 
-        return { customExecutionRole, customTaskRole };
+        const ecsAutoScalingRoleArn = this._ecsAutoScalingRole();
+
+        return { customExecutionRoleArn, customTaskRoleArn, ecsAutoScalingRoleArn };
     }
 
-    _ecsExecutionCustom(): IamRole {
+    _ecsExecutionCustom(): string {
         // Create policy
         const policy = new IamPolicy(this, "ecs-execution-custom", {
             name: `ECS_TASK_EXECUTION_CUSTOM_${ecsConfig.nameIdentifier}`,
@@ -103,10 +105,10 @@ class IamResource extends Resource {
             policyArn: "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
         });
 
-        return role;
+        return role.arn;
     }
 
-    _ecsTaskCustom(): IamRole {
+    _ecsTaskCustom(): string {
         // Create policy
         const policy = new IamPolicy(this, "ecs-task-custom", {
             name: `ECS_TASK_${ecsConfig.nameIdentifier}`,
@@ -173,7 +175,33 @@ class IamResource extends Resource {
             policyArn: policy.arn
         });
 
-        return role;
+        return role.arn;
+    }
+
+    _ecsAutoScalingRole(): string {
+        const role = new IamRole(this, "ecs-auto-scaling-role", {
+            name: `ECS_TASK_AUTOSCALE_${ecsConfig.nameIdentifier}`,
+            assumeRolePolicy: Fn.jsonencode({
+                Version: "2012-10-17",
+                Statement: [
+                    {
+                        Action: "sts:AssumeRole",
+                        Effect: "Allow",
+                        Sid: "",
+                        Principal: {
+                            Service: "application-autoscaling.amazonaws.com"
+                        }
+                    }
+                ]
+            })
+        });
+
+        new IamRolePolicyAttachment(this, "ecs-auto-scaling-role-attachment", {
+            role: role.name,
+            policyArn: ecsConfig.amazonEC2ContainerServiceAutoscaleRole
+        });
+
+        return role.arn;
     }
 }
 

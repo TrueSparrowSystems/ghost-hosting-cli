@@ -72,7 +72,7 @@ class EcsResource extends Resource {
 
         const ecsTaskDefinition = this._createEcsTaskDefinition();
 
-        this._createEcsService(ecsCluster, ecsTaskDefinition, ecsSg, targetGroup);
+        return this._createEcsService(ecsCluster, ecsTaskDefinition, ecsSg, targetGroup);
     }
 
     /**

@@ -14,5 +14,6 @@
   "ghostImageUri": "public.ecr.aws/j0d2y7t1/ghost:5.7.0-alpine",
   "nginxImageUri": "public.ecr.aws/j0d2y7t1/nginx:1.23.1",
   "clusterName": "plg-gh-cluster",
-  "amazonECSTaskExecutionRolePolicy": "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+  "amazonECSTaskExecutionRolePolicy": "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
+  "amazonEC2ContainerServiceAutoscaleRole":"arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole"
 }

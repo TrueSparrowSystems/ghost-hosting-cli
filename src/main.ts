@@ -10,10 +10,12 @@ import { S3Resource } from "./s3";
 import { IamResource } from "./iam";
 import { AcmResource } from "./acm";
 import { S3Upload } from "./s3_upload";
+import { AutoScaling } from "./auto_scaling"
 
 import { S3Bucket, S3Object } from "../.gen/providers/aws/s3";
 import { RandomProvider } from "../.gen/providers/random";
 import { LocalProvider } from "../.gen/providers/local";
+import { EcsService } from "../.gen/providers/aws/ecs";
 
 import { readInput } from "../lib/readInput";
 
@@ -64,7 +66,6 @@ class GhostStack extends TerraformStack {
 
         this._createRdsInstance();
 
-        // TODO: conditional based on listener arn
         const certificateArn = this._createAcmCertificate();
 
         const { blogBucket, staticBucket, configsBucket } = this._createS3Buckets();
@@ -77,20 +78,26 @@ class GhostStack extends TerraformStack {
 
         const { albSecurityGroups, listenerArn } = this._createAlb(certificateArn);
 
-        const { customExecutionRole, customTaskRole } = this._createIamRolePolicies(
+        const {
+            customExecutionRoleArn,
+            customTaskRoleArn,
+            ecsAutoScalingRoleArn
+        } = this._createIamRolePolicies(
             blogBucket,
             configsBucket
         );
 
-        this._createEcs(
+        const ecsService = this._createEcs(
             albSecurityGroups,
             listenerArn,
-            customExecutionRole.arn,
-            customTaskRole.arn,
+            customExecutionRoleArn,
+            customTaskRoleArn,
             configsBucket,
             ghostEnvUpload,
             nginxEnvUpload
         );
+
+        this._autoScale(ecsService, ecsAutoScalingRoleArn);
     }
 
     /**
@@ -258,6 +265,19 @@ class GhostStack extends TerraformStack {
             nginxEnvUpload,
             ghostHostingUrl: this.userInput.ghostHostingUrl,
             staticWebsiteUrl: this.userInput.staticWebsiteUrl
+        }).perform();
+    }
+
+    /**
+     * @dev Auto scale
+     * @param ecsService
+     * @param ecsAutoScalingRoleArn
+     * @private
+     */
+    _autoScale(ecsService: EcsService, ecsAutoScalingRoleArn: string) {
+        return new AutoScaling(this, "auto-scale", {
+            ecsService,
+            autoScaleRoleArn: ecsAutoScalingRoleArn
         }).perform();
     }
 }
