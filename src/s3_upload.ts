@@ -25,8 +25,8 @@ interface Response {
   nginxEnvUpload: S3Object;
 }
 
-const GHOST_ENV_FILE_NAME = 'ghost';
-const NGINX_ENV_FILE_NAME = 'nginx';
+const GHOST_ENV_FILE_NAME = ecsConfig.ghostContainerName + '.env';
+const NGINX_ENV_FILE_NAME = ecsConfig.nginxContainerName + '.env';
 
 /**
  * Class to create required s3 buckets.
@@ -95,7 +95,7 @@ class S3Upload extends Resource {
     const identifier = 'plg-gh-' + filename + '-configs';
 
     return new S3Object(this, identifier, {
-      key: filename + '.env',
+      key: filename,
       bucket: this.options.configsBucket.bucket,
       acl: 'private',
       content: fileContent,

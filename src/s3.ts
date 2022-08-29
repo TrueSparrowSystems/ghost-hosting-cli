@@ -1,4 +1,4 @@
-import { Resource, TerraformOutput } from 'cdktf';
+import { Resource } from 'cdktf';
 import { Construct } from 'constructs';
 import { S3Bucket, S3BucketAcl, S3BucketWebsiteConfiguration } from '../.gen/providers/aws/s3';
 import { StringResource } from '../.gen/providers/random';
@@ -58,10 +58,6 @@ class S3Resource extends Resource {
       keepers: {
         vpc_id: this.options.vpcId,
       },
-    });
-
-    new TerraformOutput(this, 'random_string_s3', {
-      value: stringResource.result,
     });
 
     return stringResource.result;

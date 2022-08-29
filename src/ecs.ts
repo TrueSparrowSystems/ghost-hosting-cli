@@ -9,6 +9,9 @@ import { getDomainFromUrl, getPathSuffixFromUrl } from '../lib/util';
 
 import ecsConfig from '../config/ecs.json';
 
+const GHOST_ENV_FILE_NAME = ecsConfig.ghostContainerName + '.env';
+const NGINX_ENV_FILE_NAME = ecsConfig.nginxContainerName + '.env';
+
 const plgTags = {
   Name: 'PLG Ghost',
 };
@@ -220,9 +223,9 @@ class EcsResource extends Resource {
   }
 
   _getGhostContainerDefinition(): any {
-    const envFileArn = `arn:aws:s3:::${this.options.configBucket.bucket}/ghost.env`;
+    const envFileArn = `arn:aws:s3:::${this.options.configBucket.bucket}/${GHOST_ENV_FILE_NAME}`;
 
-    new TerraformOutput(this, 'ecs-env-file-arn', {
+    new TerraformOutput(this, 'ghost_env_file_arn', {
       value: envFileArn,
     });
 
@@ -233,12 +236,6 @@ class EcsResource extends Resource {
       portMappings: [
         {
           containerPort: ecsConfig.ghostContainerPort,
-        },
-      ],
-      mountPoints: [
-        {
-          containerPath: '/var/lib/ghost/content',
-          sourceVolume: 'ghost',
         },
       ],
       environmentFiles: [
@@ -265,9 +262,9 @@ class EcsResource extends Resource {
    * @private
    */
   _getNginxContainerDefinition(): any {
-    const envFileArn = `arn:aws:s3:::${this.options.configBucket.bucket}/nginx.env`;
+    const envFileArn = `arn:aws:s3:::${this.options.configBucket.bucket}/${NGINX_ENV_FILE_NAME}`;
 
-    new TerraformOutput(this, 'nginx-env-file-arn', {
+    new TerraformOutput(this, 'nginx_env_file_arn', {
       value: envFileArn,
     });
 

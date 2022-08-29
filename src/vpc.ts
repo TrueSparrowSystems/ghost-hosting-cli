@@ -1,4 +1,4 @@
-import { Fn, Resource, TerraformOutput } from 'cdktf';
+import { Fn, Resource } from 'cdktf';
 import { Construct } from 'constructs';
 
 import { Vpc } from '../.gen/modules/vpc';
@@ -70,14 +70,6 @@ class VpcResource extends Resource {
   _getZones(): DataAwsAvailabilityZones {
     const zones = new DataAwsAvailabilityZones(this, 'zones', {
       state: 'available',
-    });
-
-    new TerraformOutput(this, 'first_zone', {
-      value: Fn.element(zones.names, 0),
-    });
-
-    new TerraformOutput(this, 'second_zone', {
-      value: Fn.element(zones.names, 1),
     });
 
     return zones;
