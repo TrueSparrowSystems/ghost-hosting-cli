@@ -185,6 +185,7 @@ class GhostStack extends TerraformStack {
     return new S3Resource(this, 'plg-gh-s3', {
       vpcId: this.vpcId,
       ghostHostingUrl: this.userInput.ghostHostingUrl,
+      region: this.userInput.aws.region
     }).perform();
   }
 
@@ -256,6 +257,7 @@ class GhostStack extends TerraformStack {
       ghostEnvUpload,
       nginxEnvUpload,
       ghostHostingUrl: this.userInput.ghostHostingUrl,
+      region: this.userInput.aws.region,
       staticWebsiteUrl: this.userInput.staticWebsiteUrl,
     }).perform();
   }

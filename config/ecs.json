@@ -5,7 +5,7 @@
   "nginxContainerName": "nginx",
   "nginxContainerPort": 8080,
   "logGroupName": "plg/ghost",
-  "logGroupRegion": "us-east-1",
+
   "logStreamPrefix": "ecs",
   "taskDefinition": {
     "memory": "1024",

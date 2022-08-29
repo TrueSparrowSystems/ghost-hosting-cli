@@ -29,6 +29,7 @@ interface Options {
   ghostEnvUpload: S3Object;
   nginxEnvUpload: S3Object;
   ghostHostingUrl: string;
+  region: string;
   staticWebsiteUrl: string | undefined;
 }
 
@@ -249,8 +250,8 @@ class EcsResource extends Resource {
         secretOptions: null,
         options: {
           'awslogs-group': ecsConfig.logGroupName,
-          'awslogs-region': ecsConfig.logGroupRegion,
-          'awslogs-stream-prefix': ecsConfig.logStreamPrefix,
+          'awslogs-region': this.options.region,
+          'awslogs-stream-prefix': ecsConfig.logStreamPrefix
         },
       },
     };
@@ -298,8 +299,8 @@ class EcsResource extends Resource {
         secretOptions: null,
         options: {
           'awslogs-group': ecsConfig.logGroupName,
-          'awslogs-region': 'us-east-1',
-          'awslogs-stream-prefix': 'ecs',
+          'awslogs-region': this.options.region,
+          'awslogs-stream-prefix': ecsConfig.logStreamPrefix
         },
       },
     };

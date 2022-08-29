@@ -8,6 +8,7 @@ import s3Config from '../config/s3.json';
 interface Options {
   vpcId: string;
   ghostHostingUrl: string;
+  region: string;
 }
 
 interface Response {
