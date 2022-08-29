@@ -170,7 +170,6 @@ class GhostStack extends TerraformStack {
       vpcId: this.vpcId,
       publicSubnets: this.vpcPublicSubnets,
       useExistingAlb: this.userInput.alb.useExistingAlb,
-      isConfiguredDomain: this.userInput.alb.isConfiguredDomain,
       listenerArn: this.userInput.alb.listenerArn,
       certificateArn,
     }).perform();

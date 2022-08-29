@@ -15,6 +15,7 @@ const USER_CONFIGS = {
     rds: {}
 };
 const CONFIG_FILE = 'config.json';
+const ALLOWED_ACTIONS = ['setup', 'deploy', 'destroy'];
 
 interface Options {
     accessKeyId: string,
@@ -27,7 +28,6 @@ interface Options {
     vpcSubnets: string,
     vpcPublicSubnets: string,
     useExistingAlb: string,
-    isConfiguredDomain: string,
     listenerArn: string,
     useExistingRds: string,
     rdsDbName: string,
@@ -48,7 +48,6 @@ const options: Options = {
     hostStaticWebsite: '',
     listenerArn: '',
     useExistingAlb: '',
-    isConfiguredDomain: '',
     staticWebsiteUrl: '',
     rdsDbName: '',
     rdsHost: '',
@@ -88,8 +87,9 @@ class GetInput {
 
     _hasPreviousConfigInFile(): boolean {
         let configData: any;
+        console.log('cwd: ', process.cwd());
         try {
-            configData = require(`../${CONFIG_FILE}`);
+            configData = require(`${process.cwd()}/${CONFIG_FILE}`);
         } catch(err) {
             // console.log('Error: ', err);
         } finally {
@@ -120,7 +120,7 @@ class GetInput {
         command.allowUnknownOption();
 
         command
-        .addArgument(new Argument('<name>', 'Action arguements').choices(['setup', 'deploy', 'destroy']))
+        .addArgument(new Argument('<name>', 'Action arguements').choices(ALLOWED_ACTIONS))
         .option(
             '--aws-access-key-id <awsAccessKeyId>',
             'AWS Access Key Id'
@@ -134,16 +134,18 @@ class GetInput {
             'AWS Default Region'
         )
         .action(function(arg, opts){
-            console.log('----------- arg: ', arg);
-            console.log('----------- opts: ', opts);
-            console.log('----------- help: ', command.helpInformation());
+            if(!ALLOWED_ACTIONS.includes(arg)) {
+                console.error('Invalid action argument : ', arg);
+                process.exit(1);
+            }
+            // console.log('----------- help: ', command.helpInformation());
             options.accessKeyId = opts.awsAccessKeyId;
             options.secretAccessKey = opts.awsSecretAccessKey;
             options.region = opts.awsRegion;
         })
         .parse();
 
-        console.log('----------- options: ', options);
+        // console.log('----------- options: ', options);
     }
 
     _getVpcConfigurations(): void {
@@ -220,10 +222,10 @@ class GetInput {
                 options.vpcPublicSubnets = readlineSyc.question("Provide VPC Public Subnets to launch ALB [comma separated values, atleast 2 subnets required] : ");
                 this._validateInputStringOption(options.vpcSubnets, 'Invalid VPC Public Subnets.');
             }
-            options.isConfiguredDomain = readlineSyc.question("Do you have Route53 configured for the domain in the same AWS account? [Else the SSL certification verification will fail] (Y/n) : ", {defaultInput: yes});
-            this._validateInputBooleanOption(options.isConfiguredDomain);
+            const hasDomainConfiguredInRoute53 = readlineSyc.question("Do you have Route53 configured for the domain in the same AWS account? [Else the SSL certification verification will fail] (Y/n) : ", {defaultInput: yes});
+            this._validateInputBooleanOption(hasDomainConfiguredInRoute53);
 
-            if (options.isConfiguredDomain === no) {
+            if (hasDomainConfiguredInRoute53 === no) {
                 console.log('Cannot proceed further!');
                 process.exit(0);
             }
@@ -323,8 +325,7 @@ class GetInput {
 
         // Add alb inputs
         USER_CONFIGS[`alb`] = {
-            useExistingAlb: options.useExistingAlb === yes,
-            isConfiguredDomain: options.isConfiguredDomain === yes
+            useExistingAlb: options.useExistingAlb === yes
         };
 
         if(options.useExistingAlb === yes){

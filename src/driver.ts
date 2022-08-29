@@ -6,7 +6,7 @@ import { GetInput } from '../lib/getInput';
 function run(): void {
   _getUserInput();
 
-  _installProvidersAndModules();
+  // _installProvidersAndModules();
 
   _applyPlanChanges();
 }

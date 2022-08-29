@@ -1,4 +1,4 @@
-build/*
+dist/*
 cdktf.out
 cdktf.log
 terraform.*

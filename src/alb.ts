@@ -7,7 +7,6 @@ interface Options {
   vpcId: string;
   publicSubnets: string[];
   useExistingAlb: boolean;
-  isConfiguredDomain: boolean;
   listenerArn: string | undefined;
   certificateArn: string | undefined;
 }

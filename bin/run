@@ -1,8 +1,0 @@
-#!/usr/bin/env node
-
-// require('ts-node').register();
-
-// const { run } = require('../src/driver.js');
-// run();
-
-require('../build/src/driver.js').run();

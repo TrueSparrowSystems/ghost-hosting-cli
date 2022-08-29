@@ -8,6 +8,7 @@
     "get": "cdktf get",
     "diff": "cdktf diff",
     "auto-deploy": "cdktf deploy --auto-approve",
+    "auto-destroy": "cdktf destroy --auto-approve",
     "synth": "cdktf synth",
     "compile": "tsc --pretty",
     "watch": "cdktf get && tsc -w",
@@ -58,6 +59,6 @@
     "build/**/*"
   ],
   "bin": {
-    "plg-ghost": "./bin/run"
+    "plg-ghost": "./run"
   }
 }
