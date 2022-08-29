@@ -35,12 +35,7 @@ function _deployStack(): void {
 }
 
 function _destroyStack(): void {
-  if (shell.exec('npm run diff').code !== 0) {
-    shell.echo('Error: cdktf exec failed');
-    shell.exit(1);
-  }
-
-  console.log('\nPlease review the above output for DESTROY action.');
+  console.log('\nThis action will destroy the stack.');
   const approve = readlineSync.question('Do you want to approve?(y/n): ');
 
   if (approve === 'y') {
