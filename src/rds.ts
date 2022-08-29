@@ -14,6 +14,7 @@ interface Options {
   rdsDbUserName: string | undefined;
   rdsDbPassword: string | undefined;
   rdsDbName: string | undefined;
+  region: string;
 }
 
 interface Response {
@@ -101,7 +102,7 @@ class RdsResource extends Resource {
         dbName: rdsConfig.dbName,
         username: rdsConfig.dbUserName,
         password: password.result,
-        availabilityZone: rdsConfig.availabilityZone,
+        availabilityZone: `${this.options.region}a`,
         instanceClass: rdsConfig.dbInstanceClass,
         subnetIds: this.options.vpcSubnets,
         parameterGroupName: nameIdentifier,

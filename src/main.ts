@@ -150,6 +150,7 @@ class GhostStack extends TerraformStack {
         rdsDbUserName: this.userInput.rds.rdsDbUserName,
         rdsDbPassword: this.userInput.rds.rdsDbPassword,
         rdsDbName: this.userInput.rds.rdsDbName,
+        region: this.userInput.aws.region
       },
     ).perform();
 
