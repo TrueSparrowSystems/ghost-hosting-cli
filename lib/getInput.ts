@@ -15,7 +15,11 @@ const USER_CONFIGS = {
     rds: {}
 };
 const CONFIG_FILE = 'config.json';
-const ALLOWED_ACTIONS = ['setup', 'deploy', 'destroy'];
+enum ActionType {
+    DEPLOY = 'deploy',
+    DESTROY = 'destroy'
+};
+const ALLOWED_ACTIONS = [ActionType.DEPLOY, ActionType.DESTROY];
 
 interface Options {
     accessKeyId: string,
@@ -55,20 +59,28 @@ const options: Options = {
     rdsDbPassword: ''
 };
 
+interface GetInputResponse {
+    action: string;
+}
+
 class GetInput {
     constructor() {
         // Do nothing
     }
 
-    perform() {
+    perform(): GetInputResponse {
+        const response = this._parseArguments();
+
+        if(response.action === ActionType.DESTROY){
+            return response;
+        }
+        
         // if file already exists, consider values from file otherwise ask for input
         if(this._hasPreviousConfigInFile()){
             if(this._usePreviousConfigData()){
-                return;
+                return response;
             }
         }
-
-        this._parseArguments();
 
         this._getAwsCredentials();
 
@@ -83,6 +95,8 @@ class GetInput {
         this._validateInput();
 
         this._createConfig();
+
+        return response;
     }
 
     _hasPreviousConfigInFile(): boolean {
@@ -116,9 +130,11 @@ class GetInput {
         return useExistingConfig === yes;
     }
 
-    _parseArguments() {
-        command.allowUnknownOption();
+    _parseArguments(): GetInputResponse {
 
+        let mainAction = '';
+
+        command.allowUnknownOption();
         command
         .addArgument(new Argument('<name>', 'Action arguements').choices(ALLOWED_ACTIONS))
         .option(
@@ -138,6 +154,7 @@ class GetInput {
                 console.error('Invalid action argument : ', arg);
                 process.exit(1);
             }
+            mainAction = arg;
             // console.log('----------- help: ', command.helpInformation());
             options.accessKeyId = opts.awsAccessKeyId;
             options.secretAccessKey = opts.awsSecretAccessKey;
@@ -146,6 +163,10 @@ class GetInput {
         .parse();
 
         // console.log('----------- options: ', options);
+
+        return {
+            action: mainAction
+        }
     }
 
     _getVpcConfigurations(): void {
@@ -158,7 +179,7 @@ class GetInput {
         }
     }
 
-    _getAwsCredentials() {
+    _getAwsCredentials(): void {
         if (!options.accessKeyId) {
             options.accessKeyId = readlineSyc.question("AWS access key id : ");
             this._validateInputStringOption(options.accessKeyId);
@@ -175,7 +196,7 @@ class GetInput {
         }
     }
 
-    _getBlogManagementRequirements() {
+    _getBlogManagementRequirements(): void {
         options.ghostHostingUrl = readlineSyc.question("Ghost hosting url : ");
         this._validateInputStringOption(options.ghostHostingUrl);
         // TODO: Validation for HTTPS only
@@ -191,7 +212,7 @@ class GetInput {
         }
     }
 
-    _getRdsRequirements() {
+    _getRdsRequirements(): void {
         options.useExistingRds = readlineSyc.question("Do you want to use existing RDS MySQL instance? (y/N) : ", {defaultInput: no});
         this._validateInputBooleanOption(options.useExistingRds);
 
@@ -209,7 +230,7 @@ class GetInput {
         }
     }
 
-    _getAlbRequirements() {
+    _getAlbRequirements(): void {
         if(options.useExistingVpc === yes){
             options.useExistingAlb = readlineSyc.question("Do you have existing ALB? (y/N) : ", {defaultInput: no});
             this._validateInputBooleanOption(options.useExistingAlb);
@@ -232,7 +253,7 @@ class GetInput {
         }
     }
 
-    _validateInput() {
+    _validateInput(): void {
         // Validate VPC subnets
         if(options.vpcSubnets && options.vpcSubnets.split(',').length < 2){
             this._validateInputStringOption('', 'Atleast 2 VPC Subnets required.');
@@ -290,7 +311,7 @@ class GetInput {
         }
     }
 
-    _createConfig() {
+    _createConfig(): void {
 
         // Add AWS credentials
         USER_CONFIGS[`aws`] = {
@@ -352,4 +373,8 @@ class GetInput {
     }
 }
 
-export { GetInput };
+export { 
+    GetInput, 
+    GetInputResponse, 
+    ActionType 
+};

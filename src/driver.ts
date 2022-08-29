@@ -1,39 +1,51 @@
 import * as shell from 'shelljs';
 import * as readlineSync from 'readline-sync';
 // const cdktfExec = './node_modules/.bin/cdktf';
-import { GetInput } from '../lib/getInput';
+import { GetInput, ActionType } from '../lib/getInput';
 
 function run(): void {
-  _getUserInput();
+  const response = new GetInput().perform();
 
-  // _installProvidersAndModules();
-
-  _applyPlanChanges();
-}
-
-function _getUserInput(): void {
-  new GetInput().perform();
-}
-
-function _installProvidersAndModules(): void {
-  if (shell.exec('npm run get').code !== 0) {
-    shell.echo('Error: Download failed for providers and modules.');
-    process.exit(1);
+  if (response.action === ActionType.DEPLOY) {
+    _deployStack();
+  } else if (response.action === ActionType.DESTROY) {
+    _destroyStack();
   }
 }
 
-function _applyPlanChanges(): void {
+function _deployStack(): void {
   if (shell.exec('npm run diff').code !== 0) {
     shell.echo('Error: cdktf exec failed');
     shell.exit(1);
   }
 
-  console.log('Please review the output above for the ghost hosting.');
-  const approve = readlineSync.question('Do you want to approve?(y/n) (Applies the changes outlined in the plan): ');
+  console.log('Please review the above output for DEPLOY action.');
+  const approve = readlineSync.question('Do you want to approve?(y/n): ');
 
   if (approve === 'y') {
     if (shell.exec('npm run auto-deploy').code !== 0) {
       shell.echo('Error: cdktf deploy failed');
+      shell.exit(1);
+    }
+  } else if (approve === 'n') {
+    console.log('Declined!');
+  } else {
+    console.log(`Invalid input! Please choose 'y' or 'n'`);
+  }
+}
+
+function _destroyStack(): void {
+  if (shell.exec('npm run diff').code !== 0) {
+    shell.echo('Error: cdktf exec failed');
+    shell.exit(1);
+  }
+
+  console.log('\nPlease review the above output for DESTROY action.');
+  const approve = readlineSync.question('Do you want to approve?(y/n): ');
+
+  if (approve === 'y') {
+    if (shell.exec('npm run auto-destroy').code !== 0) {
+      shell.echo('Error: cdktf destroy failed');
       shell.exit(1);
     }
   } else if (approve === 'n') {
