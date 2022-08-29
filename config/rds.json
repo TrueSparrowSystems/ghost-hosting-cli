@@ -2,6 +2,5 @@
   "dbName": "ghost_db",
   "dbUserName": "ghost",
   "dbStorageSizeInGB": "10",
-  "availabilityZone": "us-east-1a",
   "dbInstanceClass": "db.t3.micro"
 }
