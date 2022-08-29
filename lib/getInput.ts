@@ -124,8 +124,8 @@ class GetInput {
     }
 
     _usePreviousConfigData(): boolean {
-        const useExistingConfig = readlineSyc.question("Previous installation \"config.json\" file found, Would you like to use the existing configuration options? [Else it will start from the scratch] (Y/n) : ", {defaultInput: yes});
-        this._validateInputBooleanOption(useExistingConfig);
+        let useExistingConfig = readlineSyc.question("Previous installation \"config.json\" file found, Would you like to use the existing configuration options? [Else it will start from the scratch] (Y/n) : ", {defaultInput: yes});
+        useExistingConfig = this._validateInputBooleanOption(useExistingConfig);
 
         return useExistingConfig === yes;
     }
@@ -136,7 +136,7 @@ class GetInput {
 
         command.allowUnknownOption();
         command
-        .addArgument(new Argument('<name>', 'Action arguements').choices(ALLOWED_ACTIONS))
+        .addArgument(new Argument('<action>', 'Action arguements').choices(ALLOWED_ACTIONS))
         .option(
             '--aws-access-key-id <awsAccessKeyId>',
             'AWS Access Key Id'
@@ -171,7 +171,7 @@ class GetInput {
 
     _getVpcConfigurations(): void {
         options.useExistingVpc = readlineSyc.question("Use existing VPC? (y/N) : ", {defaultInput: no});
-        this._validateInputBooleanOption(options.useExistingVpc);
+        options.useExistingVpc = this._validateInputBooleanOption(options.useExistingVpc);
 
         if (options.useExistingVpc === yes) {
             options.vpcSubnets = readlineSyc.question("Provide VPC Subnets to run ECS tasks [comma separated values, atleast 2 subnets required] : ");
@@ -202,7 +202,7 @@ class GetInput {
         // TODO: Validation for HTTPS only
 
         options.hostStaticWebsite = readlineSyc.question("Do you want to host static website? (Y/n) : ", {defaultInput: yes});
-        this._validateInputBooleanOption(options.hostStaticWebsite);
+        options.hostStaticWebsite = this._validateInputBooleanOption(options.hostStaticWebsite);
 
         if (options.hostStaticWebsite === yes) {
             // TODO: create static bucket
@@ -214,7 +214,7 @@ class GetInput {
 
     _getRdsRequirements(): void {
         options.useExistingRds = readlineSyc.question("Do you want to use existing RDS MySQL instance? (y/N) : ", {defaultInput: no});
-        this._validateInputBooleanOption(options.useExistingRds);
+        options.useExistingRds = this._validateInputBooleanOption(options.useExistingRds);
 
         if (options.useExistingRds === yes) {
             options.rdsHost = readlineSyc.question("MySQL host : ");
@@ -233,7 +233,7 @@ class GetInput {
     _getAlbRequirements(): void {
         if(options.useExistingVpc === yes){
             options.useExistingAlb = readlineSyc.question("Do you have existing ALB? (y/N) : ", {defaultInput: no});
-            this._validateInputBooleanOption(options.useExistingAlb);
+            options.useExistingAlb = this._validateInputBooleanOption(options.useExistingAlb);
         }
 
         if (options.useExistingAlb === yes) {
@@ -243,8 +243,8 @@ class GetInput {
                 options.vpcPublicSubnets = readlineSyc.question("Provide VPC Public Subnets to launch ALB [comma separated values, atleast 2 subnets required] : ");
                 this._validateInputStringOption(options.vpcSubnets, 'Invalid VPC Public Subnets.');
             }
-            const hasDomainConfiguredInRoute53 = readlineSyc.question("Do you have Route53 configured for the domain in the same AWS account? [Else the SSL certification verification will fail] (Y/n) : ", {defaultInput: yes});
-            this._validateInputBooleanOption(hasDomainConfiguredInRoute53);
+            let hasDomainConfiguredInRoute53 = readlineSyc.question("Do you have Route53 configured for the domain in the same AWS account? [Else the SSL certification verification will fail] (Y/n) : ", {defaultInput: yes});
+            hasDomainConfiguredInRoute53 = this._validateInputBooleanOption(hasDomainConfiguredInRoute53);
 
             if (hasDomainConfiguredInRoute53 === no) {
                 console.log('Cannot proceed further!');
@@ -298,10 +298,13 @@ class GetInput {
     }
 
     _validateInputBooleanOption(bool: string) {
-        if(![yes, no].includes(bool.toLowerCase())){
+        bool = bool.toLowerCase();
+        if(![yes, no].includes(bool)){
             console.error(new Error('Invalid option!'));
             process.exit(1);
         }
+
+        return bool;
     }
 
     _validateInputStringOption(str: string, msg = '') {
