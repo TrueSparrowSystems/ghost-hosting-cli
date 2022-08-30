@@ -81,12 +81,8 @@ class S3Upload extends Resource {
       `GHOST_SERVER_NAME=${hostingDomain}\n` +
       `GHOST_STATIC_SERVER_NAME=${staticWebsiteDomain}\n` +
       `PROXY_PASS_HOST=127.0.0.1\n` +
-      `PROXY_PASS_PORT=${ecsConfig.ghostContainerPort}`;
-
-    if (this.options.hostStaticWebsite) {
-      const s3EnvVars = `\nS3_STATIC_BUCKET_HOST=${this.options.hostStaticWebsite ? this.options.staticBucket.bucketDomainName : "127.0.0.1"}`;
-      fileContent = fileContent.concat(s3EnvVars);
-    }
+      `PROXY_PASS_PORT=${ecsConfig.ghostContainerPort}\n` +
+      `S3_STATIC_BUCKET_HOST=${this.options.hostStaticWebsite ? this.options.staticBucket.bucketDomainName : "127.0.0.1"}`;
 
     return fileContent;
   }
