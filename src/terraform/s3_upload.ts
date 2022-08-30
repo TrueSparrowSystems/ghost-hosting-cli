@@ -1,6 +1,6 @@
 import { Resource } from 'cdktf';
 import { Construct } from 'constructs';
-import { S3Bucket, S3Object } from '../.gen/providers/aws/s3';
+import { S3Bucket, S3Object } from '../gen/providers/aws/s3';
 import { getDomainFromUrl } from '../lib/util';
 
 import ecsConfig from '../config/ecs.json';

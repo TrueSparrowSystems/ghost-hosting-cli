@@ -1,7 +1,7 @@
 import { Resource } from 'cdktf';
 import { Construct } from 'constructs';
-import { AppautoscalingPolicy, AppautoscalingTarget } from '../.gen/providers/aws/appautoscaling';
-import { EcsService } from '../.gen/providers/aws/ecs';
+import { AppautoscalingPolicy, AppautoscalingTarget } from '../gen/providers/aws/appautoscaling';
+import { EcsService } from '../gen/providers/aws/ecs';
 
 import ecsConfig from '../config/ecs.json';
 

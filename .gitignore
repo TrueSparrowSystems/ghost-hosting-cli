@@ -4,7 +4,7 @@ cdktf.log
 terraform.*
 tsconfig.tsbuildinfo
 config.json
-.gen
+src/gen
 
 # Editor / IDE files
 /.idea

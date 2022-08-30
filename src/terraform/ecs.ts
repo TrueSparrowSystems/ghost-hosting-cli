@@ -1,10 +1,10 @@
 import { Resource, Fn, TerraformOutput } from 'cdktf';
 import { Construct } from 'constructs';
-import { EcsCluster, EcsClusterCapacityProviders, EcsService, EcsTaskDefinition } from '../.gen/providers/aws/ecs';
-import { SecurityGroup, SecurityGroupRule } from '../.gen/providers/aws/vpc';
-import { CloudwatchLogGroup } from '../.gen/providers/aws/cloudwatch';
-import { AlbListenerRule, AlbTargetGroup } from '../.gen/providers/aws/elb';
-import { S3Bucket, S3Object } from '../.gen/providers/aws/s3';
+import { EcsCluster, EcsClusterCapacityProviders, EcsService, EcsTaskDefinition } from '../gen/providers/aws/ecs';
+import { SecurityGroup, SecurityGroupRule } from '../gen/providers/aws/vpc';
+import { CloudwatchLogGroup } from '../gen/providers/aws/cloudwatch';
+import { AlbListenerRule, AlbTargetGroup } from '../gen/providers/aws/elb';
+import { S3Bucket, S3Object } from '../gen/providers/aws/s3';
 import { getDomainFromUrl, getPathSuffixFromUrl } from '../lib/util';
 
 import ecsConfig from '../config/ecs.json';

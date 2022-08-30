@@ -1,8 +1,8 @@
 import { Resource } from 'cdktf';
 import { Construct } from 'constructs';
-import { Rds } from '../.gen/modules/rds';
-import { SecurityGroup } from '../.gen/providers/aws/vpc';
-import { Password } from '../.gen/providers/random';
+import { Rds } from '../gen/modules/rds';
+import { SecurityGroup } from '../gen/providers/aws/vpc';
+import { Password } from '../gen/providers/random';
 
 import rdsConfig from '../config/rds.json';
 

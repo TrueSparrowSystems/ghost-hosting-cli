@@ -12,10 +12,10 @@ import { AcmResource } from './acm';
 import { S3Upload } from './s3_upload';
 import { AutoScaling } from './auto_scaling';
 
-import { S3Bucket, S3Object } from '../.gen/providers/aws/s3';
-import { RandomProvider } from '../.gen/providers/random';
-import { LocalProvider } from '../.gen/providers/local';
-import { EcsService } from '../.gen/providers/aws/ecs';
+import { S3Bucket, S3Object } from '../gen/providers/aws/s3';
+import { RandomProvider } from '../gen/providers/random';
+import { LocalProvider } from '../gen/providers/local';
+import { EcsService } from '../gen/providers/aws/ecs';
 
 import { readInput } from '../lib/readInput';
 

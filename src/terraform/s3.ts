@@ -1,7 +1,7 @@
 import { Resource } from 'cdktf';
 import { Construct } from 'constructs';
-import { S3Bucket, S3BucketAcl, S3BucketWebsiteConfiguration } from '../.gen/providers/aws/s3';
-import { StringResource } from '../.gen/providers/random';
+import { S3Bucket, S3BucketAcl, S3BucketWebsiteConfiguration } from '../gen/providers/aws/s3';
+import { StringResource } from '../gen/providers/random';
 
 import s3Config from '../config/s3.json';
 

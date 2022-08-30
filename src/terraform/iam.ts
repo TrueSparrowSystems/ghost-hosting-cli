@@ -1,7 +1,7 @@
 import { Resource, Fn } from 'cdktf';
 import { Construct } from 'constructs';
-import { IamPolicy, IamRole, IamRolePolicyAttachment } from '../.gen/providers/aws/iam';
-import { S3Bucket } from '../.gen/providers/aws/s3';
+import { IamPolicy, IamRole, IamRolePolicyAttachment } from '../gen/providers/aws/iam';
+import { S3Bucket } from '../gen/providers/aws/s3';
 
 import ecsConfig from '../config/ecs.json';
 

@@ -1,8 +1,8 @@
 import { Resource, Fn } from 'cdktf';
 import { Construct } from 'constructs';
 
-import { AcmCertificate, AcmCertificateValidation } from '../.gen/providers/aws/acm';
-import { DataAwsRoute53Zone, Route53Record } from '../.gen/providers/aws/route53';
+import { AcmCertificate, AcmCertificateValidation } from '../gen/providers/aws/acm';
+import { DataAwsRoute53Zone, Route53Record } from '../gen/providers/aws/route53';
 
 import { getRootDomainFromUrl } from '../lib/util';
 

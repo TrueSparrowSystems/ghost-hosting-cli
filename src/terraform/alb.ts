@@ -1,7 +1,7 @@
 import { Resource, Fn } from 'cdktf';
 import { Construct } from 'constructs';
-import { SecurityGroup } from '../.gen/providers/aws/vpc';
-import { Alb, AlbListener, DataAwsLb, DataAwsLbListener } from '../.gen/providers/aws/elb';
+import { SecurityGroup } from '../gen/providers/aws/vpc';
+import { Alb, AlbListener, DataAwsLb, DataAwsLbListener } from '../gen/providers/aws/elb';
 
 interface Options {
   vpcId: string;
