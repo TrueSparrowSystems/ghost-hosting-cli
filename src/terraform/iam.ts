@@ -73,7 +73,7 @@ class IamResource extends Resource {
 
     // Create role
     const role = new IamRole(this, 'ecs-execution-role-custom', {
-      name: `ECS_TASK_EXECUTION_${ecsConfig.nameIdentifier}`,
+      name: `ECS_TASK_EXECUTION_${ecsConfig.nameIdentifier}_${this.options.randomString}`,
       assumeRolePolicy: Fn.jsonencode({
         Version: '2012-10-17',
         Statement: [
@@ -137,7 +137,7 @@ class IamResource extends Resource {
 
     // Create role
     const role = new IamRole(this, 'ecs-task-role-custom', {
-      name: `ECS_TASK_${ecsConfig.nameIdentifier}`,
+      name: `ECS_TASK_${ecsConfig.nameIdentifier}_${this.options.randomString}`,
       assumeRolePolicy: Fn.jsonencode({
         Version: '2012-10-17',
         Statement: [
