@@ -12,6 +12,7 @@ import { AcmResource } from './acm';
 import { S3Upload } from './s3_upload';
 import { AutoScaling } from './auto_scaling';
 
+import { StringResource } from '../gen/providers/random';
 import { S3Bucket, S3Object } from '../gen/providers/aws/s3';
 import { RandomProvider } from '../gen/providers/random';
 import { LocalProvider } from '../gen/providers/local';
@@ -24,6 +25,7 @@ import { readInput } from '../lib/readInput';
  */
 class GhostStack extends TerraformStack {
   userInput: any;
+  randomString: string;
   vpcId: string;
   vpcSubnets: string[];
   vpcPublicSubnets: string[];
@@ -44,6 +46,7 @@ class GhostStack extends TerraformStack {
 
     this.userInput = {};
 
+    this.randomString = '';
     this.vpcId = '';
     this.vpcSubnets = [];
     this.vpcPublicSubnets = [];
@@ -63,6 +66,8 @@ class GhostStack extends TerraformStack {
     this._setProviders();
 
     this._createVpc();
+
+    this._generateRandomString();
 
     this._createRdsInstance();
 
@@ -90,6 +95,25 @@ class GhostStack extends TerraformStack {
     );
 
     this._autoScale(ecsService, ecsAutoScalingRoleArn);
+  }
+
+  /**
+   * Generate random string append with resource name and identifier
+   */
+  _generateRandomString(): void {
+    const stringResource = new StringResource(this, 'random_string', {
+      length: 8,
+      lower: true,
+      upper: false,
+      special: false,
+      numeric: true,
+      minNumeric: 2,
+      keepers: {
+        vpc_id: this.vpcId,
+      },
+    });
+
+    this.randomString = stringResource.result;
   }
 
   /**
@@ -183,6 +207,7 @@ class GhostStack extends TerraformStack {
    */
   _createS3Buckets() {
     return new S3Resource(this, 'plg-gh-s3', {
+      randomString: this.randomString,
       vpcId: this.vpcId,
       ghostHostingUrl: this.userInput.ghostHostingUrl,
       region: this.userInput.aws.region
@@ -218,6 +243,7 @@ class GhostStack extends TerraformStack {
 
   _createIamRolePolicies(blogBucket: S3Bucket, configsBucket: S3Bucket) {
     return new IamResource(this, 'plg-gh-iam', {
+      randomString: this.randomString,
       blogBucket,
       configsBucket,
     }).perform();

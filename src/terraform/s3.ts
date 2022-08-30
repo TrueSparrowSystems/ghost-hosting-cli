@@ -1,11 +1,11 @@
 import { Resource } from 'cdktf';
 import { Construct } from 'constructs';
 import { S3Bucket, S3BucketAcl, S3BucketWebsiteConfiguration } from '../gen/providers/aws/s3';
-import { StringResource } from '../gen/providers/random';
 
 import s3Config from '../config/s3.json';
 
 interface Options {
+  randomString: string;
   vpcId: string;
   ghostHostingUrl: string;
   region: string;
@@ -33,45 +33,22 @@ class S3Resource extends Resource {
    * Main performer of the class.
    */
   perform(): Response {
-    const randomString = this._generateRandomSuffix();
+    const blogBucket = this._createBlogAssetBucket();
 
-    const blogBucket = this._createBlogAssetBucket(randomString);
+    const staticBucket = this._createStaticAssetBucket();
 
-    const staticBucket = this._createStaticAssetBucket(randomString);
-
-    const configsBucket = this._createConfigsBucket(randomString);
+    const configsBucket = this._createConfigsBucket();
 
     return { blogBucket, staticBucket, configsBucket };
   }
 
   /**
-   * Generate random suffix string to attach to bucket names.
-   * @private
-   */
-  _generateRandomSuffix(): string {
-    const stringResource = new StringResource(this, 'random_string', {
-      length: 8,
-      lower: true,
-      upper: false,
-      special: false,
-      numeric: true,
-      minNumeric: 2,
-      keepers: {
-        vpc_id: this.options.vpcId,
-      },
-    });
-
-    return stringResource.result;
-  }
-
-  /**
    * Create bucket to store blog assets.
    *
-   * @param randomSuffix
    * @private
    */
-  _createBlogAssetBucket(randomSuffix: string): S3Bucket {
-    const blogContentS3BucketName = s3Config.blogContentS3BucketName.concat('-', randomSuffix);
+  _createBlogAssetBucket(): S3Bucket {
+    const blogContentS3BucketName = s3Config.blogContentS3BucketName.concat('-', this.options.randomString);
 
     return new S3Bucket(this, 'plg-gh-blog-assets', {
       bucket: blogContentS3BucketName,
@@ -81,11 +58,10 @@ class S3Resource extends Resource {
   /**
    * Create bucket to store static assets.
    *
-   * @param randomSuffix
    * @private
    */
-  _createStaticAssetBucket(randomSuffix: string): S3Bucket {
-    const blogStaticS3BucketName = s3Config.blogStaticS3BucketName.concat('-', randomSuffix);
+  _createStaticAssetBucket(): S3Bucket {
+    const blogStaticS3BucketName = s3Config.blogStaticS3BucketName.concat('-', this.options.randomString);
 
     const staticBucket = new S3Bucket(this, 'plg-gh-static-assets', {
       bucket: blogStaticS3BucketName,
@@ -112,11 +88,10 @@ class S3Resource extends Resource {
   /**
    * Create bucket to store configuration files.
    *
-   * @param randomSuffix
    * @private
    */
-  _createConfigsBucket(randomSuffix: string): S3Bucket {
-    const configsBucket = s3Config.configsS3BucketName.concat('-', randomSuffix);
+  _createConfigsBucket(): S3Bucket {
+    const configsBucket = s3Config.configsS3BucketName.concat('-', this.options.randomString);
 
     return new S3Bucket(this, 'plg-gh-configs', {
       bucket: configsBucket,
