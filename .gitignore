@@ -2,6 +2,7 @@ dist/*
 cdktf.out
 cdktf.log
 terraform.*
+.terraform.*
 tsconfig.tsbuildinfo
 config.json
 src/gen
