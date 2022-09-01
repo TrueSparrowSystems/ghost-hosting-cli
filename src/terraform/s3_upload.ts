@@ -77,7 +77,7 @@ class S3Upload extends Resource {
     const staticWebsiteDomain = this.options.staticWebsiteUrl
       ? getDomainFromUrl(this.options.staticWebsiteUrl)
       : '127.0.0.1';
-    let fileContent =
+    const fileContent =
       `GHOST_SERVER_NAME=${hostingDomain}\n` +
       `GHOST_STATIC_SERVER_NAME=${staticWebsiteDomain}\n` +
       `PROXY_PASS_HOST=127.0.0.1\n` +

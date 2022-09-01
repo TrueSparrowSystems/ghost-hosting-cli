@@ -223,7 +223,7 @@ class EcsResource extends Resource {
     });
   }
 
-  _getGhostContainerDefinition(): any {
+  _getGhostContainerDefinition(): object {
     const envFileArn = `arn:aws:s3:::${this.options.configBucket.bucket}/${GHOST_ENV_FILE_NAME}`;
 
     new TerraformOutput(this, 'ghost_env_file_arn', {
@@ -262,7 +262,7 @@ class EcsResource extends Resource {
    *
    * @private
    */
-  _getNginxContainerDefinition(): any {
+  _getNginxContainerDefinition(): object {
     const envFileArn = `arn:aws:s3:::${this.options.configBucket.bucket}/${NGINX_ENV_FILE_NAME}`;
 
     new TerraformOutput(this, 'nginx_env_file_arn', {

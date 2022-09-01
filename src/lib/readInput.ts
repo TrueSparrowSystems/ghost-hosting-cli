@@ -1,20 +1,20 @@
 import * as fs from 'fs';
 
 let configJson = {};
-function readInput(): any {
+function readInput(): object {
     _readFromFile();
 
     return _formatInput();
 }
 
-function _readFromFile(): any {
+function _readFromFile(): void {
     const configFileName = 'config.json';
     const data = fs.readFileSync(configFileName, 'utf-8');
 
     configJson = JSON.parse(data);
 }
 
-function _formatInput(): any {
+function _formatInput(): object {
     return configJson;
 }
 

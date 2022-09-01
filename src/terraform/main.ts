@@ -250,7 +250,7 @@ class GhostStack extends TerraformStack {
   }
 
   /**
-   * Create ECS container, cluster, task-definition, service and task in EC2-ECS optimised instance
+   * Create ECS container, cluster, task-definition, service and task in EC2-ECS optimized instance
    *
    * @param albSecurityGroups
    * @param listenerArn
