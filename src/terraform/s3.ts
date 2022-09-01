@@ -18,11 +18,22 @@ interface Response {
 }
 
 /**
- * Class to create required s3 buckets.
+ * @dev Class to create required s3 buckets
+ * - This will create three s3 buckets
+ *    1. blog asset bucket - to store static content/images
+ *    2. static asset bucket - to store static pages
+ *    3. configs bucket - to store env/config files
  */
 class S3Resource extends Resource {
   options: Options;
 
+  /**
+   * @dev Constructor for the S3 resource class
+   *
+   * @param scope - scope in which to define this construct
+   * @param name - name of the resource
+   * @param options - options required by the resource
+   */
   constructor(scope: Construct, name: string, options: Options) {
     super(scope, name);
 
@@ -30,7 +41,9 @@ class S3Resource extends Resource {
   }
 
   /**
-   * Main performer of the class.
+   * @dev Main performer of the class
+   * 
+   * @returns { Response }
    */
   perform(): Response {
     const blogBucket = this._createBlogAssetBucket();
@@ -43,9 +56,9 @@ class S3Resource extends Resource {
   }
 
   /**
-   * Create bucket to store blog assets.
-   *
-   * @private
+   * @dev Create bucket to store blog assets
+   * 
+   * @returns { S3Bucket }
    */
   _createBlogAssetBucket(): S3Bucket {
     const blogContentS3BucketName = s3Config.blogContentS3BucketName.concat('-', this.options.randomString);
@@ -56,9 +69,9 @@ class S3Resource extends Resource {
   }
 
   /**
-   * Create bucket to store static assets.
+   * @dev Create bucket to store static assets
    *
-   * @private
+   * @returns { S3Bucket }
    */
   _createStaticAssetBucket(): S3Bucket {
     const blogStaticS3BucketName = s3Config.blogStaticS3BucketName.concat('-', this.options.randomString);
@@ -86,9 +99,9 @@ class S3Resource extends Resource {
   }
 
   /**
-   * Create bucket to store configuration files.
+   * @dev Create bucket to store configuration files
    *
-   * @private
+   * @returns { S3Bucket }
    */
   _createConfigsBucket(): S3Bucket {
     const configsBucket = s3Config.configsS3BucketName.concat('-', this.options.randomString);

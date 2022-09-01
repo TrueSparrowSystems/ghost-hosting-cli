@@ -19,11 +19,18 @@ const plgTags = {
 };
 
 /**
- * @dev Resource to create certificate and attach it to the domain
+ * @dev Class to create ACM certificate and attach it to the domain provided
  */
 class AcmResource extends Resource {
   options: Options;
 
+  /**
+   * @dev Constructor for the ACM certificate resource class
+   *
+   * @param scope - scope in which to define this construct
+   * @param name - name of the resource
+   * @param options - options required by the resource
+   */
   constructor(scope: Construct, name: string, options: Options) {
     super(scope, name);
 
@@ -32,6 +39,8 @@ class AcmResource extends Resource {
 
   /**
    * @dev Main performer of the class
+   * 
+   * @returns { Response }
    */
   perform(): Response {
     const rootDomain = getRootDomainFromUrl(this.options.ghostHostingUrl) || '';
@@ -49,8 +58,9 @@ class AcmResource extends Resource {
 
   /**
    * @dev Create certificate for the provided domain
+   * 
    * @param ghostHostingDomain
-   * @private
+   * @returns { AcmCertificate }
    */
   _createCertificate(ghostHostingDomain: string): AcmCertificate {
     return new AcmCertificate(this, 'cert', {
@@ -66,8 +76,9 @@ class AcmResource extends Resource {
 
   /**
    * @dev Get Route53 zone for the domain provided
+   * 
    * @param ghostHostingDomain
-   * @private
+   * @returns { DataAwsRoute53Zone }
    */
   _getRoute53Zone(ghostHostingDomain: string): DataAwsRoute53Zone {
     return new DataAwsRoute53Zone(this, 'route_53_zone', {
@@ -77,9 +88,10 @@ class AcmResource extends Resource {
 
   /**
    * @dev Create Route53 record
+   * 
    * @param route53Zone
    * @param cert
-   * @private
+   * @returns { string[] } - collected fqdns
    */
   _createRoute53Record(route53Zone: DataAwsRoute53Zone, cert: AcmCertificate): string[] {
     const fqdns = [];
@@ -104,9 +116,10 @@ class AcmResource extends Resource {
 
   /**
    * @dev Validate ACM certificate created for the domain
+   * 
    * @param cert
    * @param fqdns
-   * @private
+   * @returns { void }
    */
   _validateAcmCertificate(cert: AcmCertificate, fqdns: string[]): void {
     new AcmCertificateValidation(this, 'cert-validation', {

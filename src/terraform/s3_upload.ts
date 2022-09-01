@@ -29,11 +29,21 @@ const GHOST_ENV_FILE_NAME = ecsConfig.ghostContainerName + '.env';
 const NGINX_ENV_FILE_NAME = ecsConfig.nginxContainerName + '.env';
 
 /**
- * Class to create required s3 buckets.
+ * @dev Class to upload config files to S3 buckets
+ * - This will create two env variables files and upload it to configs s3 bucket
+ *    1. ghost env - to store ghost environment variables
+ *    2. nginx env - to store nginx environment variables
  */
 class S3Upload extends Resource {
   options: Options;
 
+  /**
+   * @dev Constructor for the S3 upload resource class
+   *
+   * @param scope - scope in which to define this construct
+   * @param name - name of the resource
+   * @param options - options required by the resource
+   */
   constructor(scope: Construct, name: string, options: Options) {
     super(scope, name);
 
@@ -41,7 +51,9 @@ class S3Upload extends Resource {
   }
 
   /**
-   * Main performer of the class.
+   * @dev Main performer of the class
+   * 
+   * @returns { Response }
    */
   perform(): Response {
     const ghostEnvFileContent = this._getGhostEnvFileContent();
@@ -55,6 +67,11 @@ class S3Upload extends Resource {
     return { ghostEnvUpload, nginxEnvUpload };
   }
 
+  /**
+   * @dev Ghost environment variables
+   *
+   * @returns { string } - ghost env variables as a concatenated string
+   */
   _getGhostEnvFileContent(): string {
     return (
       `database__client=mysql\n` +
@@ -72,6 +89,11 @@ class S3Upload extends Resource {
     );
   }
 
+  /**
+   * @dev Nginx environment variables
+   * 
+   * @returns { string } - nginx env variables as a concatenated string
+   */
   _getNginxEnvFileContent(): string {
     const hostingDomain = getDomainFromUrl(this.options.ghostHostingUrl);
     const staticWebsiteDomain = this.options.staticWebsiteUrl
@@ -87,6 +109,13 @@ class S3Upload extends Resource {
     return fileContent;
   }
 
+  /**
+   * @dev Upload file to s3 bucket
+   *
+   * @param fileContent - contents of the file as a string
+   * @param filename - name of the file to upload
+   * @returns { S3Object }
+   */
   _uploadFileToBucket(fileContent: string, filename: string): S3Object {
     const identifier = 'plg-gh-' + filename + '-configs';
 
