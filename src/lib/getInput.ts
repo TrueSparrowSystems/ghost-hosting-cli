@@ -18,7 +18,7 @@ const CONFIG_FILE = 'config.json';
 enum ActionType {
     DEPLOY = 'deploy',
     DESTROY = 'destroy'
-};
+}
 const ALLOWED_ACTIONS = [ActionType.DEPLOY, ActionType.DESTROY];
 
 interface Options {
@@ -100,8 +100,7 @@ class GetInput {
     }
 
     _hasPreviousConfigInFile(): boolean {
-        let configData: any;
-        console.log('cwd: ', process.cwd());
+        let configData: object = {};
         try {
             configData = require(`${process.cwd()}/${CONFIG_FILE}`);
         } catch(err) {
@@ -136,7 +135,7 @@ class GetInput {
 
         command.allowUnknownOption();
         command
-        .addArgument(new Argument('<action>', 'Action arguements').choices(ALLOWED_ACTIONS))
+        .addArgument(new Argument('<action>', 'Action arguments').choices(ALLOWED_ACTIONS))
         .option(
             '--aws-access-key-id <awsAccessKeyId>',
             'AWS Access Key Id'
@@ -174,7 +173,7 @@ class GetInput {
         options.useExistingVpc = this._validateInputBooleanOption(options.useExistingVpc);
 
         if (options.useExistingVpc === yes) {
-            options.vpcSubnets = readlineSyc.question("Provide VPC Subnets to run ECS tasks [comma separated values, atleast 2 subnets required] : ");
+            options.vpcSubnets = readlineSyc.question("Provide VPC Subnets to run ECS tasks [comma separated values, at least 2 subnets required] : ");
             this._validateInputStringOption(options.vpcSubnets, 'Invalid VPC Subnets.');
         }
     }
@@ -240,7 +239,7 @@ class GetInput {
             options.listenerArn = readlineSyc.question("Please provide listener ARN : ");
         } else {
             if(options.useExistingVpc === yes) {
-                options.vpcPublicSubnets = readlineSyc.question("Provide VPC Public Subnets to launch ALB [comma separated values, atleast 2 subnets required] : ");
+                options.vpcPublicSubnets = readlineSyc.question("Provide VPC Public Subnets to launch ALB [comma separated values, at least 2 subnets required] : ");
                 this._validateInputStringOption(options.vpcSubnets, 'Invalid VPC Public Subnets.');
             }
             let hasDomainConfiguredInRoute53 = readlineSyc.question("Do you have Route53 configured for the domain in the same AWS account? [Else the SSL certification verification will fail] (Y/n) : ", {defaultInput: yes});
@@ -256,11 +255,11 @@ class GetInput {
     _validateInput(): void {
         // Validate VPC subnets
         if(options.vpcSubnets && options.vpcSubnets.split(',').length < 2){
-            this._validateInputStringOption('', 'Atleast 2 VPC Subnets required.');
+            this._validateInputStringOption('', 'At least 2 VPC Subnets required.');
         }
 
         if(options.vpcPublicSubnets && options.vpcPublicSubnets.split(',').length < 2){
-            this._validateInputStringOption('', 'Atleast 2 VPC Public Subnets required.');
+            this._validateInputStringOption('', 'At least 2 VPC Public Subnets required.');
         }
 
         // Validate URLs and domains
