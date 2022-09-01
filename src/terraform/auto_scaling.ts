@@ -11,11 +11,18 @@ interface Options {
 }
 
 /**
- * @dev Class to create required auto scaling target and policies.
+ * @dev Class to create required auto scaling target and policies
  */
 class AutoScaling extends Resource {
   options: Options;
 
+  /**
+   * @dev Constructor for the auto scaling resource class
+   *
+   * @param scope - scope in which to define this construct
+   * @param name - name of the resource
+   * @param options - options required by the resource
+   */
   constructor(scope: Construct, name: string, options: Options) {
     super(scope, name);
 
@@ -24,6 +31,8 @@ class AutoScaling extends Resource {
 
   /**
    * @dev Main performer of the class
+   * 
+   * @returns { void }
    */
   perform(): void {
     const ecsTarget = this._createAppAutoScalingTarget();
@@ -33,7 +42,8 @@ class AutoScaling extends Resource {
 
   /**
    * @dev Create auto scaling target
-   * @private
+   * 
+   * @returns { AppautoscalingTarget }
    */
   _createAppAutoScalingTarget(): AppautoscalingTarget {
     return new AppautoscalingTarget(this, 'auto-scaling-target', {
@@ -50,7 +60,8 @@ class AutoScaling extends Resource {
   /**
    * @dev Create auto scaling policies for memory and cpu
    * @param ecsTarget
-   * @private
+   * 
+   * @returns { void }
    */
   _createAppAutoScalingPolicies(ecsTarget: AppautoscalingTarget): void {
     new AppautoscalingPolicy(this, 'auto-scaling-policy-cpu', {

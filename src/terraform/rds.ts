@@ -30,16 +30,20 @@ const plgTags = {
 };
 
 /**
- * Class to deploy RDS instance.
+ * @dev Class to create RDS instance
+ * - This will create 
+ *    1. RDS instance with randomly generated password
+ *    2. Security group to allow traffic to RDS instance
  */
 class RdsResource extends Resource {
   options: Options;
 
   /**
-   * Constructor to deploy RDS instance.
-   * @param scope
-   * @param name
-   * @param options
+   * @dev Constructor for the RDS instance resource class
+   *
+   * @param scope - scope in which to define this construct
+   * @param name - name of the resource
+   * @param options - options required by the resource
    */
   constructor(scope: Construct, name: string, options: Options) {
     super(scope, name);
@@ -48,7 +52,10 @@ class RdsResource extends Resource {
   }
 
   /**
-   * Main performer of the class.
+   * @dev Main performer of the class
+   * - This creates RDS instance based on choices provided.
+   * 
+   * @returns { Response } 
    */
   perform(): Response {
     const responseData = {

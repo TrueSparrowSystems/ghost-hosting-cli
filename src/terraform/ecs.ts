@@ -38,11 +38,25 @@ interface Response {
 }
 
 /**
- * Class to deploy ECS tasks.
+ * @dev Class to create ECS tasks
+ * - This resource creates 
+ *    1. Security group - to allow traffic to ecs tasks
+ *    2. Target group - 
+ *    3. ECS cluster
+ *    4. Capacity Provider
+ *    5. ECS Task Definition
+ *    6. ECS Service
  */
 class EcsResource extends Resource {
   options: Options;
 
+  /**
+   * @dev Constructor for the ECS resource class
+   *
+   * @param scope - scope in which to define this construct
+   * @param name - name of the resource
+   * @param options - options required by the resource
+   */
   constructor(scope: Construct, name: string, options: Options) {
     super(scope, name);
 
@@ -50,7 +64,9 @@ class EcsResource extends Resource {
   }
 
   /**
-   * Main performer.
+   * @dev Main performer of the class
+   * 
+   * @returns { Response }
    */
   perform(): Response {
     this._createLogGroup();
@@ -70,6 +86,11 @@ class EcsResource extends Resource {
     return { ecsService };
   }
 
+  /**
+   * @dev Create a target group
+   *
+   * @returns { AlbTargetGroup }
+   */
   _createTargetGroup(): AlbTargetGroup {
     const urlPath = getPathSuffixFromUrl(this.options.ghostHostingUrl);
     const targetGroup = new AlbTargetGroup(this, 'plg-gh-alb-tg', {
@@ -123,9 +144,10 @@ class EcsResource extends Resource {
   }
 
   /**
-   * Create security group for ecs - this will allow traffic to ECS from ALB only.
+   * @dev Create security group for ecs 
+   * - This will allow traffic to ECS from ALB only
    *
-   * @private
+   * @returns { SecurityGroup }
    */
   _createSecurityGroup() {
     const ecsSg = new SecurityGroup(this, 'plg-gh-ecs', {
@@ -168,9 +190,9 @@ class EcsResource extends Resource {
   }
 
   /**
-   * Create ECS cluster.
+   * @dev Create ECS cluster
    *
-   * @private
+   * @returns { EcsCluster }
    */
   _createEcsCluster(): EcsCluster {
     return new EcsCluster(this, 'plg-ghost', {
@@ -178,6 +200,11 @@ class EcsResource extends Resource {
     });
   }
 
+  /**
+   * @dev Add capacity provider
+   * 
+   * @returns { EcsClusterCapacityProviders } 
+   */
   _addCapacityProvider(): void {
     new EcsClusterCapacityProviders(this, 'plg-gh-capacity-provider', {
       clusterName: ecsConfig.clusterName,
@@ -186,9 +213,9 @@ class EcsResource extends Resource {
   }
 
   /**
-   * Create log group for ecs tasks.
-   *
-   * @private
+   * @dev Create a log group to store ecs task logs
+   * 
+   * @returns { void }
    */
   _createLogGroup(): void {
     new CloudwatchLogGroup(this, 'plg-gh-log-group', {
@@ -197,9 +224,12 @@ class EcsResource extends Resource {
   }
 
   /**
-   * Create task definition for ecs tasks.
+   * @dev Create task definition for ecs tasks.
+   * - This is creating a task definition with two containers registered to it.
+   *    1. Ghost container
+   *    2. Nginx container
    *
-   * @private
+   * @returns { EcsTaskDefinition }
    */
   _createEcsTaskDefinition(): EcsTaskDefinition {
     return new EcsTaskDefinition(this, 'ecs-task-definition', {
@@ -223,6 +253,11 @@ class EcsResource extends Resource {
     });
   }
 
+  /**
+   * @dev Get container definition for ghost container
+   *
+   * @returns { object }
+   */
   _getGhostContainerDefinition(): object {
     const envFileArn = `arn:aws:s3:::${this.options.configBucket.bucket}/${GHOST_ENV_FILE_NAME}`;
 
@@ -258,9 +293,9 @@ class EcsResource extends Resource {
   }
 
   /**
-   * Nginx server task definition.
+   * @dev Get container definition for nginx container
    *
-   * @private
+   * @returns { object }
    */
   _getNginxContainerDefinition(): object {
     const envFileArn = `arn:aws:s3:::${this.options.configBucket.bucket}/${NGINX_ENV_FILE_NAME}`;
@@ -307,13 +342,13 @@ class EcsResource extends Resource {
   }
 
   /**
-   * Create ECS service to run tasks.
+   * @dev Create ECS service to run tasks
    *
    * @param ecsCluster
    * @param ecsTaskDefinition
    * @param ecsSecurityGroup
    * @param targetGroup
-   * @private
+   * @returns { EcsService }
    */
   _createEcsService(
     ecsCluster: EcsCluster,

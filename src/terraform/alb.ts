@@ -21,11 +21,18 @@ const plgTags = {
 };
 
 /**
- * Class to deploy ALB.
+ * @dev Class to an application load balancer
  */
 class AlbResource extends Resource {
   options: Options;
 
+  /**
+   * @dev Constructor for the ALB resource class
+   *
+   * @param scope - scope in which to define this construct
+   * @param name - name of the resource
+   * @param options - options required by the resource
+   */
   constructor(scope: Construct, name: string, options: Options) {
     super(scope, name);
 
@@ -33,7 +40,9 @@ class AlbResource extends Resource {
   }
 
   /**
-   * Main performer.
+   * @dev Main performer of the class
+   * 
+   * @returns { Response }
    */
   perform(): Response {
     let listenerArn: string;
@@ -60,6 +69,12 @@ class AlbResource extends Resource {
     return { albSecurityGroups: Fn.tolist(alb.securityGroups), listenerArn };
   }
 
+  /**
+   * @dev Create a security group for the ALB
+   * - This will allow traffic to ALB from the internet
+   * 
+   * @returns { SecurityGroup }
+   */
   _createAlbSecurityGroup(): SecurityGroup {
     return new SecurityGroup(this, 'plg-gh-alb-sg', {
       name: 'alb-sg',
@@ -93,6 +108,12 @@ class AlbResource extends Resource {
     });
   }
 
+  /**
+   * @dev Create application load balancer
+   *
+   * @param securityGroup - security group created for alb
+   * @returns { Alb }
+   */
   _createAlb(securityGroup: SecurityGroup): Alb {
     return new Alb(this, 'plg-gh-alb', {
       loadBalancerType: 'application',
@@ -106,6 +127,12 @@ class AlbResource extends Resource {
     });
   }
 
+  /**
+   * @dev Create an HTTP listener and attach it to the load balancer
+   * - This will redirect any traffic routed to PORT 80 of the load balancer to PORT 443
+   * 
+   * @param alb
+   */
   _addHttpListener(alb: Alb): void {
     new AlbListener(this, 'plg-gh-http-listener', {
       port: 80,
@@ -125,6 +152,12 @@ class AlbResource extends Resource {
     });
   }
 
+  /**
+   * @dev Create and attach an HTTPS listener to the load balancer
+   * 
+   * @param alb 
+   * @returns { string }
+   */
   _addHttpsListener(alb: Alb): string {
     const albListener = new AlbListener(this, 'plg-gh-https-listener', {
       port: 443,

@@ -18,17 +18,32 @@ interface Response {
 }
 
 /**
- * Class to create required IAM roles for task execution.
+ * @dev Class to create custom IAM roles
+ * - This creates two custom IAM roles
+ *    1. Task Execution Role - required by ECS
+ *    2. Task Role - required by ECS
  */
 class IamResource extends Resource {
   options: Options;
 
+  /**
+   * @dev Constructor for the IAM resource class
+   *
+   * @param scope - scope in which to define this construct
+   * @param name - name of the resource
+   * @param options - options required by the resource
+   */
   constructor(scope: Construct, name: string, options: Options) {
     super(scope, name);
 
     this.options = options;
   }
 
+  /**
+   * @dev Main performer of the class
+   *
+   * @returns { Response }
+   */
   perform(): Response {
     const customExecutionRoleArn = this._ecsExecutionCustom();
 
@@ -39,6 +54,14 @@ class IamResource extends Resource {
     return { customExecutionRoleArn, customTaskRoleArn, ecsAutoScalingRoleArn };
   }
 
+  /**
+   * @dev Create a custom execution role for ECS tasks
+   * - This role has two policies attached
+   *    1. Custom policy
+   *    2. AmazonECSTaskExecutionRolePolicy - provided by aws
+   *
+   * @returns { string } - arn of the ecs execution role created
+   */
   _ecsExecutionCustom(): string {
     // Create policy
     const policy = new IamPolicy(this, 'ecs-execution-custom', {
@@ -103,6 +126,12 @@ class IamResource extends Resource {
     return role.arn;
   }
 
+  /**
+   * @dev Create a task role for ecs tasks
+   * - This role allows ecs tasks to consume other aws resources like cloudwatch log groups and s3 buckets
+   *
+   * @returns { string } - arn of the ecs execution role created
+   */
   _ecsTaskCustom(): string {
     // Create policy
     const policy = new IamPolicy(this, 'ecs-task-custom', {

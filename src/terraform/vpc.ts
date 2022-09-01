@@ -20,18 +20,20 @@ interface Response {
   vpcPublicSubnets: string[];
 }
 
-interface Response {
-  vpcId: string;
-  vpcSubnets: string[];
-  vpcPublicSubnets: string[];
-}
-
 /**
- * Class to create VPC and subnets.
+ * @dev Class to create VPC resource with the subnets
+ * - VPC and subnet creation will be dependent on the choice provided
  */
 class VpcResource extends Resource {
   options: Options;
 
+  /**
+   * @dev Constructor for the VPC resource class
+   *
+   * @param scope - scope in which to define this construct
+   * @param name - name of the resource
+   * @param options - options required by the resource
+   */
   constructor(scope: Construct, name: string, options: Options) {
     super(scope, name);
 
@@ -39,7 +41,9 @@ class VpcResource extends Resource {
   }
 
   /**
-   * Main performer.
+   * @dev Main performer of the class
+   * 
+   * @returns { Response }
    */
   perform(): Response {
     const privateSubnetCidrBlocks = this._getSubnetCidr();
@@ -50,9 +54,9 @@ class VpcResource extends Resource {
   }
 
   /**
-   * Get required private subnet cidr blocks.
-   *
-   * @private
+   * @dev Get required private subnet cidr blocks
+   * 
+   * @returns { string[] } - list of private subnet cidr blocks
    */
   _getSubnetCidr(): string[] {
     if (this.options.useExistingVpc) {
@@ -63,9 +67,9 @@ class VpcResource extends Resource {
   }
 
   /**
-   * Get available zones for the VPC.
-   *
-   * @private
+   * @dev Get available zones for the vpc
+   * 
+   * @returns { DataAwsAvailabilityZones } - available zones
    */
   _getZones(): DataAwsAvailabilityZones {
     const zones = new DataAwsAvailabilityZones(this, 'zones', {
@@ -76,11 +80,12 @@ class VpcResource extends Resource {
   }
 
   /**
-   * Get or Create VPC
+   * @dev Get or create VPC
+   * - This will create new vpc and subnets based on the choice provided
    *
-   * @param privateSubnetCidrBlocks
-   * @param zones
-   * @private
+   * @param privateSubnetCidrBlocks - list of private subnet's cidr blocks
+   * @param zones - available zones
+   * @returns { Response }
    */
   _getOrCreateVpc(privateSubnetCidrBlocks: string[], zones: DataAwsAvailabilityZones): Response {
     let vpcId, vpcSubnets, vpcPublicSubnets: string[];
