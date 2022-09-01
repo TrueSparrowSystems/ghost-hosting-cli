@@ -15,7 +15,6 @@ import { AutoScaling } from './auto_scaling';
 import { StringResource } from '../gen/providers/random';
 import { S3Bucket, S3Object } from '../gen/providers/aws/s3';
 import { RandomProvider } from '../gen/providers/random';
-import { LocalProvider } from '../gen/providers/local';
 import { EcsService } from '../gen/providers/aws/ecs';
 
 import { readInput } from '../lib/readInput';
@@ -132,11 +131,6 @@ class GhostStack extends TerraformStack {
     // Random provider
     new RandomProvider(this, 'random-provider', {
       alias: 'random-provider',
-    });
-
-    // Local provider
-    new LocalProvider(this, 'local', {
-      alias: 'local-provider',
     });
   }
 

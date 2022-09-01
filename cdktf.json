@@ -13,11 +13,8 @@
     },
     {
       "name": "random",
-      "source": "hashicorp/random"
-    },
-    {
-      "name": "local",
-      "source": "hashicorp/local"
+      "source": "hashicorp/random",
+      "version": "3.4.1"
     }
   ],
   "terraformModules": [

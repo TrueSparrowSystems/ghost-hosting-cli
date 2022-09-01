@@ -1,6 +1,5 @@
 import * as shell from 'shelljs';
 import * as readlineSync from 'readline-sync';
-// const cdktfExec = './node_modules/.bin/cdktf';
 import { GetInput, ActionType } from './lib/getInput';
 
 function run(): void {
