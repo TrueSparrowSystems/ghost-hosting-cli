@@ -1,0 +1,23 @@
+dist/*
+cdktf.out
+cdktf.log
+terraform.*
+.terraform.*
+tsconfig.tsbuildinfo
+config.json
+src/gen
+
+# Editor / IDE files
+/.idea
+/.idea/*
+.vscode
+
+# Dependency directory
+# https://docs.npmjs.com/cli/shrinkwrap#caveats
+node_modules
+package-lock.json
+
+# Optional eslint cache
+.eslintcache
+
+.DS_Store

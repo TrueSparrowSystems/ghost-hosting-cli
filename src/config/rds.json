@@ -1,0 +1,6 @@
+{
+  "dbName": "ghost_db",
+  "dbUserName": "ghost",
+  "dbStorageSizeInGB": "10",
+  "dbInstanceClass": "db.t3.micro"
+}

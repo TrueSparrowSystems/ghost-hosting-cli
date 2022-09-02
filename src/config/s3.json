@@ -1,0 +1,6 @@
+{
+  "configsS3BucketName": "ghost-configs",
+  "blogContentS3BucketName": "ghost-blog-assets",
+  "blogStaticS3BucketName": "ghost-static-assets",
+  "storagePathPrefix": "blog-content/development/images"
+}
