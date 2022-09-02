@@ -63,11 +63,23 @@ interface GetInputResponse {
     action: string;
 }
 
+/**
+ * @dev Class to get inputs from the user
+ * - This will ask required questions to the user regarding the resource configuration
+ */
 class GetInput {
+    /**
+     * @dev Constructor to get inputs from the user
+     */
     constructor() {
         // Do nothing
     }
 
+    /**
+     * @dev Main performer of the class
+     * 
+     * @returns {GetInputResponse}
+     */
     perform(): GetInputResponse {
         const response = this._parseArguments();
 
@@ -99,6 +111,11 @@ class GetInput {
         return response;
     }
 
+    /**
+     * @dev Check whether configuration file already exists or not
+     *
+     * @returns {boolean}
+     */
     _hasPreviousConfigInFile(): boolean {
         let configData: object = {};
         try {
@@ -122,6 +139,11 @@ class GetInput {
         return Object.keys(configData).length > 0 && pass;
     }
 
+    /**
+     * @dev Ask user whether to use existing configurations or to create new
+     *
+     * @returns {boolean}
+     */
     _usePreviousConfigData(): boolean {
         let useExistingConfig = readlineSyc.question("Previous installation \"config.json\" file found, Would you like to use the existing configuration options? [Else it will start from the scratch] (Y/n) : ", {defaultInput: yes});
         useExistingConfig = this._validateInputBooleanOption(useExistingConfig);
@@ -129,6 +151,11 @@ class GetInput {
         return useExistingConfig === yes;
     }
 
+    /**
+     * @dev Parse arguments provided with the `run` command
+     * 
+     * @returns {GetInputResponse}
+     */
     _parseArguments(): GetInputResponse {
 
         let mainAction = '';
@@ -168,6 +195,11 @@ class GetInput {
         }
     }
 
+    /**
+     * @dev Get vpc configurations
+     * 
+     * @returns {void}
+     */
     _getVpcConfigurations(): void {
         options.useExistingVpc = readlineSyc.question("Use existing VPC? (y/N) : ", {defaultInput: no});
         options.useExistingVpc = this._validateInputBooleanOption(options.useExistingVpc);
@@ -178,6 +210,11 @@ class GetInput {
         }
     }
 
+    /**
+     * @dev Get aws credentials
+     * 
+     * @returns {void}
+     */
     _getAwsCredentials(): void {
         if (!options.accessKeyId) {
             options.accessKeyId = readlineSyc.question("AWS access key id : ");
@@ -195,6 +232,11 @@ class GetInput {
         }
     }
 
+    /**
+     * @dev Get blog related requirements
+     * 
+     * @returns {void}
+     */
     _getBlogManagementRequirements(): void {
         options.ghostHostingUrl = readlineSyc.question("Ghost hosting url : ");
         this._validateInputStringOption(options.ghostHostingUrl);
@@ -211,6 +253,11 @@ class GetInput {
         }
     }
 
+    /**
+     * @dev Get rds requirements
+     * 
+     * @returns {void}
+     */
     _getRdsRequirements(): void {
         options.useExistingRds = readlineSyc.question("Do you want to use existing RDS MySQL instance? (y/N) : ", {defaultInput: no});
         options.useExistingRds = this._validateInputBooleanOption(options.useExistingRds);
@@ -229,6 +276,11 @@ class GetInput {
         }
     }
 
+    /**
+     * @dev Get load balancer requirements
+     * 
+     * @returns {void}
+     */
     _getAlbRequirements(): void {
         if(options.useExistingVpc === yes){
             options.useExistingAlb = readlineSyc.question("Do you have existing ALB? (y/N) : ", {defaultInput: no});
@@ -252,6 +304,11 @@ class GetInput {
         }
     }
 
+    /**
+     * @dev Validate the input fields provided
+     * 
+     * @returns {void}
+     */
     _validateInput(): void {
         // Validate VPC subnets
         if(options.vpcSubnets && options.vpcSubnets.split(',').length < 2){
@@ -296,7 +353,13 @@ class GetInput {
         }
     }
 
-    _validateInputBooleanOption(bool: string) {
+    /**
+     * @dev Validate boolean option
+     *
+     * @param bool - boolean value as a string
+     * @returns {string}
+     */
+    _validateInputBooleanOption(bool: string): string {
         bool = bool.toLowerCase();
         if(![yes, no].includes(bool)){
             console.error(new Error('Invalid option!'));
@@ -306,6 +369,13 @@ class GetInput {
         return bool;
     }
 
+    /**
+     * @dev Validate input string
+     *
+     * @param str - input string
+     * @param msg 
+     * @returns {void}
+     */
     _validateInputStringOption(str: string, msg = '') {
         if(str === undefined || str === ''){
             console.error(new Error(msg || 'Invalid option!'));
@@ -313,6 +383,11 @@ class GetInput {
         }
     }
 
+    /**
+     * @dev Create configuration file from the inputs provided by the user
+     * 
+     * @returns {void}
+     */
     _createConfig(): void {
 
         // Add AWS credentials
