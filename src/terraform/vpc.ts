@@ -7,6 +7,7 @@ import { DataAwsAvailabilityZones } from '../gen/providers/aws/datasources';
 
 import { getPrivateSubnetCidrBlocks, getPublicSubnetCidrBlocks } from '../lib/util';
 import vpcConfig from '../config/vpc.json';
+import commonConfig from '../config/common.json';
 
 interface Options {
   useExistingVpc: boolean;
@@ -73,7 +74,7 @@ class VpcResource extends Resource {
    */
   _getZones(): DataAwsAvailabilityZones {
     const zones = new DataAwsAvailabilityZones(this, 'zones', {
-      state: 'available',
+      state: 'available'
     });
 
     return zones;
@@ -99,23 +100,24 @@ class VpcResource extends Resource {
       vpcPublicSubnets = this.options.vpcPublicSubnets;
     } else {
       const vpcOptions = {
-        name: vpcConfig.nameLabel,
+        name: commonConfig.nameIdentifier,
         azs: [Fn.element(zones.names, 0), Fn.element(zones.names, 1)],
         cidr: vpcConfig.cidrPrefix,
         publicSubnets: getPublicSubnetCidrBlocks(vpcConfig.cidrPrefix),
         publicSubnetTags: {
-          Name: vpcConfig.nameLabel + ' public',
+          Name: commonConfig.nameLabel + ' public',
         },
         privateSubnets: privateSubnetCidrBlocks,
         privateSubnetTags: {
-          Name: vpcConfig.nameLabel + ' private',
+          Name: commonConfig.nameLabel + ' private',
         },
         enableNatGateway: true,
         singleNatGateway: true,
         enableDnsHostnames: true,
+        tags: commonConfig.tags
       };
 
-      const vpc = new Vpc(this, vpcConfig.nameIdentifier, vpcOptions);
+      const vpc = new Vpc(this, 'vpc', vpcOptions);
 
       vpcId = vpc.vpcIdOutput;
       vpcSubnets = Fn.tolist(vpc.privateSubnetsOutput);

@@ -4,6 +4,7 @@ import { AppautoscalingPolicy, AppautoscalingTarget } from '../gen/providers/aws
 import { EcsService } from '../gen/providers/aws/ecs';
 
 import ecsConfig from '../config/ecs.json';
+import commonConfig from '../config/common.json';
 
 interface Options {
   autoScaleRoleArn: string;
@@ -53,7 +54,7 @@ class AutoScaling extends Resource {
       scalableDimension: 'ecs:service:DesiredCount',
       serviceNamespace: 'ecs',
       roleArn: this.options.autoScaleRoleArn,
-      dependsOn: [this.options.ecsService],
+      dependsOn: [this.options.ecsService]
     });
   }
 
@@ -65,7 +66,7 @@ class AutoScaling extends Resource {
    */
   _createAppAutoScalingPolicies(ecsTarget: AppautoscalingTarget): void {
     new AppautoscalingPolicy(this, 'auto-scaling-policy-cpu', {
-      name: 'application-scaling-policy-cpu',
+      name: commonConfig.nameIdentifier,
       policyType: 'TargetTrackingScaling',
       resourceId: ecsTarget.resourceId,
       scalableDimension: ecsTarget.scalableDimension,
@@ -82,7 +83,7 @@ class AutoScaling extends Resource {
     });
 
     new AppautoscalingPolicy(this, 'auto-scaling-policy-memory', {
-      name: 'application-scaling-policy-memory',
+      name: commonConfig.nameIdentifier,
       policyType: 'TargetTrackingScaling',
       resourceId: ecsTarget.resourceId,
       scalableDimension: ecsTarget.scalableDimension,
@@ -95,7 +96,7 @@ class AutoScaling extends Resource {
         scaleInCooldown: 30,
         scaleOutCooldown: 60,
       },
-      dependsOn: [ecsTarget],
+      dependsOn: [ecsTarget]
     });
   }
 }

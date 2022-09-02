@@ -5,6 +5,7 @@ import { SecurityGroup } from '../gen/providers/aws/vpc';
 import { Password } from '../gen/providers/random';
 
 import rdsConfig from '../config/rds.json';
+import commonConfig from '../config/common.json';
 
 interface Options {
   vpcId: string;
@@ -24,10 +25,6 @@ interface Response {
   rdsDbName: string;
   rdsSecurityGroupId: string;
 }
-
-const plgTags = {
-  Name: 'PLG Ghost',
-};
 
 /**
  * @dev Class to create RDS instance
@@ -71,10 +68,8 @@ class RdsResource extends Resource {
     }
 
     if (!this.options.useExistingRds) {
-      const nameIdentifier = 'plg-ghost';
-
-      const rdsSg = new SecurityGroup(this, 'rds_sg', {
-        name: nameIdentifier + 'rds-sg',
+      const rdsSg = new SecurityGroup(this, 'rds-sg', {
+        name: commonConfig.nameIdentifier,
         vpcId: this.options.vpcId,
         egress: [
           {
@@ -84,7 +79,7 @@ class RdsResource extends Resource {
             cidrBlocks: ['0.0.0.0/0'],
           },
         ],
-        tags: plgTags,
+        tags: commonConfig.tags,
       });
 
       const password = new Password(this, 'rds-pw', {
@@ -100,7 +95,7 @@ class RdsResource extends Resource {
       });
 
       const rdsOptions = {
-        identifier: nameIdentifier,
+        identifier: commonConfig.nameIdentifier,
         family: 'mysql8.0',
         engine: 'mysql',
         engineVersion: '8.0',
@@ -112,9 +107,9 @@ class RdsResource extends Resource {
         availabilityZone: `${this.options.region}a`,
         instanceClass: rdsConfig.dbInstanceClass,
         subnetIds: this.options.vpcSubnets,
-        parameterGroupName: nameIdentifier,
-        optionGroupName: nameIdentifier,
-        dbSubnetGroupName: nameIdentifier,
+        parameterGroupName: commonConfig.nameIdentifier,
+        optionGroupName: commonConfig.nameIdentifier,
+        dbSubnetGroupName: commonConfig.nameIdentifier,
         vpcSecurityGroupIds: [rdsSg.id],
         createDbSubnetGroup: true,
         dbSubnetGroupUseNamePrefix: false,
@@ -124,7 +119,7 @@ class RdsResource extends Resource {
         skipFinalSnapshot: true,
         skipFinalBackup: true,
         publiclyAccessible: true,
-        tags: plgTags,
+        tags: commonConfig.tags
       };
 
       const rds = new Rds(this, 'rds', rdsOptions);

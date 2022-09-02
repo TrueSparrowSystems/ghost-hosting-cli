@@ -4,6 +4,7 @@ import { IamPolicy, IamRole, IamRolePolicyAttachment } from '../gen/providers/aw
 import { S3Bucket } from '../gen/providers/aws/s3';
 
 import ecsConfig from '../config/ecs.json';
+import commonConfig from '../config/common.json';
 
 interface Options {
   randomString: string;
@@ -65,7 +66,7 @@ class IamResource extends Resource {
   _ecsExecutionCustom(): string {
     // Create policy
     const policy = new IamPolicy(this, 'ecs-execution-custom', {
-      name: `ECS_TASK_EXECUTION_CUSTOM_${ecsConfig.nameIdentifier}_${this.options.randomString}`,
+      name: commonConfig.nameIdentifier,
       path: '/',
       policy: Fn.jsonencode({
         Version: '2012-10-17',
@@ -96,7 +97,7 @@ class IamResource extends Resource {
 
     // Create role
     const role = new IamRole(this, 'ecs-execution-role-custom', {
-      name: `ECS_TASK_EXECUTION_${ecsConfig.nameIdentifier}_${this.options.randomString}`,
+      name: commonConfig.nameIdentifier,
       assumeRolePolicy: Fn.jsonencode({
         Version: '2012-10-17',
         Statement: [
@@ -135,7 +136,7 @@ class IamResource extends Resource {
   _ecsTaskCustom(): string {
     // Create policy
     const policy = new IamPolicy(this, 'ecs-task-custom', {
-      name: `ECS_TASK_${ecsConfig.nameIdentifier}_${this.options.randomString}`,
+      name: commonConfig.nameIdentifier,
       path: '/',
       policy: Fn.jsonencode({
         Version: '2012-10-17',
@@ -166,7 +167,7 @@ class IamResource extends Resource {
 
     // Create role
     const role = new IamRole(this, 'ecs-task-role-custom', {
-      name: `ECS_TASK_${ecsConfig.nameIdentifier}_${this.options.randomString}`,
+      name: commonConfig.nameIdentifier,
       assumeRolePolicy: Fn.jsonencode({
         Version: '2012-10-17',
         Statement: [
@@ -193,7 +194,7 @@ class IamResource extends Resource {
 
   _ecsAutoScalingRole(): string {
     const role = new IamRole(this, 'ecs-auto-scaling-role', {
-      name: `ECS_TASK_AUTOSCALE_${ecsConfig.nameIdentifier}_${this.options.randomString}`,
+      name: commonConfig.nameIdentifier,
       assumeRolePolicy: Fn.jsonencode({
         Version: '2012-10-17',
         Statement: [

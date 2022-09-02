@@ -5,6 +5,7 @@ import { AcmCertificate, AcmCertificateValidation } from '../gen/providers/aws/a
 import { DataAwsRoute53Zone, Route53Record } from '../gen/providers/aws/route53';
 
 import { getRootDomainFromUrl } from '../lib/util';
+import commonConfig from '../config/common.json';
 
 interface Options {
   ghostHostingUrl: string;
@@ -13,10 +14,6 @@ interface Options {
 interface Response {
   certificateArn: string;
 }
-
-const plgTags = {
-  Name: 'PLG Ghost',
-};
 
 /**
  * @dev Class to create ACM certificate and attach it to the domain provided
@@ -67,7 +64,7 @@ class AcmResource extends Resource {
       domainName: ghostHostingDomain,
       subjectAlternativeNames: [`*.${ghostHostingDomain}`],
       validationMethod: 'DNS',
-      tags: plgTags,
+      tags: commonConfig.tags,
       lifecycle: {
         createBeforeDestroy: false,
       },
@@ -81,8 +78,8 @@ class AcmResource extends Resource {
    * @returns { DataAwsRoute53Zone }
    */
   _getRoute53Zone(ghostHostingDomain: string): DataAwsRoute53Zone {
-    return new DataAwsRoute53Zone(this, 'route_53_zone', {
-      name: ghostHostingDomain,
+    return new DataAwsRoute53Zone(this, 'route-53-zone', {
+      name: ghostHostingDomain
     });
   }
 
@@ -98,14 +95,14 @@ class AcmResource extends Resource {
 
     const domainValidationOptions = cert.domainValidationOptions;
     for (let index = 0; index < Fn.tolist(domainValidationOptions).length; index++) {
-      const identifier = 'domain_validation_record_' + index;
+      const identifier = 'domain-validation-record-' + index;
       const record = new Route53Record(this, identifier, {
         name: domainValidationOptions.get(index).resourceRecordName,
         type: domainValidationOptions.get(index).resourceRecordType,
         records: [domainValidationOptions.get(index).resourceRecordValue],
         allowOverwrite: true,
         ttl: 60,
-        zoneId: route53Zone.id,
+        zoneId: route53Zone.id
       });
 
       fqdns.push(record.fqdn);

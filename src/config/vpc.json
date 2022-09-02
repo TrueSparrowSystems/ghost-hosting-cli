@@ -1,6 +1,4 @@
 {
   "cidrPrefix": "23.0.0.0/16",
-  "numberOfPrivateSubnets": 2,
-  "nameLabel": "PLG Ghost Test",
-  "nameIdentifier": "plg-ghost"
+  "numberOfPrivateSubnets": 2
 }

@@ -8,13 +8,10 @@ import { S3Bucket, S3Object } from '../gen/providers/aws/s3';
 import { getDomainFromUrl, getPathSuffixFromUrl } from '../lib/util';
 
 import ecsConfig from '../config/ecs.json';
+import commonConfig from '../config/common.json';
 
 const GHOST_ENV_FILE_NAME = ecsConfig.ghostContainerName + '.env';
 const NGINX_ENV_FILE_NAME = ecsConfig.nginxContainerName + '.env';
-
-const plgTags = {
-  Name: 'PLG Ghost',
-};
 
 interface Options {
   vpcId: string;
@@ -93,8 +90,8 @@ class EcsResource extends Resource {
    */
   _createTargetGroup(): AlbTargetGroup {
     const urlPath = getPathSuffixFromUrl(this.options.ghostHostingUrl);
-    const targetGroup = new AlbTargetGroup(this, 'plg-gh-alb-tg', {
-      name: 'plg-gh-alb-tg',
+    const targetGroup = new AlbTargetGroup(this, 'alb-tg', {
+      name: commonConfig.nameIdentifier,
       port: 80,
       protocol: 'HTTP',
       targetType: 'ip',
@@ -108,7 +105,7 @@ class EcsResource extends Resource {
         healthyThreshold: 2,
         interval: 10,
       },
-      tags: plgTags,
+      tags: commonConfig.tags
     });
 
     // Attach target group to the listener
@@ -117,7 +114,7 @@ class EcsResource extends Resource {
     if (this.options.staticWebsiteUrl) {
       hostDomains.push(getDomainFromUrl(this.options.staticWebsiteUrl));
     }
-    new AlbListenerRule(this, 'listener_rule', {
+    new AlbListenerRule(this, 'listener-rule', {
       listenerArn: this.options.listenerArn,
       priority: 50,
       condition: [
@@ -138,6 +135,7 @@ class EcsResource extends Resource {
           targetGroupArn: targetGroup.arn,
         },
       ],
+      tags: commonConfig.tags
     });
 
     return targetGroup;
@@ -150,8 +148,8 @@ class EcsResource extends Resource {
    * @returns { SecurityGroup }
    */
   _createSecurityGroup() {
-    const ecsSg = new SecurityGroup(this, 'plg-gh-ecs', {
-      name: 'plg-gh-ecs-security-group',
+    const ecsSg = new SecurityGroup(this, 'ecs-sg', {
+      name: commonConfig.nameIdentifier,
       description: 'Firewall for ECS traffic',
       vpcId: this.options.vpcId,
       ingress: [
@@ -171,18 +169,18 @@ class EcsResource extends Resource {
           cidrBlocks: ['0.0.0.0/0'],
         },
       ],
-      tags: plgTags,
+      tags: commonConfig.tags,
     });
 
     // Allow DB connection
     if (this.options.rdsSecurityGroupId) {
-      new SecurityGroupRule(this, 'rds_sg_rule', {
+      new SecurityGroupRule(this, 'rds-sg-rule', {
         type: 'ingress',
         fromPort: 3306,
         toPort: 3306,
         protocol: 'tcp',
         securityGroupId: this.options.rdsSecurityGroupId,
-        sourceSecurityGroupId: ecsSg.id,
+        sourceSecurityGroupId: ecsSg.id
       });
     }
 
@@ -195,8 +193,9 @@ class EcsResource extends Resource {
    * @returns { EcsCluster }
    */
   _createEcsCluster(): EcsCluster {
-    return new EcsCluster(this, 'plg-ghost', {
+    return new EcsCluster(this, 'cluster', {
       name: ecsConfig.clusterName,
+      tags: commonConfig.tags
     });
   }
 
@@ -206,9 +205,9 @@ class EcsResource extends Resource {
    * @returns { EcsClusterCapacityProviders } 
    */
   _addCapacityProvider(): void {
-    new EcsClusterCapacityProviders(this, 'plg-gh-capacity-provider', {
+    new EcsClusterCapacityProviders(this, 'capacity-provider', {
       clusterName: ecsConfig.clusterName,
-      capacityProviders: ['FARGATE', 'FARGATE_SPOT'],
+      capacityProviders: ['FARGATE', 'FARGATE_SPOT']
     });
   }
 
@@ -218,7 +217,7 @@ class EcsResource extends Resource {
    * @returns { void }
    */
   _createLogGroup(): void {
-    new CloudwatchLogGroup(this, 'plg-gh-log-group', {
+    new CloudwatchLogGroup(this, 'log-group', {
       name: ecsConfig.logGroupName,
     });
   }
@@ -232,7 +231,7 @@ class EcsResource extends Resource {
    * @returns { EcsTaskDefinition }
    */
   _createEcsTaskDefinition(): EcsTaskDefinition {
-    return new EcsTaskDefinition(this, 'ecs-task-definition', {
+    return new EcsTaskDefinition(this, 'task-definition', {
       family: 'ghost-task',
       memory: ecsConfig.taskDefinition.memory,
       cpu: ecsConfig.taskDefinition.cpu,
@@ -250,6 +249,7 @@ class EcsResource extends Resource {
         },
       ],
       dependsOn: [this.options.ghostEnvUpload, this.options.nginxEnvUpload],
+      tags: commonConfig.tags
     });
   }
 
@@ -356,8 +356,8 @@ class EcsResource extends Resource {
     ecsSecurityGroup: SecurityGroup,
     targetGroup: AlbTargetGroup,
   ): EcsService {
-    return new EcsService(this, 'plg-gh-ecs-service', {
-      name: 'plg-gh-ecs-service',
+    return new EcsService(this, 'ecs-service', {
+      name: commonConfig.nameIdentifier,
       cluster: ecsCluster.arn,
       taskDefinition: ecsTaskDefinition.arn,
       desiredCount: 1,
@@ -385,6 +385,7 @@ class EcsResource extends Resource {
         securityGroups: [ecsSecurityGroup.id],
         subnets: this.options.subnets,
       },
+      tags: commonConfig.tags
     });
   }
 }

@@ -117,9 +117,7 @@ class S3Upload extends Resource {
    * @returns { S3Object }
    */
   _uploadFileToBucket(fileContent: string, filename: string): S3Object {
-    const identifier = 'plg-gh-' + filename + '-configs';
-
-    return new S3Object(this, identifier, {
+    return new S3Object(this, 'upload-configs', {
       key: filename,
       bucket: this.options.configsBucket.bucket,
       acl: 'private',
