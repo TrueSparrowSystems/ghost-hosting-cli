@@ -74,8 +74,8 @@ class AlbResource extends Resource {
    * @returns { SecurityGroup }
    */
   _createAlbSecurityGroup(): SecurityGroup {
-    return new SecurityGroup(this, 'alb', {
-      name: commonConfig.nameIdentifier,
+    return new SecurityGroup(this, 'alb_sg', {
+      name: commonConfig.nameIdentifier + '-alb',
       description: 'Firewall for internet traffic',
       vpcId: this.options.vpcId,
       ingress: [
@@ -132,7 +132,7 @@ class AlbResource extends Resource {
    * @param alb
    */
   _addHttpListener(alb: Alb): void {
-    new AlbListener(this, 'http-listener', {
+    new AlbListener(this, 'http_listener', {
       port: 80,
       protocol: 'HTTP',
       loadBalancerArn: alb.arn,
@@ -157,7 +157,7 @@ class AlbResource extends Resource {
    * @returns { string }
    */
   _addHttpsListener(alb: Alb): string {
-    const albListener = new AlbListener(this, 'https-listener', {
+    const albListener = new AlbListener(this, 'https_listener', {
       port: 443,
       protocol: 'HTTPS',
       loadBalancerArn: alb.arn,

@@ -64,7 +64,7 @@ class S3Resource extends Resource {
   _createBlogAssetBucket(): S3Bucket {
     const blogContentS3BucketName = s3Config.blogContentS3BucketName.concat('-', this.options.randomString);
 
-    return new S3Bucket(this, 'blog-assets', {
+    return new S3Bucket(this, 'blog_assets', {
       bucket: blogContentS3BucketName,
     });
   }
@@ -77,18 +77,18 @@ class S3Resource extends Resource {
   _createStaticAssetBucket(): S3Bucket {
     const blogStaticS3BucketName = s3Config.blogStaticS3BucketName.concat('-', this.options.randomString);
 
-    const staticBucket = new S3Bucket(this, 'static-assets', {
+    const staticBucket = new S3Bucket(this, 'static_assets', {
       bucket: blogStaticS3BucketName,
     });
 
-    new S3BucketAcl(this, 'static-assets-acl', {
+    new S3BucketAcl(this, 'static_assets_acl', {
       acl: 'public-read',
       bucket: staticBucket.bucket,
     });
 
     const urlPath = getPathSuffixFromUrl(this.options.ghostHostingUrl);
 
-    new S3BucketWebsiteConfiguration(this, 'website-configuration', {
+    new S3BucketWebsiteConfiguration(this, 'website_configuration', {
       
       bucket: staticBucket.bucket,
       indexDocument: {

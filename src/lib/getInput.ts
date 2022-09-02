@@ -127,12 +127,10 @@ class GetInput {
         }
 
         let pass = true;
-        for (const key in configData) {
-            if(!['staticWebsiteUrl'].includes(key)){
-                if(!Object.prototype.hasOwnProperty.call(configData, key)){
-                    pass = false;
-                    break;
-                }
+        for (const key in USER_CONFIGS) {
+            if(!Object.prototype.hasOwnProperty.call(configData, key)){
+                pass = false;
+                break;
             }
         }
 
@@ -251,6 +249,15 @@ class GetInput {
             this._validateInputStringOption(options.staticWebsiteUrl);
             // TODO: validate website url/ extract path suffix
         }
+
+        let hasDomainConfiguredInRoute53 = readlineSyc.question("Do you have Route53 configured for the domain in the same AWS account? [Else the SSL certification verification will fail] (Y/n) : ", {defaultInput: yes});
+        hasDomainConfiguredInRoute53 = this._validateInputBooleanOption(hasDomainConfiguredInRoute53);
+
+        if (hasDomainConfiguredInRoute53 === no) {
+            console.log('Cannot proceed further!');
+            process.exit(0);
+        }
+
     }
 
     /**
@@ -293,13 +300,6 @@ class GetInput {
             if(options.useExistingVpc === yes) {
                 options.vpcPublicSubnets = readlineSyc.question("Provide VPC Public Subnets to launch ALB [comma separated values, at least 2 subnets required] : ");
                 this._validateInputStringOption(options.vpcSubnets, 'Invalid VPC Public Subnets.');
-            }
-            let hasDomainConfiguredInRoute53 = readlineSyc.question("Do you have Route53 configured for the domain in the same AWS account? [Else the SSL certification verification will fail] (Y/n) : ", {defaultInput: yes});
-            hasDomainConfiguredInRoute53 = this._validateInputBooleanOption(hasDomainConfiguredInRoute53);
-
-            if (hasDomainConfiguredInRoute53 === no) {
-                console.log('Cannot proceed further!');
-                process.exit(0);
             }
         }
     }

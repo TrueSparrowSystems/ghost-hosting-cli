@@ -78,7 +78,7 @@ class AcmResource extends Resource {
    * @returns { DataAwsRoute53Zone }
    */
   _getRoute53Zone(ghostHostingDomain: string): DataAwsRoute53Zone {
-    return new DataAwsRoute53Zone(this, 'route-53-zone', {
+    return new DataAwsRoute53Zone(this, 'route53_zone', {
       name: ghostHostingDomain
     });
   }
@@ -95,7 +95,7 @@ class AcmResource extends Resource {
 
     const domainValidationOptions = cert.domainValidationOptions;
     for (let index = 0; index < Fn.tolist(domainValidationOptions).length; index++) {
-      const identifier = 'domain-validation-record-' + index;
+      const identifier = 'domain_validation_record_' + index;
       const record = new Route53Record(this, identifier, {
         name: domainValidationOptions.get(index).resourceRecordName,
         type: domainValidationOptions.get(index).resourceRecordType,
@@ -119,7 +119,7 @@ class AcmResource extends Resource {
    * @returns { void }
    */
   _validateAcmCertificate(cert: AcmCertificate, fqdns: string[]): void {
-    new AcmCertificateValidation(this, 'cert-validation', {
+    new AcmCertificateValidation(this, 'cert_validation', {
       certificateArn: cert.arn,
       validationRecordFqdns: fqdns,
     });

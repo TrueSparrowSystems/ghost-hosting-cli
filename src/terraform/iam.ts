@@ -65,8 +65,8 @@ class IamResource extends Resource {
    */
   _ecsExecutionCustom(): string {
     // Create policy
-    const policy = new IamPolicy(this, 'ecs-execution-custom', {
-      name: commonConfig.nameIdentifier,
+    const policy = new IamPolicy(this, 'ecs_execution_custom', {
+      name: commonConfig.nameIdentifier + '-execution',
       path: '/',
       policy: Fn.jsonencode({
         Version: '2012-10-17',
@@ -96,8 +96,8 @@ class IamResource extends Resource {
     });
 
     // Create role
-    const role = new IamRole(this, 'ecs-execution-role-custom', {
-      name: commonConfig.nameIdentifier,
+    const role = new IamRole(this, 'ecs_execution_role_custom', {
+      name: commonConfig.nameIdentifier + '-execution',
       assumeRolePolicy: Fn.jsonencode({
         Version: '2012-10-17',
         Statement: [
@@ -114,12 +114,12 @@ class IamResource extends Resource {
     });
 
     // Role-policy attachment
-    new IamRolePolicyAttachment(this, 'ecs-execution-custom-policy-role-attachment', {
+    new IamRolePolicyAttachment(this, 'ecs_execution_custom_policy_role_attachment', {
       role: role.name,
       policyArn: policy.arn,
     });
 
-    new IamRolePolicyAttachment(this, 'ecs-execution-default-policy-role-attachment1', {
+    new IamRolePolicyAttachment(this, 'ecs_execution_default_policy_role_attachment', {
       role: role.name,
       policyArn: 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy',
     });
@@ -135,8 +135,8 @@ class IamResource extends Resource {
    */
   _ecsTaskCustom(): string {
     // Create policy
-    const policy = new IamPolicy(this, 'ecs-task-custom', {
-      name: commonConfig.nameIdentifier,
+    const policy = new IamPolicy(this, 'ecs_task_custom', {
+      name: commonConfig.nameIdentifier + '-task',
       path: '/',
       policy: Fn.jsonencode({
         Version: '2012-10-17',
@@ -154,20 +154,15 @@ class IamResource extends Resource {
           {
             Effect: 'Allow',
             Action: 's3:*',
-            Resource: [this.options.blogBucket.arn + '/'],
-          },
-          {
-            Effect: 'Allow',
-            Action: ['logs:CreateLogStream', 'logs:PutLogEvents'],
-            Resource: '*',
-          },
+            Resource: [this.options.blogBucket.arn + '/*'],
+          }
         ],
       }),
     });
 
     // Create role
-    const role = new IamRole(this, 'ecs-task-role-custom', {
-      name: commonConfig.nameIdentifier,
+    const role = new IamRole(this, 'ecs_task_role_custom', {
+      name: commonConfig.nameIdentifier + '-task',
       assumeRolePolicy: Fn.jsonencode({
         Version: '2012-10-17',
         Statement: [
@@ -184,7 +179,7 @@ class IamResource extends Resource {
     });
 
     // Role-policy attachment
-    new IamRolePolicyAttachment(this, 'ecs-custom-task-role-attachment', {
+    new IamRolePolicyAttachment(this, 'ecs_custom_task_role_attachment', {
       role: role.name,
       policyArn: policy.arn,
     });
@@ -193,8 +188,8 @@ class IamResource extends Resource {
   }
 
   _ecsAutoScalingRole(): string {
-    const role = new IamRole(this, 'ecs-auto-scaling-role', {
-      name: commonConfig.nameIdentifier,
+    const role = new IamRole(this, 'ecs_auto_scaling_role', {
+      name: commonConfig.nameIdentifier + '-auto-scaling',
       assumeRolePolicy: Fn.jsonencode({
         Version: '2012-10-17',
         Statement: [
@@ -210,7 +205,7 @@ class IamResource extends Resource {
       }),
     });
 
-    new IamRolePolicyAttachment(this, 'ecs-auto-scaling-role-attachment', {
+    new IamRolePolicyAttachment(this, 'ecs_auto_scaling_role_attachment', {
       role: role.name,
       policyArn: ecsConfig.amazonEC2ContainerServiceAutoscaleRole,
     });

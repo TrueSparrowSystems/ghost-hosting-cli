@@ -32,6 +32,7 @@ interface Options {
 
 interface Response {
   ecsService: EcsService;
+  ecsCluster: EcsCluster;
 }
 
 /**
@@ -74,13 +75,13 @@ class EcsResource extends Resource {
 
     const ecsCluster = this._createEcsCluster();
 
-    this._addCapacityProvider();
+    this._addCapacityProvider(ecsCluster);
 
     const ecsTaskDefinition = this._createEcsTaskDefinition();
 
     const ecsService = this._createEcsService(ecsCluster, ecsTaskDefinition, ecsSg, targetGroup);
 
-    return { ecsService };
+    return { ecsCluster, ecsService };
   }
 
   /**
@@ -90,7 +91,7 @@ class EcsResource extends Resource {
    */
   _createTargetGroup(): AlbTargetGroup {
     const urlPath = getPathSuffixFromUrl(this.options.ghostHostingUrl);
-    const targetGroup = new AlbTargetGroup(this, 'alb-tg', {
+    const targetGroup = new AlbTargetGroup(this, 'alb_tg', {
       name: commonConfig.nameIdentifier,
       port: 80,
       protocol: 'HTTP',
@@ -114,7 +115,7 @@ class EcsResource extends Resource {
     if (this.options.staticWebsiteUrl) {
       hostDomains.push(getDomainFromUrl(this.options.staticWebsiteUrl));
     }
-    new AlbListenerRule(this, 'listener-rule', {
+    new AlbListenerRule(this, 'listener_rule', {
       listenerArn: this.options.listenerArn,
       priority: 50,
       condition: [
@@ -148,8 +149,8 @@ class EcsResource extends Resource {
    * @returns { SecurityGroup }
    */
   _createSecurityGroup() {
-    const ecsSg = new SecurityGroup(this, 'ecs-sg', {
-      name: commonConfig.nameIdentifier,
+    const ecsSg = new SecurityGroup(this, 'ecs_sg', {
+      name: commonConfig.nameIdentifier + '-ecs',
       description: 'Firewall for ECS traffic',
       vpcId: this.options.vpcId,
       ingress: [
@@ -174,7 +175,7 @@ class EcsResource extends Resource {
 
     // Allow DB connection
     if (this.options.rdsSecurityGroupId) {
-      new SecurityGroupRule(this, 'rds-sg-rule', {
+      new SecurityGroupRule(this, 'rds_sg_rule', {
         type: 'ingress',
         fromPort: 3306,
         toPort: 3306,
@@ -204,9 +205,9 @@ class EcsResource extends Resource {
    * 
    * @returns { EcsClusterCapacityProviders } 
    */
-  _addCapacityProvider(): void {
-    new EcsClusterCapacityProviders(this, 'capacity-provider', {
-      clusterName: ecsConfig.clusterName,
+  _addCapacityProvider(ecsCluster: EcsCluster): void {
+    new EcsClusterCapacityProviders(this, 'capacity_provider', {
+      clusterName: ecsCluster.name,
       capacityProviders: ['FARGATE', 'FARGATE_SPOT']
     });
   }
@@ -217,7 +218,7 @@ class EcsResource extends Resource {
    * @returns { void }
    */
   _createLogGroup(): void {
-    new CloudwatchLogGroup(this, 'log-group', {
+    new CloudwatchLogGroup(this, 'log_group', {
       name: ecsConfig.logGroupName,
     });
   }
@@ -231,7 +232,7 @@ class EcsResource extends Resource {
    * @returns { EcsTaskDefinition }
    */
   _createEcsTaskDefinition(): EcsTaskDefinition {
-    return new EcsTaskDefinition(this, 'task-definition', {
+    return new EcsTaskDefinition(this, 'task_definition', {
       family: 'ghost-task',
       memory: ecsConfig.taskDefinition.memory,
       cpu: ecsConfig.taskDefinition.cpu,
@@ -356,11 +357,11 @@ class EcsResource extends Resource {
     ecsSecurityGroup: SecurityGroup,
     targetGroup: AlbTargetGroup,
   ): EcsService {
-    return new EcsService(this, 'ecs-service', {
+    return new EcsService(this, 'ecs_service', {
       name: commonConfig.nameIdentifier,
       cluster: ecsCluster.arn,
       taskDefinition: ecsTaskDefinition.arn,
-      desiredCount: 1,
+      desiredCount: ecsConfig.autoScalingMinCapacity,
       capacityProviderStrategy: [
         {
           capacityProvider: 'FARGATE_SPOT',

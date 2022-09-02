@@ -15,7 +15,9 @@ import { AutoScaling } from './auto_scaling';
 import { StringResource } from '../gen/providers/random';
 import { S3Bucket, S3Object } from '../gen/providers/aws/s3';
 import { RandomProvider } from '../gen/providers/random';
-import { EcsService } from '../gen/providers/aws/ecs';
+import { EcsCluster, EcsService } from '../gen/providers/aws/ecs';
+
+import commonConfig from '../config/common.json';
 
 import { readInput } from '../lib/readInput';
 
@@ -85,7 +87,7 @@ class GhostStack extends TerraformStack {
       configsBucket,
     );
 
-    const { ecsService } = this._createEcs(
+    const { ecsCluster, ecsService } = this._createEcs(
       albSecurityGroups,
       listenerArn,
       customExecutionRoleArn,
@@ -95,7 +97,7 @@ class GhostStack extends TerraformStack {
       nginxEnvUpload,
     );
 
-    this._autoScale(ecsService, ecsAutoScalingRoleArn);
+    this._autoScale(ecsCluster, ecsService, ecsAutoScalingRoleArn);
   }
 
   /**
@@ -104,7 +106,7 @@ class GhostStack extends TerraformStack {
    * @returns {void}
    */
   _generateRandomString(): void {
-    const stringResource = new StringResource(this, 'random-string', {
+    const stringResource = new StringResource(this, 'random_string', {
       length: 8,
       lower: true,
       upper: false,
@@ -126,15 +128,15 @@ class GhostStack extends TerraformStack {
    */
   _setProviders(): void {
     // AWS provider
-    new AwsProvider(this, 'aws-provider', {
+    new AwsProvider(this, 'aws_provider', {
       region: this.userInput.aws.region,
       accessKey: this.userInput.aws.accessKeyId,
       secretKey: this.userInput.aws.secretAccessKey,
     });
 
     // Random provider
-    new RandomProvider(this, 'random-provider', {
-      alias: 'random-provider',
+    new RandomProvider(this, 'random_provider', {
+      alias: 'random_provider',
     });
   }
 
@@ -223,7 +225,7 @@ class GhostStack extends TerraformStack {
   }
 
   _s3Upload(blogBucket: S3Bucket, configsBucket: S3Bucket, staticBucket: S3Bucket) {
-    return new S3Upload(this, 's3-upload', {
+    return new S3Upload(this, 's3_upload', {
       region: this.userInput.aws.region,
       blogBucket,
       configsBucket,
@@ -292,8 +294,9 @@ class GhostStack extends TerraformStack {
    * @param ecsAutoScalingRoleArn
    * @private
    */
-  _autoScale(ecsService: EcsService, ecsAutoScalingRoleArn: string) {
-    return new AutoScaling(this, 'auto-scale', {
+  _autoScale(ecsCluster: EcsCluster, ecsService: EcsService, ecsAutoScalingRoleArn: string) {
+    return new AutoScaling(this, 'auto_scale', {
+      ecsCluster,
       ecsService,
       autoScaleRoleArn: ecsAutoScalingRoleArn,
     }).perform();
@@ -301,7 +304,7 @@ class GhostStack extends TerraformStack {
 }
 
 const app = new App();
-new GhostStack(app, 'plg-ghost')
+new GhostStack(app, commonConfig.nameIdentifier)
   .perform()
   .then()
   .catch((err) => {

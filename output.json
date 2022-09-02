@@ -1,0 +1,6 @@
+{
+  "plg-ghost": {
+    "ecs_ghost_env_file_arn_48DD5FB6": "arn:aws:s3:::plg-ghost-configs-2kjy9r0r/ghost.env",
+    "ecs_nginx_env_file_arn_529F38EB": "arn:aws:s3:::plg-ghost-configs-2kjy9r0r/nginx.env"
+  }
+}

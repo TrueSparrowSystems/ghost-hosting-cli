@@ -68,8 +68,8 @@ class RdsResource extends Resource {
     }
 
     if (!this.options.useExistingRds) {
-      const rdsSg = new SecurityGroup(this, 'rds-sg', {
-        name: commonConfig.nameIdentifier,
+      const rdsSg = new SecurityGroup(this, 'rds_sg', {
+        name: commonConfig.nameIdentifier + '-rds',
         vpcId: this.options.vpcId,
         egress: [
           {
@@ -82,7 +82,7 @@ class RdsResource extends Resource {
         tags: commonConfig.tags,
       });
 
-      const password = new Password(this, 'rds-pw', {
+      const password = new Password(this, 'rds_pw', {
         length: 8,
         special: true,
         minLower: 4,
@@ -118,7 +118,7 @@ class RdsResource extends Resource {
         createRandomPassword: false,
         skipFinalSnapshot: true,
         skipFinalBackup: true,
-        publiclyAccessible: true,
+        publiclyAccessible: false,
         tags: commonConfig.tags
       };
 

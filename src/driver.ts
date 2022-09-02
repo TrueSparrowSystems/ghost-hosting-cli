@@ -23,7 +23,8 @@ function run(): void {
  * @returns {void}
  */
 function _deployStack(): void {
-  if (shell.exec('npm run diff').code !== 0) {
+  const resp = shell.exec('npm run diff');
+  if (resp.code !== 0) {
     shell.echo('Error: cdktf exec failed');
     shell.exit(1);
   }
