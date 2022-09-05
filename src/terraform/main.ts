@@ -15,12 +15,14 @@ import { AutoScaling } from './auto_scaling';
 import { StringResource } from '../gen/providers/random';
 import { S3Bucket, S3Object } from '../gen/providers/aws/s3';
 import { RandomProvider } from '../gen/providers/random';
-import { EcsService } from '../gen/providers/aws/ecs';
+import { EcsCluster, EcsService } from '../gen/providers/aws/ecs';
+
+import commonConfig from '../config/common.json';
 
 import { readInput } from '../lib/readInput';
 
 /**
- * Terraform stack
+ * @dev Terraform stack
  */
 class GhostStack extends TerraformStack {
   userInput: any;
@@ -35,7 +37,7 @@ class GhostStack extends TerraformStack {
   rdsSecurityGroupId: string;
 
   /**
-   * Constructor for the terraform stack
+   * @dev Constructor for the terraform stack
    *
    * @param {Construct} scope
    * @param {string} name
@@ -57,9 +59,11 @@ class GhostStack extends TerraformStack {
   }
 
   /**
-   * Main performer of the class.
+   * @dev Main performer of the class
+   * 
+   * @returns {Promise<void>}
    */
-  async perform() {
+  async perform(): Promise<void> {
     this.userInput = readInput();
 
     this._setProviders();
@@ -83,7 +87,7 @@ class GhostStack extends TerraformStack {
       configsBucket,
     );
 
-    const { ecsService } = this._createEcs(
+    const { ecsCluster, ecsService } = this._createEcs(
       albSecurityGroups,
       listenerArn,
       customExecutionRoleArn,
@@ -93,11 +97,13 @@ class GhostStack extends TerraformStack {
       nginxEnvUpload,
     );
 
-    this._autoScale(ecsService, ecsAutoScalingRoleArn);
+    this._autoScale(ecsCluster, ecsService, ecsAutoScalingRoleArn);
   }
 
   /**
-   * Generate random string append with resource name and identifier
+   * @dev Generate random string append with resource name and identifier
+   * 
+   * @returns {void}
    */
   _generateRandomString(): void {
     const stringResource = new StringResource(this, 'random_string', {
@@ -116,31 +122,31 @@ class GhostStack extends TerraformStack {
   }
 
   /**
-   * Set required providers.
+   * @dev Set required providers.
    *
-   * @private
+   * @returns {void}
    */
   _setProviders(): void {
     // AWS provider
-    new AwsProvider(this, 'AWS', {
+    new AwsProvider(this, 'aws_provider', {
       region: this.userInput.aws.region,
       accessKey: this.userInput.aws.accessKeyId,
       secretKey: this.userInput.aws.secretAccessKey,
     });
 
     // Random provider
-    new RandomProvider(this, 'random-provider', {
-      alias: 'random-provider',
+    new RandomProvider(this, 'random_provider', {
+      alias: 'random_provider',
     });
   }
 
   /**
-   * Create aws vpc
+   * @dev Create aws vpc
    *
-   * @private
+   * @returns {void}
    */
   _createVpc(): void {
-    const { vpcId, vpcSubnets, vpcPublicSubnets } = new VpcResource(this, 'plg-gh-vpc', {
+    const { vpcId, vpcSubnets, vpcPublicSubnets } = new VpcResource(this, 'vpc', {
       useExistingVpc: this.userInput.vpc.useExistingVpc,
       vpcSubnets: this.userInput.vpc.vpcSubnets || [],
       vpcPublicSubnets: this.userInput.vpc.vpcPublicSubnets || [],
@@ -152,14 +158,14 @@ class GhostStack extends TerraformStack {
   }
 
   /**
-   * Create aws rds instance in private subnet.
+   * @dev Create aws rds instance in private subnet.
    *
-   * @private
+   * @returns {void}
    */
   _createRdsInstance(): void {
     const { rdsHost, rdsDbUserName, rdsDbPassword, rdsDbName, rdsSecurityGroupId } = new RdsResource(
       this,
-      'plg-gh-rds',
+      'rds',
       {
         vpcId: this.vpcId,
         vpcSubnets: this.vpcSubnets,
@@ -180,12 +186,12 @@ class GhostStack extends TerraformStack {
   }
 
   /**
-   * Create application load balancer
+   * @dev Create application load balancer
    *
    * @private
    */
   _createAlb(certificateArn: string | undefined) {
-    return new AlbResource(this, 'plg-gh-alb', {
+    return new AlbResource(this, 'alb', {
       vpcId: this.vpcId,
       publicSubnets: this.vpcPublicSubnets,
       useExistingAlb: this.userInput.alb.useExistingAlb,
@@ -195,12 +201,12 @@ class GhostStack extends TerraformStack {
   }
 
   /**
-   * Create required s3 buckets
+   * @dev Create required s3 buckets
    *
    * @private
    */
   _createS3Buckets() {
-    return new S3Resource(this, 'plg-gh-s3', {
+    return new S3Resource(this, 's3', {
       randomString: this.randomString,
       vpcId: this.vpcId,
       ghostHostingUrl: this.userInput.ghostHostingUrl,
@@ -213,13 +219,13 @@ class GhostStack extends TerraformStack {
       return { certificateArn: '' };
     }
 
-    return new AcmResource(this, 'plg-gh-acm', {
+    return new AcmResource(this, 'acm', {
       ghostHostingUrl: this.userInput.ghostHostingUrl,
     }).perform();
   }
 
   _s3Upload(blogBucket: S3Bucket, configsBucket: S3Bucket, staticBucket: S3Bucket) {
-    return new S3Upload(this, 's3-env-upload', {
+    return new S3Upload(this, 's3_upload', {
       region: this.userInput.aws.region,
       blogBucket,
       configsBucket,
@@ -236,7 +242,7 @@ class GhostStack extends TerraformStack {
   }
 
   _createIamRolePolicies(blogBucket: S3Bucket, configsBucket: S3Bucket) {
-    return new IamResource(this, 'plg-gh-iam', {
+    return new IamResource(this, 'iam', {
       randomString: this.randomString,
       blogBucket,
       configsBucket,
@@ -244,7 +250,7 @@ class GhostStack extends TerraformStack {
   }
 
   /**
-   * Create ECS container, cluster, task-definition, service and task in EC2-ECS optimized instance
+   * @dev Create ECS container, cluster, task-definition, service and task in EC2-ECS optimized instance
    *
    * @param albSecurityGroups
    * @param listenerArn
@@ -264,7 +270,7 @@ class GhostStack extends TerraformStack {
     ghostEnvUpload: S3Object,
     nginxEnvUpload: S3Object,
   ) {
-    return new EcsResource(this, 'plg-gh-ecs', {
+    return new EcsResource(this, 'ecs', {
       vpcId: this.vpcId,
       subnets: this.vpcSubnets,
       dbInstanceEndpoint: this.rdsHost,
@@ -288,8 +294,9 @@ class GhostStack extends TerraformStack {
    * @param ecsAutoScalingRoleArn
    * @private
    */
-  _autoScale(ecsService: EcsService, ecsAutoScalingRoleArn: string) {
-    return new AutoScaling(this, 'auto-scale', {
+  _autoScale(ecsCluster: EcsCluster, ecsService: EcsService, ecsAutoScalingRoleArn: string) {
+    return new AutoScaling(this, 'auto_scale', {
+      ecsCluster,
       ecsService,
       autoScaleRoleArn: ecsAutoScalingRoleArn,
     }).perform();
@@ -297,7 +304,7 @@ class GhostStack extends TerraformStack {
 }
 
 const app = new App();
-new GhostStack(app, 'plg-ghost')
+new GhostStack(app, commonConfig.nameIdentifier)
   .perform()
   .then()
   .catch((err) => {

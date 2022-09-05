@@ -1,12 +1,14 @@
 import { Resource } from 'cdktf';
 import { Construct } from 'constructs';
 import { AppautoscalingPolicy, AppautoscalingTarget } from '../gen/providers/aws/appautoscaling';
-import { EcsService } from '../gen/providers/aws/ecs';
+import { EcsCluster, EcsService } from '../gen/providers/aws/ecs';
 
 import ecsConfig from '../config/ecs.json';
+import commonConfig from '../config/common.json';
 
 interface Options {
   autoScaleRoleArn: string;
+  ecsCluster: EcsCluster;
   ecsService: EcsService;
 }
 
@@ -46,14 +48,14 @@ class AutoScaling extends Resource {
    * @returns { AppautoscalingTarget }
    */
   _createAppAutoScalingTarget(): AppautoscalingTarget {
-    return new AppautoscalingTarget(this, 'auto-scaling-target', {
-      maxCapacity: 9,
-      minCapacity: 1,
-      resourceId: `service/${ecsConfig.clusterName}/${this.options.ecsService.name}`,
+    return new AppautoscalingTarget(this, 'auto_scaling_target', {
+      maxCapacity: ecsConfig.autoScalingMaxCapacity,
+      minCapacity: ecsConfig.autoScalingMinCapacity,
+      resourceId: `service/${this.options.ecsCluster.name}/${this.options.ecsService.name}`,
       scalableDimension: 'ecs:service:DesiredCount',
       serviceNamespace: 'ecs',
       roleArn: this.options.autoScaleRoleArn,
-      dependsOn: [this.options.ecsService],
+      dependsOn: [this.options.ecsService]
     });
   }
 
@@ -64,8 +66,8 @@ class AutoScaling extends Resource {
    * @returns { void }
    */
   _createAppAutoScalingPolicies(ecsTarget: AppautoscalingTarget): void {
-    new AppautoscalingPolicy(this, 'auto-scaling-policy-cpu', {
-      name: 'application-scaling-policy-cpu',
+    new AppautoscalingPolicy(this, 'auto_scaling_policy_cpu', {
+      name: commonConfig.nameIdentifier,
       policyType: 'TargetTrackingScaling',
       resourceId: ecsTarget.resourceId,
       scalableDimension: ecsTarget.scalableDimension,
@@ -81,8 +83,8 @@ class AutoScaling extends Resource {
       dependsOn: [ecsTarget],
     });
 
-    new AppautoscalingPolicy(this, 'auto-scaling-policy-memory', {
-      name: 'application-scaling-policy-memory',
+    new AppautoscalingPolicy(this, 'auto_scaling_policy_memory', {
+      name: commonConfig.nameIdentifier,
       policyType: 'TargetTrackingScaling',
       resourceId: ecsTarget.resourceId,
       scalableDimension: ecsTarget.scalableDimension,
@@ -95,7 +97,7 @@ class AutoScaling extends Resource {
         scaleInCooldown: 30,
         scaleOutCooldown: 60,
       },
-      dependsOn: [ecsTarget],
+      dependsOn: [ecsTarget]
     });
   }
 }

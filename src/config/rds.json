@@ -1,6 +1,9 @@
 {
   "dbName": "ghost_db",
-  "dbUserName": "ghost",
+  "dbUserName": "master",
   "dbStorageSizeInGB": "10",
-  "dbInstanceClass": "db.t3.micro"
+  "dbInstanceClass": "db.t3.micro",
+  "backupWindow": "03:00-06:00",
+  "maintenanceWindow": "Mon:06:30-Mon:07:30",
+  "multiAz": false
 }

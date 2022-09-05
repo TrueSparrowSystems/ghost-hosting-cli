@@ -31,12 +31,12 @@ It gives the following benefits:
 
 - Deploy Ghost Stack
     ```bash
-    ./run deploy
+    plg-ghost deploy
     ```
 
 - Destroy Ghost Stack
     ```bash
-    ./run destroy
+    plg-ghost destroy
     ```
 
 ## Development 
@@ -49,6 +49,7 @@ $ cd ghost-hosting-cli
 npm install
 
 npm run watch
+// OR  npm run get && npm run build
 ```
 
 Run `./run deploy` in a new terminal window.

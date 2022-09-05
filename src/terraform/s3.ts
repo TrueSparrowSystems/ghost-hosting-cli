@@ -1,6 +1,7 @@
-import { Resource } from 'cdktf';
+import { Resource, TerraformOutput } from 'cdktf';
 import { Construct } from 'constructs';
 import { S3Bucket, S3BucketAcl, S3BucketWebsiteConfiguration } from '../gen/providers/aws/s3';
+import { getPathSuffixFromUrl } from '../lib/util';
 
 import s3Config from '../config/s3.json';
 
@@ -63,7 +64,7 @@ class S3Resource extends Resource {
   _createBlogAssetBucket(): S3Bucket {
     const blogContentS3BucketName = s3Config.blogContentS3BucketName.concat('-', this.options.randomString);
 
-    return new S3Bucket(this, 'plg-gh-blog-assets', {
+    return new S3Bucket(this, 'blog_assets', {
       bucket: blogContentS3BucketName,
     });
   }
@@ -76,22 +77,29 @@ class S3Resource extends Resource {
   _createStaticAssetBucket(): S3Bucket {
     const blogStaticS3BucketName = s3Config.blogStaticS3BucketName.concat('-', this.options.randomString);
 
-    const staticBucket = new S3Bucket(this, 'plg-gh-static-assets', {
+    const staticBucket = new S3Bucket(this, 'static_assets', {
       bucket: blogStaticS3BucketName,
     });
 
-    new S3BucketAcl(this, 'plg-gh-static-assets-acl', {
+    new TerraformOutput(this, 'website_bucket_arn', {
+      value: staticBucket.arn
+    });
+
+    new S3BucketAcl(this, 'static_assets_acl', {
       acl: 'public-read',
       bucket: staticBucket.bucket,
     });
 
-    new S3BucketWebsiteConfiguration(this, 'plg-gh-website-configuration', {
+    const urlPath = getPathSuffixFromUrl(this.options.ghostHostingUrl);
+
+    new S3BucketWebsiteConfiguration(this, 'website_configuration', {
+      
       bucket: staticBucket.bucket,
       indexDocument: {
         suffix: 'index.html',
       },
       errorDocument: {
-        key: 'blog/404/index.html',
+        key: `${urlPath}/404/index.html`
       },
     });
 
@@ -106,7 +114,7 @@ class S3Resource extends Resource {
   _createConfigsBucket(): S3Bucket {
     const configsBucket = s3Config.configsS3BucketName.concat('-', this.options.randomString);
 
-    return new S3Bucket(this, 'plg-gh-configs', {
+    return new S3Bucket(this, 'configs', {
       bucket: configsBucket,
     });
   }

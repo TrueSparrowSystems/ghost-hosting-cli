@@ -5,6 +5,7 @@ import { AcmCertificate, AcmCertificateValidation } from '../gen/providers/aws/a
 import { DataAwsRoute53Zone, Route53Record } from '../gen/providers/aws/route53';
 
 import { getRootDomainFromUrl } from '../lib/util';
+import commonConfig from '../config/common.json';
 
 interface Options {
   ghostHostingUrl: string;
@@ -13,10 +14,6 @@ interface Options {
 interface Response {
   certificateArn: string;
 }
-
-const plgTags = {
-  Name: 'PLG Ghost',
-};
 
 /**
  * @dev Class to create ACM certificate and attach it to the domain provided
@@ -67,7 +64,7 @@ class AcmResource extends Resource {
       domainName: ghostHostingDomain,
       subjectAlternativeNames: [`*.${ghostHostingDomain}`],
       validationMethod: 'DNS',
-      tags: plgTags,
+      tags: commonConfig.tags,
       lifecycle: {
         createBeforeDestroy: false,
       },
@@ -81,8 +78,8 @@ class AcmResource extends Resource {
    * @returns { DataAwsRoute53Zone }
    */
   _getRoute53Zone(ghostHostingDomain: string): DataAwsRoute53Zone {
-    return new DataAwsRoute53Zone(this, 'route_53_zone', {
-      name: ghostHostingDomain,
+    return new DataAwsRoute53Zone(this, 'route53_zone', {
+      name: ghostHostingDomain
     });
   }
 
@@ -105,7 +102,7 @@ class AcmResource extends Resource {
         records: [domainValidationOptions.get(index).resourceRecordValue],
         allowOverwrite: true,
         ttl: 60,
-        zoneId: route53Zone.id,
+        zoneId: route53Zone.id
       });
 
       fqdns.push(record.fqdn);
@@ -122,7 +119,7 @@ class AcmResource extends Resource {
    * @returns { void }
    */
   _validateAcmCertificate(cert: AcmCertificate, fqdns: string[]): void {
-    new AcmCertificateValidation(this, 'cert-validation', {
+    new AcmCertificateValidation(this, 'cert_validation', {
       certificateArn: cert.arn,
       validationRecordFqdns: fqdns,
     });

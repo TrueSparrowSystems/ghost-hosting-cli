@@ -1,7 +1,9 @@
-import { Resource, Fn } from 'cdktf';
+import { Resource, Fn, TerraformOutput } from 'cdktf';
 import { Construct } from 'constructs';
 import { SecurityGroup } from '../gen/providers/aws/vpc';
 import { Alb, AlbListener, DataAwsLb, DataAwsLbListener } from '../gen/providers/aws/elb';
+
+import commonConfig from '../config/common.json';
 
 interface Options {
   vpcId: string;
@@ -15,10 +17,6 @@ interface Response {
   albSecurityGroups: string[];
   listenerArn: string;
 }
-
-const plgTags = {
-  Name: 'PLG Ghost',
-};
 
 /**
  * @dev Class to an application load balancer
@@ -76,8 +74,8 @@ class AlbResource extends Resource {
    * @returns { SecurityGroup }
    */
   _createAlbSecurityGroup(): SecurityGroup {
-    return new SecurityGroup(this, 'plg-gh-alb-sg', {
-      name: 'alb-sg',
+    return new SecurityGroup(this, 'alb_sg', {
+      name: commonConfig.nameIdentifier + '-alb',
       description: 'Firewall for internet traffic',
       vpcId: this.options.vpcId,
       ingress: [
@@ -104,7 +102,7 @@ class AlbResource extends Resource {
           cidrBlocks: ['0.0.0.0/0'],
         },
       ],
-      tags: plgTags,
+      tags: commonConfig.tags,
     });
   }
 
@@ -115,16 +113,22 @@ class AlbResource extends Resource {
    * @returns { Alb }
    */
   _createAlb(securityGroup: SecurityGroup): Alb {
-    return new Alb(this, 'plg-gh-alb', {
+    const alb = new Alb(this, 'alb', {
       loadBalancerType: 'application',
-      name: 'plg-gh-alb',
+      name: commonConfig.nameIdentifier,
       internal: false,
       ipAddressType: 'ipv4',
       subnets: this.options.publicSubnets,
       securityGroups: [securityGroup.id],
       idleTimeout: 60,
-      tags: plgTags,
+      tags: commonConfig.tags,
     });
+
+    new TerraformOutput(this, 'alb_dns_name', {
+      value: alb.dnsName
+    });
+
+    return alb;
   }
 
   /**
@@ -134,7 +138,7 @@ class AlbResource extends Resource {
    * @param alb
    */
   _addHttpListener(alb: Alb): void {
-    new AlbListener(this, 'plg-gh-http-listener', {
+    new AlbListener(this, 'http_listener', {
       port: 80,
       protocol: 'HTTP',
       loadBalancerArn: alb.arn,
@@ -148,7 +152,7 @@ class AlbResource extends Resource {
           },
         },
       ],
-      tags: plgTags,
+      tags: commonConfig.tags,
     });
   }
 
@@ -159,7 +163,7 @@ class AlbResource extends Resource {
    * @returns { string }
    */
   _addHttpsListener(alb: Alb): string {
-    const albListener = new AlbListener(this, 'plg-gh-https-listener', {
+    const albListener = new AlbListener(this, 'https_listener', {
       port: 443,
       protocol: 'HTTPS',
       loadBalancerArn: alb.arn,
@@ -175,7 +179,7 @@ class AlbResource extends Resource {
           },
         },
       ],
-      tags: plgTags,
+      tags: commonConfig.tags,
     });
 
     return albListener.arn;
