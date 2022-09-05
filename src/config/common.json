@@ -1,4 +1,5 @@
 {
+  "stackName": "plg-ghost",
   "nameLabel": "PLG Ghost Test",
   "nameIdentifier": "plg-ghost",
   "tags": {
