@@ -1,4 +1,4 @@
-import { Resource } from 'cdktf';
+import { Resource, TerraformOutput } from 'cdktf';
 import { Construct } from 'constructs';
 import { Rds } from '../gen/modules/rds';
 import { SecurityGroup } from '../gen/providers/aws/vpc';
@@ -129,6 +129,23 @@ class RdsResource extends Resource {
       responseData.rdsDbPassword = password.result;
       responseData.rdsDbName = rdsConfig.dbName;
       responseData.rdsSecurityGroupId = rdsSg.id;
+
+      new TerraformOutput(this, 'rds_host', {
+        value: rds.dbInstanceAddressOutput
+      });
+
+      new TerraformOutput(this, 'rds_user', {
+        value: rdsConfig.dbUserName
+      });
+
+      new TerraformOutput(this, 'rds_password', {
+        value: password.result,
+        sensitive: true
+      });
+
+      new TerraformOutput(this, 'rds_database', {
+        value: rdsConfig.dbName
+      });
     }
 
     return responseData;

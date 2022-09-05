@@ -1,4 +1,4 @@
-import { Resource } from 'cdktf';
+import { Resource, TerraformOutput } from 'cdktf';
 import { Construct } from 'constructs';
 import { S3Bucket, S3BucketAcl, S3BucketWebsiteConfiguration } from '../gen/providers/aws/s3';
 import { getPathSuffixFromUrl } from '../lib/util';
@@ -79,6 +79,10 @@ class S3Resource extends Resource {
 
     const staticBucket = new S3Bucket(this, 'static_assets', {
       bucket: blogStaticS3BucketName,
+    });
+
+    new TerraformOutput(this, 'website_bucket_arn', {
+      value: staticBucket.arn
     });
 
     new S3BucketAcl(this, 'static_assets_acl', {

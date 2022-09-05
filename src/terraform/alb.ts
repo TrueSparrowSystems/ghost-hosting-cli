@@ -1,4 +1,4 @@
-import { Resource, Fn } from 'cdktf';
+import { Resource, Fn, TerraformOutput } from 'cdktf';
 import { Construct } from 'constructs';
 import { SecurityGroup } from '../gen/providers/aws/vpc';
 import { Alb, AlbListener, DataAwsLb, DataAwsLbListener } from '../gen/providers/aws/elb';
@@ -113,7 +113,7 @@ class AlbResource extends Resource {
    * @returns { Alb }
    */
   _createAlb(securityGroup: SecurityGroup): Alb {
-    return new Alb(this, 'alb', {
+    const alb = new Alb(this, 'alb', {
       loadBalancerType: 'application',
       name: commonConfig.nameIdentifier,
       internal: false,
@@ -123,6 +123,12 @@ class AlbResource extends Resource {
       idleTimeout: 60,
       tags: commonConfig.tags,
     });
+
+    new TerraformOutput(this, 'alb_dns_name', {
+      value: alb.dnsName
+    });
+
+    return alb;
   }
 
   /**

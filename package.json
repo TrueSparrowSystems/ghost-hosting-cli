@@ -9,6 +9,7 @@
     "diff": "cdktf diff",
     "auto-deploy": "cdktf deploy --auto-approve",
     "auto-destroy": "cdktf destroy --auto-approve",
+    "output": "cdktf output --outputs-file-include-sensitive-outputs --outputs-file output.json",
     "synth": "cdktf synth",
     "compile": "tsc --pretty",
     "watch": "cdktf get && tsc -w",
@@ -50,7 +51,8 @@
     "constructs": "10.1.37",
     "psl": "1.9.0",
     "readline-sync": "1.4.10",
-    "shelljs": "0.8.5"
+    "shelljs": "0.8.5",
+    "chalk": "5.0.1"
   },
   "devDependencies": {
     "@types/jest": "28.1.1",
