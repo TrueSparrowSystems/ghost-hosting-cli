@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as readlineSyc from "readline-sync";
+import chalk from 'chalk';
 import { Command, Argument } from 'commander';
 const command = new Command();
 
@@ -143,7 +144,7 @@ class GetInput {
      * @returns {boolean}
      */
     _usePreviousConfigData(): boolean {
-        let useExistingConfig = readlineSyc.question("Previous installation \"config.json\" file found, Would you like to use the existing configuration options? [Else it will start from the scratch] (Y/n) : ", {defaultInput: yes});
+        let useExistingConfig = readlineSyc.question(chalk.blue.bold("Previous installation \"config.json\" file found, Would you like to use the existing configuration options? [Else it will start from the scratch] (Y/n) : "), {defaultInput: yes});
         useExistingConfig = this._validateInputBooleanOption(useExistingConfig);
 
         return useExistingConfig === yes;
@@ -199,11 +200,11 @@ class GetInput {
      * @returns {void}
      */
     _getVpcConfigurations(): void {
-        options.useExistingVpc = readlineSyc.question("Use existing VPC? (y/N) : ", {defaultInput: no});
+        options.useExistingVpc = readlineSyc.question(chalk.blue.bold("Use existing VPC? (y/N) : "), {defaultInput: no});
         options.useExistingVpc = this._validateInputBooleanOption(options.useExistingVpc);
 
         if (options.useExistingVpc === yes) {
-            options.vpcSubnets = readlineSyc.question("Provide VPC Subnets to run ECS tasks [comma separated values, at least 2 subnets required] : ");
+            options.vpcSubnets = readlineSyc.question(chalk.blue.bold("Provide VPC Subnets to run ECS tasks [comma separated values, at least 2 subnets required] : "));
             this._validateInputStringOption(options.vpcSubnets, 'Invalid VPC Subnets.');
         }
     }
@@ -215,17 +216,17 @@ class GetInput {
      */
     _getAwsCredentials(): void {
         if (!options.accessKeyId) {
-            options.accessKeyId = readlineSyc.question("AWS access key id : ");
+            options.accessKeyId = readlineSyc.question(chalk.blue.bold("AWS access key id : "));
             this._validateInputStringOption(options.accessKeyId);
         }
 
         if (!options.secretAccessKey) {
-            options.secretAccessKey = readlineSyc.question("AWS secret access key : ");
+            options.secretAccessKey = readlineSyc.question(chalk.blue.bold("AWS secret access key : "));
             this._validateInputStringOption(options.secretAccessKey);
         }
 
         if (!options.region) {
-            options.region = readlineSyc.question("AWS region : ");
+            options.region = readlineSyc.question(chalk.blue.bold("AWS region : "));
             this._validateInputStringOption(options.region);
         }
     }
@@ -236,25 +237,25 @@ class GetInput {
      * @returns {void}
      */
     _getBlogManagementRequirements(): void {
-        options.ghostHostingUrl = readlineSyc.question("Ghost hosting url : ");
+        options.ghostHostingUrl = readlineSyc.question(chalk.blue.bold("Ghost hosting url : "));
         this._validateInputStringOption(options.ghostHostingUrl);
         // TODO: Validation for HTTPS only
 
-        options.hostStaticWebsite = readlineSyc.question("Do you want to host static website? (Y/n) : ", {defaultInput: yes});
+        options.hostStaticWebsite = readlineSyc.question(chalk.blue.bold("Do you want to host static website? (Y/n) : "), {defaultInput: yes});
         options.hostStaticWebsite = this._validateInputBooleanOption(options.hostStaticWebsite);
 
         if (options.hostStaticWebsite === yes) {
             // TODO: create static bucket
-            options.staticWebsiteUrl = readlineSyc.question("Static website url : ");
+            options.staticWebsiteUrl = readlineSyc.question(chalk.blue.bold("Static website url : "));
             this._validateInputStringOption(options.staticWebsiteUrl);
             // TODO: validate website url/ extract path suffix
         }
 
-        let hasDomainConfiguredInRoute53 = readlineSyc.question("Do you have Route53 configured for the domain in the same AWS account? [Else the SSL certification verification will fail] (Y/n) : ", {defaultInput: yes});
+        let hasDomainConfiguredInRoute53 = readlineSyc.question(chalk.blue.bold("Do you have Route53 configured for the domain in the same AWS account? [Else the SSL certification verification will fail] (Y/n) : "), {defaultInput: yes});
         hasDomainConfiguredInRoute53 = this._validateInputBooleanOption(hasDomainConfiguredInRoute53);
 
         if (hasDomainConfiguredInRoute53 === no) {
-            console.log('Cannot proceed further!');
+            console.log(chalk.yellow.bold('Cannot proceed further!'));
             process.exit(0);
         }
 
@@ -266,19 +267,19 @@ class GetInput {
      * @returns {void}
      */
     _getRdsRequirements(): void {
-        options.useExistingRds = readlineSyc.question("Do you want to use existing RDS MySQL instance? (y/N) : ", {defaultInput: no});
+        options.useExistingRds = readlineSyc.question(chalk.blue.bold("Do you want to use existing RDS MySQL instance? (y/N) : "), {defaultInput: no});
         options.useExistingRds = this._validateInputBooleanOption(options.useExistingRds);
 
         if (options.useExistingRds === yes) {
-            options.rdsHost = readlineSyc.question("MySQL host : ");
+            options.rdsHost = readlineSyc.question(chalk.blue.bold("MySQL host : "));
             this._validateInputStringOption(options.rdsHost);
-            options.rdsDbUserName = readlineSyc.question("MySQL user name : ");
+            options.rdsDbUserName = readlineSyc.question(chalk.blue.bold("MySQL user name : "));
             this._validateInputStringOption(options.rdsDbUserName);
-            options.rdsDbPassword = readlineSyc.question("MySQL user password : ", {
+            options.rdsDbPassword = readlineSyc.question(chalk.blue.bold("MySQL user password : "), {
                 hideEchoBack: true
             });
             this._validateInputStringOption(options.rdsDbPassword);
-            options.rdsDbName = readlineSyc.question("MySQL database name : ");
+            options.rdsDbName = readlineSyc.question(chalk.blue.bold("MySQL database name : "));
             this._validateInputStringOption(options.rdsDbName);
         }
     }
@@ -290,15 +291,15 @@ class GetInput {
      */
     _getAlbRequirements(): void {
         if(options.useExistingVpc === yes){
-            options.useExistingAlb = readlineSyc.question("Do you have existing ALB? (y/N) : ", {defaultInput: no});
+            options.useExistingAlb = readlineSyc.question(chalk.blue.bold("Do you have existing ALB? (y/N) : "), {defaultInput: no});
             options.useExistingAlb = this._validateInputBooleanOption(options.useExistingAlb);
         }
 
         if (options.useExistingAlb === yes) {
-            options.listenerArn = readlineSyc.question("Please provide listener ARN : ");
+            options.listenerArn = readlineSyc.question(chalk.blue.bold("Please provide listener ARN : "));
         } else {
             if(options.useExistingVpc === yes) {
-                options.vpcPublicSubnets = readlineSyc.question("Provide VPC Public Subnets to launch ALB [comma separated values, at least 2 subnets required] : ");
+                options.vpcPublicSubnets = readlineSyc.question(chalk.blue.bold("Provide VPC Public Subnets to launch ALB [comma separated values, at least 2 subnets required] : "));
                 this._validateInputStringOption(options.vpcSubnets, 'Invalid VPC Public Subnets.');
             }
         }
@@ -362,7 +363,7 @@ class GetInput {
     _validateInputBooleanOption(bool: string): string {
         bool = bool.toLowerCase();
         if(![yes, no].includes(bool)){
-            console.error(new Error('Invalid option!'));
+            console.error(new Error(chalk.red.bold('Invalid option!')));
             process.exit(1);
         }
 
@@ -378,7 +379,7 @@ class GetInput {
      */
     _validateInputStringOption(str: string, msg = '') {
         if(str === undefined || str === ''){
-            console.error(new Error(msg || 'Invalid option!'));
+            console.error(new Error(chalk.red.bold(msg || 'Invalid option!')));
             process.exit(1);
         }
     }
