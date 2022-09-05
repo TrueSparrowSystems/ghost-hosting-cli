@@ -31,12 +31,12 @@ It gives the following benefits:
 
 - Deploy Ghost Stack
     ```bash
-    ./run deploy
+    plg-ghost deploy
     ```
 
 - Destroy Ghost Stack
     ```bash
-    ./run destroy
+    plg-ghost destroy
     ```
 
 ## Development 
