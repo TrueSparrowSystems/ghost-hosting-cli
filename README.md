@@ -1,5 +1,5 @@
 # Ghost Hosting  CLI
-It is a command line interactive tool to host the [Ghost](https://ghost.org/) on the AWS cloud. It simplifies the Ghost server deployment by utilizing the AWS infrastructure. It also provides the flexibility to host the fresh stack or to plug it into the existing infrastructure.
+Ghost hosting cli is a command line interactive tool to host the [Ghost](https://ghost.org/) on the AWS cloud. It simplifies the Ghost server deployment by utilizing the AWS infrastructure. It also provides the flexibility to host the fresh stack or to plug it into the existing infrastructure.
 
 ## Prerequisites
 - Terraform >= 1.2.5
@@ -8,7 +8,7 @@ It is a command line interactive tool to host the [Ghost](https://ghost.org/) on
 
 ## Deploment options
 
-As it deploys on AWS, the following parameters are required by default. `AWS access key`, `AWS secret access key`, and `AWS region`. It also expects to have Route53 configured for the domain where you want to host the Ghost.
+As it gets deployed on AWS, the following parameters are required by default. `AWS access key`, `AWS secret access key`, and `AWS region`. It expects to have Route53 configured for the domain where you want to host the Ghost.
 
 Either you can go with the existing VPC by providing comma-separated subnet ids or with the default selection for creating a new VPC and subnets. 
 
@@ -16,7 +16,7 @@ If you want to use the existing VPC, you need to provide the `subnet ids` to lau
 
 It requires a `Ghost hosting url` where Ghost can be accessed on the web. If you want to host the static website for the generated content (please refer to how to generate the static content from Ghost [here](https://github.com/PLG-Works/ghost-static-website-generator)), you can also specify `Static website url` where it will provision the AWS S3 bucket to host the static website.
 
-It also requires a MySQL database to store the Ghost configurations along with the content. For that, you can provide either existing DB credentials like DB host, DB name, DB user password, and database name. Else it will create a new RDS instance for the same.
+It requires a MySQL database to store the Ghost configurations along with the content. For that, you can provide either the existing DB credentials like DB host, DB name, DB user password, and database name. Else it will create a new RDS instance for the same.
 
 ## Why do I need to use this tool?
 It gives the following benefits:
@@ -24,7 +24,7 @@ It gives the following benefits:
 - Make use of the existing infrastructure by providing the existing VPC subnets, load balancer, and database.
 - Use this setup to provision and host the static website for the generated content.
 - It uses AWS ECS with auto-scaling enabled. So, you don't have to worry about scalability.
-- It can provide a cost-efficient setup by plugging in the existing load balancer and database. Also, it runs on AW FARGATE and utilizes the FARGATE SPOT resources.
+- It can provide a cost-efficient setup by plugging in the existing load balancer and database. Also, it runs on AWS FARGATE and utilizes the FARGATE SPOT resources.
 
 
 ## Example Usage:
@@ -49,7 +49,9 @@ $ cd ghost-hosting-cli
 npm install
 
 npm run watch
-// OR  npm run get && npm run build
+// OR  npm run get && npm run build 
 ```
 
-Run `./run deploy` in a new terminal window.
+Run `./run deploy` in a new terminal window to deploy the stack.
+
+Use `./run destroy` to destroy the deployed stack.
