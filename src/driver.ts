@@ -81,7 +81,7 @@ function _readAndShowOutput(): any {
     console.log(chalk.blue.bold('Static website URL: '), chalk.green.bold(input.staticWebsiteUrl));
     console.log(
       chalk.blue.bold('Static website S3 bucket ARN: '),
-      chalk.green.bold(formattedOutput['s3_website_bucket_arn']),
+      chalk.green.bold(formattedOutput['s3_website_bucket_arn'])
     );
   }
 
@@ -139,15 +139,15 @@ function _nextActionMessage(input: any): void {
   if (input.hostStaticWebsite) {
     console.log(
       chalk.cyan(
-        'To generate the static website, follow the instructions provided here: https://github.com/marketplace/actions/ghost-static-website-generator',
-      ),
+        'To generate the static website, follow the instructions provided here: https://github.com/marketplace/actions/ghost-static-website-generator'
+      )
     );
   }
 
   console.log(
     chalk.cyan.bold(
-      'Keep "terraform.plg-ghost.tfstate" and "config.json" files safe somewhere. It is required to make changes to the existing stack or to destroy it.',
-    ),
+      'Keep "terraform.plg-ghost.tfstate" and "config.json" files safe somewhere. It is required to make changes to the existing stack or to destroy it.'
+    )
   );
 
   console.log('');

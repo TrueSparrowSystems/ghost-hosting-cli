@@ -28,7 +28,7 @@ interface Response {
 
 /**
  * @dev Class to create RDS instance
- * - This will create 
+ * - This will create
  *    1. RDS instance with randomly generated password
  *    2. Security group to allow traffic to RDS instance
  */
@@ -51,8 +51,8 @@ class RdsResource extends Resource {
   /**
    * @dev Main performer of the class
    * - This creates RDS instance based on choices provided.
-   * 
-   * @returns { Response } 
+   *
+   * @returns { Response }
    */
   perform(): Response {
     const responseData = {
@@ -119,7 +119,7 @@ class RdsResource extends Resource {
         skipFinalSnapshot: true,
         skipFinalBackup: true,
         publiclyAccessible: false,
-        tags: commonConfig.tags
+        tags: commonConfig.tags,
       };
 
       const rds = new Rds(this, 'rds', rdsOptions);
@@ -131,20 +131,20 @@ class RdsResource extends Resource {
       responseData.rdsSecurityGroupId = rdsSg.id;
 
       new TerraformOutput(this, 'rds_host', {
-        value: rds.dbInstanceAddressOutput
+        value: rds.dbInstanceAddressOutput,
       });
 
       new TerraformOutput(this, 'rds_user', {
-        value: rdsConfig.dbUserName
+        value: rdsConfig.dbUserName,
       });
 
       new TerraformOutput(this, 'rds_password', {
         value: password.result,
-        sensitive: true
+        sensitive: true,
       });
 
       new TerraformOutput(this, 'rds_database', {
-        value: rdsConfig.dbName
+        value: rdsConfig.dbName,
       });
     }
 

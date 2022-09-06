@@ -43,7 +43,7 @@ class VpcResource extends Resource {
 
   /**
    * @dev Main performer of the class
-   * 
+   *
    * @returns { Response }
    */
   perform(): Response {
@@ -56,7 +56,7 @@ class VpcResource extends Resource {
 
   /**
    * @dev Get required private subnet cidr blocks
-   * 
+   *
    * @returns { string[] } - list of private subnet cidr blocks
    */
   _getSubnetCidr(): string[] {
@@ -69,12 +69,12 @@ class VpcResource extends Resource {
 
   /**
    * @dev Get available zones for the vpc
-   * 
+   *
    * @returns { DataAwsAvailabilityZones } - available zones
    */
   _getZones(): DataAwsAvailabilityZones {
     const zones = new DataAwsAvailabilityZones(this, 'zones', {
-      state: 'available'
+      state: 'available',
     });
 
     return zones;
@@ -114,7 +114,7 @@ class VpcResource extends Resource {
         enableNatGateway: true,
         singleNatGateway: true,
         enableDnsHostnames: true,
-        tags: commonConfig.tags
+        tags: commonConfig.tags,
       };
 
       const vpc = new Vpc(this, 'vpc', vpcOptions);

@@ -48,10 +48,5 @@ $ cd ghost-hosting-cli
 
 npm install
 
-npm run watch
-// OR  npm run get && npm run build 
+npm run dev -- deploy
 ```
-
-Run `./run deploy` in a new terminal window to deploy the stack.
-
-Use `./run destroy` to destroy the deployed stack.

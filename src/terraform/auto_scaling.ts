@@ -33,7 +33,7 @@ class AutoScaling extends Resource {
 
   /**
    * @dev Main performer of the class
-   * 
+   *
    * @returns { void }
    */
   perform(): void {
@@ -44,7 +44,7 @@ class AutoScaling extends Resource {
 
   /**
    * @dev Create auto scaling target
-   * 
+   *
    * @returns { AppautoscalingTarget }
    */
   _createAppAutoScalingTarget(): AppautoscalingTarget {
@@ -55,14 +55,14 @@ class AutoScaling extends Resource {
       scalableDimension: 'ecs:service:DesiredCount',
       serviceNamespace: 'ecs',
       roleArn: this.options.autoScaleRoleArn,
-      dependsOn: [this.options.ecsService]
+      dependsOn: [this.options.ecsService],
     });
   }
 
   /**
    * @dev Create auto scaling policies for memory and cpu
    * @param ecsTarget
-   * 
+   *
    * @returns { void }
    */
   _createAppAutoScalingPolicies(ecsTarget: AppautoscalingTarget): void {
@@ -97,7 +97,7 @@ class AutoScaling extends Resource {
         scaleInCooldown: 30,
         scaleOutCooldown: 60,
       },
-      dependsOn: [ecsTarget]
+      dependsOn: [ecsTarget],
     });
   }
 }

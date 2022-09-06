@@ -43,7 +43,7 @@ class S3Resource extends Resource {
 
   /**
    * @dev Main performer of the class
-   * 
+   *
    * @returns { Response }
    */
   perform(): Response {
@@ -58,7 +58,7 @@ class S3Resource extends Resource {
 
   /**
    * @dev Create bucket to store blog assets
-   * 
+   *
    * @returns { S3Bucket }
    */
   _createBlogAssetBucket(): S3Bucket {
@@ -82,7 +82,7 @@ class S3Resource extends Resource {
     });
 
     new TerraformOutput(this, 'website_bucket_arn', {
-      value: staticBucket.arn
+      value: staticBucket.arn,
     });
 
     new S3BucketAcl(this, 'static_assets_acl', {
@@ -93,13 +93,12 @@ class S3Resource extends Resource {
     const urlPath = getPathSuffixFromUrl(this.options.ghostHostingUrl);
 
     new S3BucketWebsiteConfiguration(this, 'website_configuration', {
-      
       bucket: staticBucket.bucket,
       indexDocument: {
         suffix: 'index.html',
       },
       errorDocument: {
-        key: `${urlPath}/404/index.html`
+        key: `${urlPath}/404/index.html`,
       },
     });
 
