@@ -66,6 +66,7 @@ class S3Resource extends Resource {
 
     return new S3Bucket(this, 'blog_assets', {
       bucket: blogContentS3BucketName,
+      forceDestroy: true,
     });
   }
 
@@ -79,6 +80,7 @@ class S3Resource extends Resource {
 
     const staticBucket = new S3Bucket(this, 'static_assets', {
       bucket: blogStaticS3BucketName,
+      forceDestroy: true,
     });
 
     new TerraformOutput(this, 'website_bucket_arn', {
@@ -92,13 +94,17 @@ class S3Resource extends Resource {
 
     const urlPath = getPathSuffixFromUrl(this.options.ghostHostingUrl);
 
+    let errorDoc = '404/index.html';
+    if(urlPath){
+      errorDoc = `${urlPath}/${errorDoc}`
+    }
     new S3BucketWebsiteConfiguration(this, 'website_configuration', {
       bucket: staticBucket.bucket,
       indexDocument: {
         suffix: 'index.html',
       },
       errorDocument: {
-        key: `${urlPath}/404/index.html`,
+        key: errorDoc,
       },
     });
 
@@ -115,6 +121,7 @@ class S3Resource extends Resource {
 
     return new S3Bucket(this, 'configs', {
       bucket: configsBucket,
+      forceDestroy: true,
     });
   }
 }
