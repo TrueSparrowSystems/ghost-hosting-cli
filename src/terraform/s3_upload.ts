@@ -105,7 +105,7 @@ class S3Upload extends Resource {
       `PROXY_PASS_HOST=127.0.0.1\n` +
       `PROXY_PASS_PORT=${ecsConfig.ghostContainerPort}\n` +
       `S3_STATIC_BUCKET_HOST=${
-        this.options.hostStaticWebsite ? this.options.staticBucket.bucketRegionalDomainName : '127.0.0.1'
+        this.options.hostStaticWebsite ? this.options.staticBucket.websiteEndpoint : '127.0.0.1'
       }`;
 
     return fileContent;

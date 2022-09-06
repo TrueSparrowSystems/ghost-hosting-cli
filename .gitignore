@@ -6,6 +6,7 @@ terraform.*
 tsconfig.tsbuildinfo
 config.json
 src/gen
+output.json
 
 # Editor / IDE files
 /.idea

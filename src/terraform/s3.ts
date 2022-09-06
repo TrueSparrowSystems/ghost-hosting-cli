@@ -66,6 +66,7 @@ class S3Resource extends Resource {
 
     return new S3Bucket(this, 'blog_assets', {
       bucket: blogContentS3BucketName,
+      forceDestroy: true,
     });
   }
 
@@ -79,6 +80,7 @@ class S3Resource extends Resource {
 
     const staticBucket = new S3Bucket(this, 'static_assets', {
       bucket: blogStaticS3BucketName,
+      forceDestroy: true,
     });
 
     new TerraformOutput(this, 'website_bucket_arn', {
@@ -119,6 +121,7 @@ class S3Resource extends Resource {
 
     return new S3Bucket(this, 'configs', {
       bucket: configsBucket,
+      forceDestroy: true,
     });
   }
 }
