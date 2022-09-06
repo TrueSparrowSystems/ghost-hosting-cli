@@ -52,7 +52,7 @@ class S3Upload extends Resource {
 
   /**
    * @dev Main performer of the class
-   * 
+   *
    * @returns { Response }
    */
   perform(): Response {
@@ -91,7 +91,7 @@ class S3Upload extends Resource {
 
   /**
    * @dev Nginx environment variables
-   * 
+   *
    * @returns { string } - nginx env variables as a concatenated string
    */
   _getNginxEnvFileContent(): string {
@@ -104,7 +104,9 @@ class S3Upload extends Resource {
       `GHOST_STATIC_SERVER_NAME=${staticWebsiteDomain}\n` +
       `PROXY_PASS_HOST=127.0.0.1\n` +
       `PROXY_PASS_PORT=${ecsConfig.ghostContainerPort}\n` +
-      `S3_STATIC_BUCKET_HOST=${this.options.hostStaticWebsite ? this.options.staticBucket.bucketDomainName : "127.0.0.1"}`;
+      `S3_STATIC_BUCKET_HOST=${
+        this.options.hostStaticWebsite ? this.options.staticBucket.bucketDomainName : '127.0.0.1'
+      }`;
 
     return fileContent;
   }
@@ -117,7 +119,8 @@ class S3Upload extends Resource {
    * @returns { S3Object }
    */
   _uploadFileToBucket(fileContent: string, filename: string): S3Object {
-    const identifier = 'upload_configs_' + filename
+    const identifier = 'upload_configs_' + filename;
+    
     return new S3Object(this, identifier, {
       key: filename,
       bucket: this.options.configsBucket.bucket,

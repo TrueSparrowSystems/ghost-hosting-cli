@@ -1,9 +1,10 @@
 {
-  "name": "ghost-hosting-cli",
+  "name": "plg-ghost",
   "version": "1.0.0",
-  "description": "Host Ghost in AWS ECS and provision to host static files on AWS S3",
-  "main": "./run",
+  "description": "Host Ghost server in AWS ECS and provision to host static files on AWS S3",
+  "main": "./dist/run.js",
   "scripts": {
+    "dev": "ts-node ./src/run.ts",
     "build": "tsc",
     "get": "cdktf get",
     "diff": "cdktf diff",
@@ -17,13 +18,8 @@
     "test:watch": "jest --watch",
     "upgrade": "npm i cdktf@latest cdktf-cli@latest",
     "upgrade:next": "npm i cdktf@next cdktf-cli@next",
-    "format": "prettier --write \"src/*\"",
-    "lint": "eslint . --ext .ts",
-    "prepare": "echo 'prepare called'",
-    "prepublishOnly": "echo 'prepublishOnly called'",
-    "preversion": "echo 'preversion called'",
-    "version": "echo 'version called'",
-    "postversion": "echo 'postversion called'"
+    "format": "prettier --write \"src/**/*\"",
+    "lint": "eslint . --ext .ts"
   },
   "repository": {
     "type": "git",
@@ -73,6 +69,6 @@
     "dist/**/*"
   ],
   "bin": {
-    "plg-ghost": "./run"
+    "plg-ghost": "./dist/run.js"
   }
 }

@@ -60,7 +60,7 @@ class GhostStack extends TerraformStack {
 
   /**
    * @dev Main performer of the class
-   * 
+   *
    * @returns {Promise<void>}
    */
   async perform(): Promise<void> {
@@ -84,7 +84,7 @@ class GhostStack extends TerraformStack {
 
     const { customExecutionRoleArn, customTaskRoleArn, ecsAutoScalingRoleArn } = this._createIamRolePolicies(
       blogBucket,
-      configsBucket,
+      configsBucket
     );
 
     const { ecsCluster, ecsService } = this._createEcs(
@@ -94,7 +94,7 @@ class GhostStack extends TerraformStack {
       customTaskRoleArn,
       configsBucket,
       ghostEnvUpload,
-      nginxEnvUpload,
+      nginxEnvUpload
     );
 
     this._autoScale(ecsCluster, ecsService, ecsAutoScalingRoleArn);
@@ -102,7 +102,7 @@ class GhostStack extends TerraformStack {
 
   /**
    * @dev Generate random string append with resource name and identifier
-   * 
+   *
    * @returns {void}
    */
   _generateRandomString(): void {
@@ -163,20 +163,16 @@ class GhostStack extends TerraformStack {
    * @returns {void}
    */
   _createRdsInstance(): void {
-    const { rdsHost, rdsDbUserName, rdsDbPassword, rdsDbName, rdsSecurityGroupId } = new RdsResource(
-      this,
-      'rds',
-      {
-        vpcId: this.vpcId,
-        vpcSubnets: this.vpcSubnets,
-        useExistingRds: this.userInput.rds.useExistingRds,
-        rdsHost: this.userInput.rds.rdsHost,
-        rdsDbUserName: this.userInput.rds.rdsDbUserName,
-        rdsDbPassword: this.userInput.rds.rdsDbPassword,
-        rdsDbName: this.userInput.rds.rdsDbName,
-        region: this.userInput.aws.region
-      },
-    ).perform();
+    const { rdsHost, rdsDbUserName, rdsDbPassword, rdsDbName, rdsSecurityGroupId } = new RdsResource(this, 'rds', {
+      vpcId: this.vpcId,
+      vpcSubnets: this.vpcSubnets,
+      useExistingRds: this.userInput.rds.useExistingRds,
+      rdsHost: this.userInput.rds.rdsHost,
+      rdsDbUserName: this.userInput.rds.rdsDbUserName,
+      rdsDbPassword: this.userInput.rds.rdsDbPassword,
+      rdsDbName: this.userInput.rds.rdsDbName,
+      region: this.userInput.aws.region,
+    }).perform();
 
     this.rdsHost = rdsHost;
     this.rdsDbUserName = rdsDbUserName;
@@ -210,7 +206,7 @@ class GhostStack extends TerraformStack {
       randomString: this.randomString,
       vpcId: this.vpcId,
       ghostHostingUrl: this.userInput.ghostHostingUrl,
-      region: this.userInput.aws.region
+      region: this.userInput.aws.region,
     }).perform();
   }
 
@@ -268,7 +264,7 @@ class GhostStack extends TerraformStack {
     customTaskRoleArn: string,
     configBucket: S3Bucket,
     ghostEnvUpload: S3Object,
-    nginxEnvUpload: S3Object,
+    nginxEnvUpload: S3Object
   ) {
     return new EcsResource(this, 'ecs', {
       vpcId: this.vpcId,

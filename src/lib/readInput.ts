@@ -8,21 +8,21 @@ let configJson = {};
  * @returns {object}
  */
 function readInput(): object {
-    _readFromFile();
+  _readFromFile();
 
-    return _formatInput();
+  return _formatInput();
 }
 
 /**
  * @dev Read file and parse JSON data
- * 
+ *
  * @returns {void}
  */
 function _readFromFile(): void {
-    const configFileName = 'config.json';
-    const data = fs.readFileSync(configFileName, 'utf-8');
+  const configFileName = 'config.json';
+  const data = fs.readFileSync(configFileName, 'utf-8');
 
-    configJson = JSON.parse(data);
+  configJson = JSON.parse(data);
 }
 
 /**
@@ -31,7 +31,7 @@ function _readFromFile(): void {
  * @returns {object}
  */
 function _formatInput(): object {
-    return configJson;
+  return configJson;
 }
 
 export { readInput };

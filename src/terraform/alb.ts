@@ -39,7 +39,7 @@ class AlbResource extends Resource {
 
   /**
    * @dev Main performer of the class
-   * 
+   *
    * @returns { Response }
    */
   perform(): Response {
@@ -70,7 +70,7 @@ class AlbResource extends Resource {
   /**
    * @dev Create a security group for the ALB
    * - This will allow traffic to ALB from the internet
-   * 
+   *
    * @returns { SecurityGroup }
    */
   _createAlbSecurityGroup(): SecurityGroup {
@@ -125,7 +125,7 @@ class AlbResource extends Resource {
     });
 
     new TerraformOutput(this, 'alb_dns_name', {
-      value: alb.dnsName
+      value: alb.dnsName,
     });
 
     return alb;
@@ -134,7 +134,7 @@ class AlbResource extends Resource {
   /**
    * @dev Create an HTTP listener and attach it to the load balancer
    * - This will redirect any traffic routed to PORT 80 of the load balancer to PORT 443
-   * 
+   *
    * @param alb
    */
   _addHttpListener(alb: Alb): void {
@@ -158,8 +158,8 @@ class AlbResource extends Resource {
 
   /**
    * @dev Create and attach an HTTPS listener to the load balancer
-   * 
-   * @param alb 
+   *
+   * @param alb
    * @returns { string }
    */
   _addHttpsListener(alb: Alb): string {

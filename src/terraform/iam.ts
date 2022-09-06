@@ -155,7 +155,7 @@ class IamResource extends Resource {
             Effect: 'Allow',
             Action: 's3:*',
             Resource: [this.options.blogBucket.arn + '/*'],
-          }
+          },
         ],
       }),
     });

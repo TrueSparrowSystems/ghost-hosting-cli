@@ -37,9 +37,9 @@ interface Response {
 
 /**
  * @dev Class to create ECS tasks
- * - This resource creates 
+ * - This resource creates
  *    1. Security group - to allow traffic to ecs tasks
- *    2. Target group - 
+ *    2. Target group -
  *    3. ECS cluster
  *    4. Capacity Provider
  *    5. ECS Task Definition
@@ -63,7 +63,7 @@ class EcsResource extends Resource {
 
   /**
    * @dev Main performer of the class
-   * 
+   *
    * @returns { Response }
    */
   perform(): Response {
@@ -106,7 +106,7 @@ class EcsResource extends Resource {
         healthyThreshold: 2,
         interval: 10,
       },
-      tags: commonConfig.tags
+      tags: commonConfig.tags,
     });
 
     // Attach target group to the listener
@@ -136,14 +136,14 @@ class EcsResource extends Resource {
           targetGroupArn: targetGroup.arn,
         },
       ],
-      tags: commonConfig.tags
+      tags: commonConfig.tags,
     });
 
     return targetGroup;
   }
 
   /**
-   * @dev Create security group for ecs 
+   * @dev Create security group for ecs
    * - This will allow traffic to ECS from ALB only
    *
    * @returns { SecurityGroup }
@@ -181,7 +181,7 @@ class EcsResource extends Resource {
         toPort: 3306,
         protocol: 'tcp',
         securityGroupId: this.options.rdsSecurityGroupId,
-        sourceSecurityGroupId: ecsSg.id
+        sourceSecurityGroupId: ecsSg.id,
       });
     }
 
@@ -196,25 +196,25 @@ class EcsResource extends Resource {
   _createEcsCluster(): EcsCluster {
     return new EcsCluster(this, 'cluster', {
       name: ecsConfig.clusterName,
-      tags: commonConfig.tags
+      tags: commonConfig.tags,
     });
   }
 
   /**
    * @dev Add capacity provider
-   * 
-   * @returns { EcsClusterCapacityProviders } 
+   *
+   * @returns { EcsClusterCapacityProviders }
    */
   _addCapacityProvider(ecsCluster: EcsCluster): void {
     new EcsClusterCapacityProviders(this, 'capacity_provider', {
       clusterName: ecsCluster.name,
-      capacityProviders: ['FARGATE', 'FARGATE_SPOT']
+      capacityProviders: ['FARGATE', 'FARGATE_SPOT'],
     });
   }
 
   /**
    * @dev Create a log group to store ecs task logs
-   * 
+   *
    * @returns { void }
    */
   _createLogGroup(): void {
@@ -250,7 +250,7 @@ class EcsResource extends Resource {
         },
       ],
       dependsOn: [this.options.ghostEnvUpload, this.options.nginxEnvUpload],
-      tags: commonConfig.tags
+      tags: commonConfig.tags,
     });
   }
 
@@ -287,7 +287,7 @@ class EcsResource extends Resource {
         options: {
           'awslogs-group': ecsConfig.logGroupName,
           'awslogs-region': this.options.region,
-          'awslogs-stream-prefix': ecsConfig.logStreamPrefix
+          'awslogs-stream-prefix': ecsConfig.logStreamPrefix,
         },
       },
     };
@@ -336,7 +336,7 @@ class EcsResource extends Resource {
         options: {
           'awslogs-group': ecsConfig.logGroupName,
           'awslogs-region': this.options.region,
-          'awslogs-stream-prefix': ecsConfig.logStreamPrefix
+          'awslogs-stream-prefix': ecsConfig.logStreamPrefix,
         },
       },
     };
@@ -355,7 +355,7 @@ class EcsResource extends Resource {
     ecsCluster: EcsCluster,
     ecsTaskDefinition: EcsTaskDefinition,
     ecsSecurityGroup: SecurityGroup,
-    targetGroup: AlbTargetGroup,
+    targetGroup: AlbTargetGroup
   ): EcsService {
     return new EcsService(this, 'ecs_service', {
       name: commonConfig.nameIdentifier,
@@ -386,7 +386,7 @@ class EcsResource extends Resource {
         securityGroups: [ecsSecurityGroup.id],
         subnets: this.options.subnets,
       },
-      tags: commonConfig.tags
+      tags: commonConfig.tags,
     });
   }
 }

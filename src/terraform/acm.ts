@@ -36,7 +36,7 @@ class AcmResource extends Resource {
 
   /**
    * @dev Main performer of the class
-   * 
+   *
    * @returns { Response }
    */
   perform(): Response {
@@ -55,7 +55,7 @@ class AcmResource extends Resource {
 
   /**
    * @dev Create certificate for the provided domain
-   * 
+   *
    * @param ghostHostingDomain
    * @returns { AcmCertificate }
    */
@@ -73,19 +73,19 @@ class AcmResource extends Resource {
 
   /**
    * @dev Get Route53 zone for the domain provided
-   * 
+   *
    * @param ghostHostingDomain
    * @returns { DataAwsRoute53Zone }
    */
   _getRoute53Zone(ghostHostingDomain: string): DataAwsRoute53Zone {
     return new DataAwsRoute53Zone(this, 'route53_zone', {
-      name: ghostHostingDomain
+      name: ghostHostingDomain,
     });
   }
 
   /**
    * @dev Create Route53 record
-   * 
+   *
    * @param route53Zone
    * @param cert
    * @returns { string[] } - collected fqdns
@@ -102,7 +102,7 @@ class AcmResource extends Resource {
         records: [domainValidationOptions.get(index).resourceRecordValue],
         allowOverwrite: true,
         ttl: 60,
-        zoneId: route53Zone.id
+        zoneId: route53Zone.id,
       });
 
       fqdns.push(record.fqdn);
@@ -113,7 +113,7 @@ class AcmResource extends Resource {
 
   /**
    * @dev Validate ACM certificate created for the domain
-   * 
+   *
    * @param cert
    * @param fqdns
    * @returns { void }
