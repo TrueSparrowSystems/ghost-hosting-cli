@@ -6,7 +6,7 @@ Ghost hosting cli is a command line interactive tool to host the [Ghost](https:/
 - NodeJS >= 14.17
 - AWS account
 
-## Deploment options
+## Deployment options
 
 As it is using AWS cloud platform, the following parameters are required by default. `AWS access key`, `AWS secret access key`, and `AWS region`. It expects to have Route53 configured for the domain where you want to host the Ghost.
 
