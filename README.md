@@ -8,7 +8,7 @@ Ghost hosting cli is a command line interactive tool to host the [Ghost](https:/
 
 ## Deploment options
 
-As it gets deployed on AWS, the following parameters are required by default. `AWS access key`, `AWS secret access key`, and `AWS region`. It expects to have Route53 configured for the domain where you want to host the Ghost.
+As it is using AWS cloud platform, the following parameters are required by default. `AWS access key`, `AWS secret access key`, and `AWS region`. It expects to have Route53 configured for the domain where you want to host the Ghost.
 
 Either you can go with the existing VPC by providing comma-separated subnet ids or with the default selection for creating a new VPC and subnets. 
 
