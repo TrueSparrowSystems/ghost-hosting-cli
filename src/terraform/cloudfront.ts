@@ -15,6 +15,10 @@ interface Options {
   blogBucket: S3Bucket;
 }
 
+interface Response {
+  cloudfrontDomainName: string;
+}
+
 /**
  * @dev Class create cloudfront distribution for the S3 bucket
  */
@@ -39,7 +43,7 @@ class CloudfrontResource extends Resource {
    *
    * @returns { void }
    */
-  perform(): void {
+  perform(): Response {
     const cachePolicy = this._getCachePolicy();
 
     const responseHeaderPolicy = this._getResponseHeaderPolicy();
@@ -48,9 +52,16 @@ class CloudfrontResource extends Resource {
 
     const originAccessIdentity = this._createOriginAccessIdentity();
 
-    this._createDistribution(cachePolicy, responseHeaderPolicy, originRequestPolicy, originAccessIdentity);
+    const cloudfrontDomainName = this._createDistribution(
+      cachePolicy,
+      responseHeaderPolicy,
+      originRequestPolicy,
+      originAccessIdentity,
+    );
 
     this._attachBucketPolicy(originAccessIdentity);
+
+    return { cloudfrontDomainName: cloudfrontDomainName };
   }
 
   /**
@@ -111,10 +122,10 @@ class CloudfrontResource extends Resource {
     responseHeaderPolicy: DataAwsCloudfrontResponseHeadersPolicy,
     originRequestPolicy: DataAwsCloudfrontOriginRequestPolicy,
     originAccessIdentity: CloudfrontOriginAccessIdentity,
-  ): void {
+  ): string {
     const originId = `S3-${this.options.blogBucket.bucket}`;
 
-    new CloudfrontDistribution(this, 'distribution', {
+    const cloudfrontDistribution = new CloudfrontDistribution(this, 'distribution', {
       origin: [
         {
           domainName: this.options.blogBucket.bucketRegionalDomainName,
@@ -147,6 +158,8 @@ class CloudfrontResource extends Resource {
       },
       tags: commonConfig.tags,
     });
+
+    return cloudfrontDistribution.domainName;
   }
 
   /**

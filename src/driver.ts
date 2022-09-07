@@ -36,8 +36,8 @@ function _deployStack(): void {
     shell.exit(1);
   }
 
-  console.log('Please review the above output for DEPLOY action.');
-  const approve = readlineSync.question('Do you want to approve?(y/n): ');
+  console.log(chalk.blue.bold('Please review the above output for DEPLOY action.'));
+  const approve = readlineSync.question(chalk.blue.bold('Do you want to approve?(Y/n): '), { defaultInput: 'y' });
 
   if (approve === 'y') {
     if (shell.exec('npm run auto-deploy').code !== 0) {
@@ -110,11 +110,11 @@ function _readAndShowOutput(): any {
  * @returns {object}
  */
 function _formatOutput(output: any): any {
-  let responseData = {};
+  const responseData = {};
 
   const plgGhostOutputHash = output[commonConfig.stackName];
   Object.keys(plgGhostOutputHash).forEach(function (key) {
-    var value = plgGhostOutputHash[key];
+    const value = plgGhostOutputHash[key];
 
     const extractedKey = key.substring(0, key.length - 9); // 8 char random string with '_'
 

@@ -14,7 +14,7 @@ import { AutoScaling } from './auto_scaling';
 import { CloudfrontResource } from './cloudfront';
 
 import { StringResource } from '../gen/providers/random';
-import { S3Bucket, S3Object } from '../gen/providers/aws/s3';
+import { S3Bucket, S3Object, S3BucketWebsiteConfiguration } from '../gen/providers/aws/s3';
 import { RandomProvider } from '../gen/providers/random';
 import { EcsCluster, EcsService } from '../gen/providers/aws/ecs';
 
@@ -77,9 +77,17 @@ class GhostStack extends TerraformStack {
 
     const { certificateArn } = this._createAcmCertificate();
 
-    const { blogBucket, staticBucket, configsBucket } = this._createS3Buckets();
+    const { blogBucket, staticBucket, configsBucket, s3BucketWebsiteConfiguration } = this._createS3Buckets();
 
-    const { ghostEnvUpload, nginxEnvUpload } = this._s3Upload(blogBucket, configsBucket, staticBucket);
+    const { cloudfrontDomainName } = this._createCloudfrontDistribution(blogBucket);
+
+    const { ghostEnvUpload, nginxEnvUpload } = this._s3Upload(
+      blogBucket,
+      configsBucket,
+      staticBucket,
+      s3BucketWebsiteConfiguration,
+      cloudfrontDomainName,
+    );
 
     const { albSecurityGroups, listenerArn } = this._createAlb(certificateArn);
 
@@ -99,8 +107,6 @@ class GhostStack extends TerraformStack {
     );
 
     this._autoScale(ecsCluster, ecsService, ecsAutoScalingRoleArn);
-
-    this._createCloudfrontDistribution(blogBucket);
   }
 
   /**
@@ -223,12 +229,19 @@ class GhostStack extends TerraformStack {
     }).perform();
   }
 
-  _s3Upload(blogBucket: S3Bucket, configsBucket: S3Bucket, staticBucket: S3Bucket) {
+  _s3Upload(
+    blogBucket: S3Bucket,
+    configsBucket: S3Bucket,
+    staticBucket: S3Bucket,
+    s3BucketWebsiteConfiguration: S3BucketWebsiteConfiguration,
+    cloudfrontDomainName: string,
+  ) {
     return new S3Upload(this, 's3_upload', {
       region: this.userInput.aws.region,
       blogBucket,
       configsBucket,
       staticBucket,
+      s3BucketWebsiteConfiguration,
       rdsDbHost: this.rdsHost,
       rdsDbUserName: this.rdsDbUserName,
       rdsDbPassword: this.rdsDbPassword,
@@ -237,6 +250,7 @@ class GhostStack extends TerraformStack {
       ghostHostingUrl: this.userInput.ghostHostingUrl,
       hostStaticWebsite: this.userInput.hostStaticWebsite,
       staticWebsiteUrl: this.userInput.staticWebsiteUrl,
+      cloudfrontDomainName,
     }).perform();
   }
 
@@ -304,12 +318,12 @@ class GhostStack extends TerraformStack {
   /**
    * @dev Create cloudfront distribution
    *
-   * @param blogBucket 
+   * @param blogBucket
    * @returns {void}
    */
   _createCloudfrontDistribution(blogBucket: S3Bucket) {
     return new CloudfrontResource(this, 'cloudfront', {
-      blogBucket
+      blogBucket,
     }).perform();
   }
 }

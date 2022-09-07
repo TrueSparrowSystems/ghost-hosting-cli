@@ -16,6 +16,7 @@ interface Response {
   blogBucket: S3Bucket;
   staticBucket: S3Bucket;
   configsBucket: S3Bucket;
+  s3BucketWebsiteConfiguration: S3BucketWebsiteConfiguration;
 }
 
 /**
@@ -49,11 +50,11 @@ class S3Resource extends Resource {
   perform(): Response {
     const blogBucket = this._createBlogAssetBucket();
 
-    const staticBucket = this._createStaticAssetBucket();
+    const { staticBucket, s3BucketWebsiteConfiguration } = this._createStaticAssetBucket();
 
     const configsBucket = this._createConfigsBucket();
 
-    return { blogBucket, staticBucket, configsBucket };
+    return { blogBucket, staticBucket, configsBucket, s3BucketWebsiteConfiguration };
   }
 
   /**
@@ -75,7 +76,7 @@ class S3Resource extends Resource {
    *
    * @returns { S3Bucket }
    */
-  _createStaticAssetBucket(): S3Bucket {
+  _createStaticAssetBucket(): { staticBucket: S3Bucket; s3BucketWebsiteConfiguration: S3BucketWebsiteConfiguration } {
     const blogStaticS3BucketName = s3Config.blogStaticS3BucketName.concat('-', this.options.randomString);
 
     const staticBucket = new S3Bucket(this, 'static_assets', {
@@ -98,7 +99,8 @@ class S3Resource extends Resource {
     if (urlPath) {
       errorDoc = `${urlPath}/${errorDoc}`;
     }
-    new S3BucketWebsiteConfiguration(this, 'website_configuration', {
+
+    const s3BucketWebsiteConfiguration = new S3BucketWebsiteConfiguration(this, 'website_configuration', {
       bucket: staticBucket.bucket,
       indexDocument: {
         suffix: 'index.html',
@@ -108,7 +110,7 @@ class S3Resource extends Resource {
       },
     });
 
-    return staticBucket;
+    return { staticBucket, s3BucketWebsiteConfiguration };
   }
 
   /**
