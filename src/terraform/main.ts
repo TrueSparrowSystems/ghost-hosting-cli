@@ -11,6 +11,7 @@ import { IamResource } from './iam';
 import { AcmResource } from './acm';
 import { S3Upload } from './s3_upload';
 import { AutoScaling } from './auto_scaling';
+import { CloudfrontResource } from './cloudfront';
 
 import { StringResource } from '../gen/providers/random';
 import { S3Bucket, S3Object } from '../gen/providers/aws/s3';
@@ -84,7 +85,7 @@ class GhostStack extends TerraformStack {
 
     const { customExecutionRoleArn, customTaskRoleArn, ecsAutoScalingRoleArn } = this._createIamRolePolicies(
       blogBucket,
-      configsBucket
+      configsBucket,
     );
 
     const { ecsCluster, ecsService } = this._createEcs(
@@ -94,10 +95,12 @@ class GhostStack extends TerraformStack {
       customTaskRoleArn,
       configsBucket,
       ghostEnvUpload,
-      nginxEnvUpload
+      nginxEnvUpload,
     );
 
     this._autoScale(ecsCluster, ecsService, ecsAutoScalingRoleArn);
+
+    this._createCloudfrontDistribution(blogBucket);
   }
 
   /**
@@ -264,7 +267,7 @@ class GhostStack extends TerraformStack {
     customTaskRoleArn: string,
     configBucket: S3Bucket,
     ghostEnvUpload: S3Object,
-    nginxEnvUpload: S3Object
+    nginxEnvUpload: S3Object,
   ) {
     return new EcsResource(this, 'ecs', {
       vpcId: this.vpcId,
@@ -295,6 +298,18 @@ class GhostStack extends TerraformStack {
       ecsCluster,
       ecsService,
       autoScaleRoleArn: ecsAutoScalingRoleArn,
+    }).perform();
+  }
+
+  /**
+   * @dev Create cloudfront distribution
+   *
+   * @param blogBucket 
+   * @returns {void}
+   */
+  _createCloudfrontDistribution(blogBucket: S3Bucket) {
+    return new CloudfrontResource(this, 'cloudfront', {
+      blogBucket
     }).perform();
   }
 }

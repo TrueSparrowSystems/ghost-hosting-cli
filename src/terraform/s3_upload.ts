@@ -82,7 +82,7 @@ class S3Upload extends Resource {
       `storage__s3__bucket=${this.options.blogBucket.bucket}\n` +
       `storage__s3__region=${this.options.region}\n` +
       `storage__s3__pathPrefix=blog/images\n` +
-      `storage__s3__acl=public-read\n` +
+      `storage__s3__acl=private\n` +
       `storage__s3__forcePathStyle=true\n` +
       `storage__active=s3\n` +
       `url=${this.options.ghostHostingUrl}`
@@ -120,7 +120,7 @@ class S3Upload extends Resource {
    */
   _uploadFileToBucket(fileContent: string, filename: string): S3Object {
     const identifier = 'upload_configs_' + filename;
-    
+
     return new S3Object(this, identifier, {
       key: filename,
       bucket: this.options.configsBucket.bucket,

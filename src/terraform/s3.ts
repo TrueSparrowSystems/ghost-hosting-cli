@@ -95,8 +95,8 @@ class S3Resource extends Resource {
     const urlPath = getPathSuffixFromUrl(this.options.ghostHostingUrl);
 
     let errorDoc = '404/index.html';
-    if(urlPath){
-      errorDoc = `${urlPath}/${errorDoc}`
+    if (urlPath) {
+      errorDoc = `${urlPath}/${errorDoc}`;
     }
     new S3BucketWebsiteConfiguration(this, 'website_configuration', {
       bucket: staticBucket.bucket,

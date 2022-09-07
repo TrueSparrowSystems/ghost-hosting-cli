@@ -355,7 +355,7 @@ class EcsResource extends Resource {
     ecsCluster: EcsCluster,
     ecsTaskDefinition: EcsTaskDefinition,
     ecsSecurityGroup: SecurityGroup,
-    targetGroup: AlbTargetGroup
+    targetGroup: AlbTargetGroup,
   ): EcsService {
     return new EcsService(this, 'ecs_service', {
       name: commonConfig.nameIdentifier,
