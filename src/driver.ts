@@ -159,8 +159,8 @@ function _nextActionMessage(input: any): void {
  * @returns {void}
  */
 function _destroyStack(): void {
-  console.log('\nThis action will destroy the stack.');
-  const approve = readlineSync.question('Do you want to approve?(y/n): ');
+  console.log(chalk.blue.bold('\nThis action will destroy the stack.'));
+  const approve = readlineSync.question(chalk.blue.bold('Do you want to approve?(Y/n): '), { defaultInput: 'y' });
 
   if (approve === 'y') {
     if (shell.exec('npm run auto-destroy').code !== 0) {
