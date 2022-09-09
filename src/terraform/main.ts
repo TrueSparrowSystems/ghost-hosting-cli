@@ -1,5 +1,5 @@
 import { Construct } from 'constructs';
-import { App, TerraformStack } from 'cdktf';
+import { App, S3Backend, TerraformStack } from 'cdktf';
 import { AwsProvider } from '@cdktf/provider-aws';
 
 import { VpcResource } from './vpc';
@@ -21,11 +21,20 @@ import { EcsCluster, EcsService } from '../gen/providers/aws/ecs';
 import commonConfig from '../config/common.json';
 
 import { readInput } from '../lib/readInput';
+import { S3AsBackendStack } from './stacks/s3_as_backend';
+
+const app = new App();
+
+interface Options {
+  bucketName: string;
+  dynamoTableName: string;
+}
 
 /**
  * @dev Terraform stack
  */
 class GhostStack extends TerraformStack {
+  options: Options;
   userInput: any;
   randomString: string;
   vpcId: string;
@@ -43,9 +52,10 @@ class GhostStack extends TerraformStack {
    * @param {Construct} scope
    * @param {string} name
    */
-  constructor(scope: Construct, name: string) {
+  constructor(scope: Construct, name: string, options: Options) {
     super(scope, name);
 
+    this.options = options;
     this.userInput = {};
 
     this.randomString = '';
@@ -68,6 +78,8 @@ class GhostStack extends TerraformStack {
     this.userInput = readInput();
 
     this._setProviders();
+
+    this._s3Backend();
 
     this._createVpc();
 
@@ -107,6 +119,23 @@ class GhostStack extends TerraformStack {
     );
 
     this._autoScale(ecsCluster, ecsService, ecsAutoScalingRoleArn);
+  }
+
+  /**
+   * @dev S3 backend
+   *
+   * @returns {void}
+   */
+  _s3Backend(): void {
+    new S3Backend(this, {
+      bucket: 'tf-state-11223344', // TODO: use value from json config
+      key: 'project/ghost.tfstate',
+      region: 'us-east-1',
+      encrypt: true,
+      dynamodbTable: 'tf-s3-backend-locking',
+      accessKey: this.userInput.aws.accessKeyId,
+      secretKey: this.userInput.aws.secretAccessKey,
+    });
   }
 
   /**
@@ -328,13 +357,14 @@ class GhostStack extends TerraformStack {
   }
 }
 
-const app = new App();
-new GhostStack(app, commonConfig.nameIdentifier)
-  .perform()
-  .then()
-  .catch((err) => {
-    console.error('GhostStack Error: ', err);
-    process.exit(1);
-  });
+const s3BackendResponse = new S3AsBackendStack(app, 's3-stack', {
+  accessKey: '',
+  secretKey: '',
+}).perform();
+
+new GhostStack(app, 'ghost', {
+  bucketName: s3BackendResponse.bucketName,
+  dynamoTableName: s3BackendResponse.dynamoTableName,
+}).perform();
 
 app.synth();

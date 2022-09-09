@@ -30,7 +30,7 @@ function run(): void {
  * @returns {void}
  */
 function _deployStack(): void {
-  const resp = shell.exec('npm run diff');
+  const resp = shell.exec('npm run diff s3-stack ghost'); // TODO: Dynamo lock to handle when fails
   if (resp.code !== 0) {
     shell.echo('Error: cdktf exec failed');
     shell.exit(1);
@@ -40,7 +40,8 @@ function _deployStack(): void {
   const approve = readlineSync.question(chalk.blue.bold('Do you want to approve?(Y/n): '), { defaultInput: 'y' });
 
   if (approve === 'y') {
-    if (shell.exec('npm run auto-deploy').code !== 0) {
+    if (shell.exec('npm run auto-deploy s3-stack ghost').code !== 0) {
+      // TODO: Dynamo lock to handle when fails
       shell.echo('Error: cdktf deploy failed');
       shell.exit(1);
     }
@@ -163,7 +164,8 @@ function _destroyStack(): void {
   const approve = readlineSync.question(chalk.blue.bold('Do you want to approve?(Y/n): '), { defaultInput: 'y' });
 
   if (approve === 'y') {
-    if (shell.exec('npm run auto-destroy').code !== 0) {
+    if (shell.exec('npm run auto-destroy ghost s3-stack').code !== 0) {
+      // TODO: Dynamo lock to handle when fails
       shell.echo('Error: cdktf destroy failed');
       shell.exit(1);
     }

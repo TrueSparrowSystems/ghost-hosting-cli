@@ -86,11 +86,6 @@ class IamResource extends Resource {
             Action: 's3:*',
             Resource: [this.options.configsBucket.arn + '/*'],
           },
-          {
-            Effect: 'Allow',
-            Action: ['logs:CreateLogStream', 'logs:PutLogEvents'],
-            Resource: '*',
-          },
         ],
       }),
     });

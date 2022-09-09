@@ -89,7 +89,7 @@ class S3Resource extends Resource {
     });
 
     new S3BucketAcl(this, 'static_assets_acl', {
-      acl: 'public-read',
+      acl: 'private',
       bucket: staticBucket.bucket,
     });
 
