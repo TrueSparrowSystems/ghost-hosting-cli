@@ -164,7 +164,7 @@ function _destroyStack(): void {
   const approve = readlineSync.question(chalk.blue.bold('Do you want to approve?(Y/n): '), { defaultInput: 'y' });
 
   if (approve === 'y') {
-    if (shell.exec('npm run auto-destroy ghost s3-stack').code !== 0) {
+    if (shell.exec('npm run auto-destroy ghost').code !== 0) {
       // TODO: Dynamo lock to handle when fails
       shell.echo('Error: cdktf destroy failed');
       shell.exit(1);

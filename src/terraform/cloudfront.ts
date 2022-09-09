@@ -41,7 +41,7 @@ class CloudfrontResource extends Resource {
   /**
    * @dev Main performer of the class
    *
-   * @returns { void }
+   * @returns { Response }
    */
   perform(): Response {
     const cachePolicy = this._getCachePolicy();

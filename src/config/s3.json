@@ -3,5 +3,6 @@
   "blogContentS3BucketName": "plg-ghost-blog-assets",
   "blogStaticS3BucketName": "plg-ghost-static-assets",
   "tfStateBucketName": "tf-state-11223344",
-  "dynamoDbTableName": "tf-s3-backend-locking"
+  "dynamoDbTableName": "tf-s3-backend-locking",
+  "tfStateBucketKey": "project/terraform.tfstate"
 }
