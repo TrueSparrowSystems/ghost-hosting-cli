@@ -11,7 +11,7 @@ import { DynamodbTable } from '../gen/providers/aws/dynamodb';
 import s3Config from '../config/s3.json';
 import commonConfig from '../config/common.json';
 
-import { DataAwsIamPolicyDocument, IamPolicy, IamRole, IamRolePolicyAttachment } from '../gen/providers/aws/iam';
+import { IamPolicy, IamRole, IamRolePolicyAttachment } from '../gen/providers/aws/iam';
 
 interface Options {}
 
@@ -64,6 +64,7 @@ class S3AsBackendResource extends Resource {
       lifecycle: {
         preventDestroy: false, // TODO: discuss?
       },
+      forceDestroy: true,
     });
 
     // const IamPolicyDocument = new DataAwsIamPolicyDocument(this, 'tf_state_policy_doc', {

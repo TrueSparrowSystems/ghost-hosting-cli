@@ -20,10 +20,6 @@ import { EcsCluster, EcsService } from '../../gen/providers/aws/ecs';
 
 import s3Config from '../../config/s3.json';
 
-import { readInput } from '../../lib/readInput';
-
-const app = new App();
-
 interface Options {
   bucketName: string;
   dynamoTableName: string;
@@ -72,8 +68,6 @@ class GhostStack extends TerraformStack {
    * @returns {void}
    */
   perform(): void {
-    // this.userInput = readInput();
-
     this._setProviders();
 
     this._s3Backend();
@@ -119,13 +113,13 @@ class GhostStack extends TerraformStack {
   }
 
   /**
-   * @dev S3 backend
+   * @dev Set up S3 backend for terraform state locking
    *
    * @returns {void}
    */
   _s3Backend(): void {
     new S3Backend(this, {
-      bucket: s3Config.tfStateBucketName, // TODO: use value from json config
+      bucket: s3Config.tfStateBucketName,
       key: s3Config.tfStateBucketKey,
       region: this.userInput.aws.region,
       encrypt: true,
@@ -221,7 +215,7 @@ class GhostStack extends TerraformStack {
    *
    * @private
    */
-  _createAlb(certificateArn: string | undefined): { albSecurityGroups: string[], listenerArn: string} {
+  _createAlb(certificateArn: string | undefined): { albSecurityGroups: string[]; listenerArn: string } {
     return new AlbResource(this, 'alb', {
       vpcId: this.vpcId,
       publicSubnets: this.vpcPublicSubnets,
@@ -289,12 +283,12 @@ class GhostStack extends TerraformStack {
   }
 
   _createIamRolePolicies(
-    blogBucket: S3Bucket, 
-    configsBucket: S3Bucket
+    blogBucket: S3Bucket,
+    configsBucket: S3Bucket,
   ): {
-    customExecutionRoleArn: string,
-    customTaskRoleArn: string,
-    ecsAutoScalingRoleArn: string,
+    customExecutionRoleArn: string;
+    customTaskRoleArn: string;
+    ecsAutoScalingRoleArn: string;
   } {
     return new IamResource(this, 'iam', {
       randomString: this.randomString,
@@ -324,8 +318,8 @@ class GhostStack extends TerraformStack {
     ghostEnvUpload: S3Object,
     nginxEnvUpload: S3Object,
   ): {
-    ecsService: EcsService,
-    ecsCluster: EcsCluster
+    ecsService: EcsService;
+    ecsCluster: EcsCluster;
   } {
     return new EcsResource(this, 'ecs', {
       vpcId: this.vpcId,

@@ -1,8 +1,6 @@
 import * as fs from 'fs';
 
-let configJson = {
-
-};
+let configJson = {};
 
 /**
  * @dev Read and format inputs from the file

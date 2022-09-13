@@ -7,6 +7,7 @@ import { AwsProvider } from '@cdktf/provider-aws';
 interface Options {
   accessKey: string;
   secretKey: string;
+  region: string;
 }
 
 interface Response {
@@ -40,7 +41,7 @@ class S3AsBackendStack extends TerraformStack {
    */
   perform(): Response {
     new AwsProvider(this, 'aws_provider', {
-      region: 'us-east-1',
+      region: this.options.region,
       accessKey: this.options.accessKey,
       secretKey: this.options.secretKey,
     });

@@ -1,13 +1,21 @@
-import * as shell from 'shelljs';
 import * as readlineSync from 'readline-sync';
 import * as fs from 'fs';
 import chalk from 'chalk';
+import * as shell from 'shelljs';
 
 import { GetInput, ActionType } from './lib/getInput';
 import commonConfig from './config/common.json';
 
+import cdktfConfig from '../cdktf.json';
+
 const INPUT_FILE_NAME = 'config.json';
 const OUTPUT_FILE_NAME = 'output.json';
+
+const YES = 'y';
+const NO = 'n';
+const INVALID_INPUT = `Invalid input! Please choose ${YES} or ${NO}`;
+
+const ghostOutputDir = `${cdktfConfig.output}/stacks/${commonConfig.ghostStackName}`;
 
 /**
  * @dev Entry point to deploy or destroy terraform stacks
@@ -25,39 +33,81 @@ function run(): void {
 }
 
 /**
+ * @dev Type definition for the exec options
+ */
+type execOptions = {
+  silent: boolean | undefined;
+};
+
+/**
+ * @dev Execute command
+ *
+ * @param command - command to execute
+ * @param options - options for the shell exec
+ * @returns {Promise}
+ */
+async function exec(command: string, options: execOptions = { silent: false }) {
+  return new Promise((resolve, reject) => {
+    const handleSilently = options && options.silent ? true : false;
+    shell.exec(command, { silent: handleSilently }, function (code: number, stdout: string, stderr: string) {
+      if (code != 0) {
+        reject({ code: code, stderr: stderr });
+      }
+      resolve({ code: code, stderr: stderr });
+    });
+  });
+}
+
+/**
  * @dev Driver function to deploy the terraform stacks
  *
- * @returns {void}
+ * @returns {Promise<void>}
  */
-function _deployStack(): void {
-  const resp = shell.exec('npm run diff s3-stack ghost'); // TODO: Dynamo lock to handle when fails
-  if (resp.code !== 0) {
-    shell.echo('Error: cdktf exec failed');
+async function _deployStack(): Promise<void> {
+  console.log('Deploy called ..');
+
+  // Deploy s3 backend stack
+  await exec(`npm run auto-deploy ${commonConfig.s3BackendStackName}`).catch((err) => {
+    shell.echo('Error: cdktf s3 backend deploy failed');
     shell.exit(1);
-  }
+  });
+
+  // Diff for ghost stack
+  await exec(`npm run diff ${commonConfig.ghostStackName}`).catch((err) => {
+    shell.echo('Error: cdktf s3 backend deploy failed');
+    shell.exit(1);
+  });
+
+  // Terraform plan
+  await exec(`cd ${ghostOutputDir} && terraform plan`)
+    .then()
+    .catch((err) => {
+      shell.echo('Error: cdktf exec failed');
+      shell.exit(1);
+    });
 
   console.log(chalk.blue.bold('Please review the above output for DEPLOY action.'));
-  const approve = readlineSync.question(chalk.blue.bold('Do you want to approve?(Y/n): '), { defaultInput: 'y' });
+  const approve = readlineSync.question(chalk.blue.bold('Do you want to approve?(Y/n): '), { defaultInput: YES });
 
-  if (approve === 'y') {
-    if (shell.exec('npm run auto-deploy s3-stack ghost').code !== 0) {
-      // TODO: Dynamo lock to handle when fails
-      shell.echo('Error: cdktf deploy failed');
+  if (approve === YES) {
+    // Deploy ghost stack
+    await exec(`npm run auto-deploy ${commonConfig.ghostStackName}`).catch((err) => {
+      shell.echo('Error: cdktf ghost deploy failed');
       shell.exit(1);
-    }
+    });
 
     // Success
-    if (shell.exec('npm run output', { silent: true }).code !== 0) {
+    await exec('npm run output', { silent: true }).catch((err) => {
       shell.echo('Error: cdktf output failed');
       shell.exit(1);
-    } else {
-      const input = _readAndShowOutput();
-      _nextActionMessage(input);
-    }
-  } else if (approve === 'n') {
+    });
+
+    const input = _readAndShowOutput();
+    _nextActionMessage(input);
+  } else if (approve === NO) {
     console.log('Declined!');
   } else {
-    console.log(`Invalid input! Please choose 'y' or 'n'`);
+    console.log(INVALID_INPUT);
   }
 }
 
@@ -113,7 +163,7 @@ function _readAndShowOutput(): any {
 function _formatOutput(output: any): any {
   const responseData = {};
 
-  const plgGhostOutputHash = output[commonConfig.stackName];
+  const plgGhostOutputHash = output[commonConfig.ghostStackName];
   Object.keys(plgGhostOutputHash).forEach(function (key) {
     const value = plgGhostOutputHash[key];
 
@@ -157,22 +207,21 @@ function _nextActionMessage(input: any): void {
 /**
  * @dev Driver function to destroy already deployed terraform stacks
  *
- * @returns {void}
+ * @returns {Promise<void>}
  */
-function _destroyStack(): void {
+async function _destroyStack(): Promise<void> {
   console.log(chalk.blue.bold('\nThis action will destroy the stack.'));
-  const approve = readlineSync.question(chalk.blue.bold('Do you want to approve?(Y/n): '), { defaultInput: 'y' });
+  const approve = readlineSync.question(chalk.blue.bold('Do you want to approve?(Y/n): '), { defaultInput: YES });
 
-  if (approve === 'y') {
-    if (shell.exec('npm run auto-destroy ghost').code !== 0) {
-      // TODO: Dynamo lock to handle when fails
+  if (approve === YES) {
+    await exec(`npm run auto-destroy ${commonConfig.ghostStackName}`).catch(() => {
       shell.echo('Error: cdktf destroy failed');
       shell.exit(1);
-    }
-  } else if (approve === 'n') {
+    });
+  } else if (approve === NO) {
     console.log('Declined!');
   } else {
-    console.log(`Invalid input! Please choose 'y' or 'n'`);
+    console.log(INVALID_INPUT);
   }
 }
 

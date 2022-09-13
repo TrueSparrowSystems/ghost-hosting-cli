@@ -1,5 +1,6 @@
 {
-  "stackName": "plg-ghost",
+  "ghostStackName": "ghost",
+  "s3BackendStackName": "s3-stack",
   "nameLabel": "PLG Ghost Test",
   "nameIdentifier": "plg-ghost",
   "tags": {
