@@ -1,5 +1,5 @@
 import { Construct } from 'constructs';
-import { App, S3Backend, TerraformStack } from 'cdktf';
+import { S3Backend, TerraformStack } from 'cdktf';
 import { AwsProvider } from '@cdktf/provider-aws';
 
 import { VpcResource } from '../vpc';
