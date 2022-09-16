@@ -10,7 +10,7 @@
     "diff": "cdktf diff",
     "auto-deploy": "cdktf deploy --auto-approve",
     "auto-destroy": "cdktf destroy --auto-approve",
-    "output": "cdktf output --outputs-file-include-sensitive-outputs --outputs-file output.json",
+    "output": "cdktf output",
     "synth": "cdktf synth",
     "compile": "tsc --pretty",
     "watch": "cdktf get && tsc -w",

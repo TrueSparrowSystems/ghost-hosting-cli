@@ -105,7 +105,7 @@ async function _deployStack(): Promise<void> {
     });
 
     // Success
-    await exec('npm run output', { silent: true }).catch((err) => {
+    await exec(`npm run output -- ${commonConfig.ghostStackName} --outputs-file-include-sensitive-outputs --outputs-file ${OUTPUT_FILE_NAME}`, { silent: true }).catch((err) => {
       shell.echo('Error: cdktf output failed', err);
       shell.exit(1);
     });
@@ -222,7 +222,7 @@ async function _destroyStack(): Promise<void> {
   const approve = readlineSync.question(chalk.blue.bold('Do you want to approve?(Y/n): '), { defaultInput: YES });
 
   if (approve === YES) {
-    await exec(`cd ${GHOST_OUTPUT_DIR} && terraform destroy`).catch(() => {
+    await exec(`cd ${GHOST_OUTPUT_DIR} && terraform destroy -auto-approve`).catch(() => {
       shell.echo('Error: ghost terraform destroy failed');
       shell.exit(1);
     });
