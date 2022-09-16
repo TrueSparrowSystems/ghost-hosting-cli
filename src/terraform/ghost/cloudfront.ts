@@ -1,15 +1,18 @@
 import { Resource } from 'cdktf';
 import { Construct } from 'constructs';
-import { DataAwsCloudfrontCachePolicy, DataAwsCloudfrontResponseHeadersPolicy } from '../gen/providers/aws/cloudfront';
+import {
+  DataAwsCloudfrontCachePolicy,
+  DataAwsCloudfrontResponseHeadersPolicy,
+} from '../../gen/providers/aws/cloudfront';
 import {
   CloudfrontDistribution,
   CloudfrontOriginAccessIdentity,
   DataAwsCloudfrontOriginRequestPolicy,
 } from '@cdktf/provider-aws/lib/cloudfront';
-import { S3Bucket, S3BucketPolicy } from '../gen/providers/aws/s3';
-import { DataAwsIamPolicyDocument } from '../gen/providers/aws/iam';
+import { S3Bucket, S3BucketPolicy } from '../../gen/providers/aws/s3';
+import { DataAwsIamPolicyDocument } from '../../gen/providers/aws/iam';
 
-import commonConfig from '../config/common.json';
+import commonConfig from '../../config/common.json';
 
 interface Options {
   blogBucket: S3Bucket;

@@ -1,14 +1,14 @@
 import { Resource, Fn, TerraformOutput } from 'cdktf';
 import { Construct } from 'constructs';
-import { EcsCluster, EcsClusterCapacityProviders, EcsService, EcsTaskDefinition } from '../gen/providers/aws/ecs';
-import { SecurityGroup, SecurityGroupRule } from '../gen/providers/aws/vpc';
-import { CloudwatchLogGroup } from '../gen/providers/aws/cloudwatch';
-import { AlbListenerRule, AlbTargetGroup } from '../gen/providers/aws/elb';
-import { S3Bucket, S3Object } from '../gen/providers/aws/s3';
-import { getDomainFromUrl, getPathSuffixFromUrl } from '../lib/util';
+import { EcsCluster, EcsClusterCapacityProviders, EcsService, EcsTaskDefinition } from '../../gen/providers/aws/ecs';
+import { SecurityGroup, SecurityGroupRule } from '../../gen/providers/aws/vpc';
+import { CloudwatchLogGroup } from '../../gen/providers/aws/cloudwatch';
+import { AlbListenerRule, AlbTargetGroup } from '../../gen/providers/aws/elb';
+import { S3Bucket, S3Object } from '../../gen/providers/aws/s3';
+import { getDomainFromUrl, getPathSuffixFromUrl } from '../../lib/util';
 
-import ecsConfig from '../config/ecs.json';
-import commonConfig from '../config/common.json';
+import ecsConfig from '../../config/ecs.json';
+import commonConfig from '../../config/common.json';
 
 const GHOST_ENV_FILE_NAME = ecsConfig.ghostContainerName + '.env';
 const NGINX_ENV_FILE_NAME = ecsConfig.nginxContainerName + '.env';

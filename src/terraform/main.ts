@@ -1,23 +1,22 @@
 import { App } from 'cdktf';
-import { S3AsBackendStack } from './stacks/s3_as_backend';
-import { GhostStack } from './stacks/ghost';
-import { readInput } from '../lib/readInput';
+import { BackendStack } from './backend';
+import { GhostStack } from './ghost';
+import { readJsonFileWithFileName } from '../lib/util';
 
 import commonConfig from '../config/common.json';
 
 const app = new App();
 
-const userInput = readInput();
+const userInput = readJsonFileWithFileName(commonConfig.configFile);
 
-const s3BackendResponse = new S3AsBackendStack(app, 'xyz', {
+new BackendStack(app, commonConfig.backendStackName, {
   accessKey: userInput.aws.accessKeyId,
   secretKey: userInput.aws.secretAccessKey,
   region: userInput.aws.region,
+  uniqueIdentifier: userInput.uniqueIdentifier,
 }).perform();
 
 new GhostStack(app, commonConfig.ghostStackName, {
-  bucketName: s3BackendResponse.bucketName,
-  dynamoTableName: s3BackendResponse.dynamoTableName,
   userInput,
 }).perform();
 

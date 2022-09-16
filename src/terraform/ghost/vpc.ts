@@ -1,13 +1,13 @@
 import { Fn, Resource } from 'cdktf';
 import { Construct } from 'constructs';
 
-import { Vpc } from '../gen/modules/vpc';
-import { DataAwsSubnet } from '../gen/providers/aws/vpc';
-import { DataAwsAvailabilityZones } from '../gen/providers/aws/datasources';
+import { Vpc } from '../../gen/modules/vpc';
+import { DataAwsSubnet } from '../../gen/providers/aws/vpc';
+import { DataAwsAvailabilityZones } from '../../gen/providers/aws/datasources';
 
-import { getPrivateSubnetCidrBlocks, getPublicSubnetCidrBlocks } from '../lib/util';
-import vpcConfig from '../config/vpc.json';
-import commonConfig from '../config/common.json';
+import { getPrivateSubnetCidrBlocks, getPublicSubnetCidrBlocks } from '../../lib/util';
+import vpcConfig from '../../config/vpc.json';
+import commonConfig from '../../config/common.json';
 
 interface Options {
   useExistingVpc: boolean;

@@ -1,6 +1,6 @@
 {
   "language": "typescript",
-  "app": "node ./dist/terraform/main.js",
+  "app": "node ./dist/src/terraform/main.js",
   "projectId": "5e9223d5-25ae-46cf-b58e-a9134091d151",
   "codeMakerOutput": "./src/gen",
   "sendCrashReports": "false",

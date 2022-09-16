@@ -1,4 +1,5 @@
 import { Fn } from 'cdktf';
+import * as fs from 'fs';
 import * as Psl from 'psl';
 
 /**
@@ -63,4 +64,22 @@ export function getDomainFromUrl(url: string): string {
 export function getPathSuffixFromUrl(url: string): string {
   const urlParts = url.split('://')[1].split('/');
   return urlParts.slice(1).join('/');
+}
+
+export function readJsonFileWithFileName(fileName: string): any {
+  let fileContent = null;
+  try {
+    const data = fs.readFileSync(fileName, 'utf-8');
+    fileContent = JSON.parse(data);
+  } catch (err) {
+    console.log(err);
+  } finally {
+    fileContent = fileContent || {};
+  }
+
+  return fileContent;
+}
+
+export function getCurrentTimestampInSeconds() {
+  return Math.floor(Date.now() / 1000);
 }

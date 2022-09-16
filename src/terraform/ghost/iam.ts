@@ -1,13 +1,12 @@
 import { Resource, Fn } from 'cdktf';
 import { Construct } from 'constructs';
-import { IamPolicy, IamRole, IamRolePolicyAttachment } from '../gen/providers/aws/iam';
-import { S3Bucket } from '../gen/providers/aws/s3';
+import { IamPolicy, IamRole, IamRolePolicyAttachment } from '../../gen/providers/aws/iam';
+import { S3Bucket } from '../../gen/providers/aws/s3';
 
-import ecsConfig from '../config/ecs.json';
-import commonConfig from '../config/common.json';
+import ecsConfig from '../../config/ecs.json';
+import commonConfig from '../../config/common.json';
 
 interface Options {
-  randomString: string;
   blogBucket: S3Bucket;
   configsBucket: S3Bucket;
 }

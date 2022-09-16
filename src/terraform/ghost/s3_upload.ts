@@ -1,9 +1,9 @@
 import { Resource } from 'cdktf';
 import { Construct } from 'constructs';
-import { S3Bucket, S3Object, S3BucketWebsiteConfiguration } from '../gen/providers/aws/s3';
-import { getDomainFromUrl } from '../lib/util';
+import { S3Bucket, S3Object, S3BucketWebsiteConfiguration } from '../../gen/providers/aws/s3';
+import { getDomainFromUrl } from '../../lib/util';
 
-import ecsConfig from '../config/ecs.json';
+import ecsConfig from '../../config/ecs.json';
 
 interface Options {
   region: string;

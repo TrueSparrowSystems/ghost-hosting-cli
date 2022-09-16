@@ -1,11 +1,11 @@
 import { Resource, TerraformOutput } from 'cdktf';
 import { Construct } from 'constructs';
-import { Rds } from '../gen/modules/rds';
-import { SecurityGroup } from '../gen/providers/aws/vpc';
-import { Password } from '../gen/providers/random';
+import { Rds } from '../../gen/modules/rds';
+import { SecurityGroup } from '../../gen/providers/aws/vpc';
+import { Password } from '../../gen/providers/random';
 
-import rdsConfig from '../config/rds.json';
-import commonConfig from '../config/common.json';
+import rdsConfig from '../../config/rds.json';
+import commonConfig from '../../config/common.json';
 
 interface Options {
   vpcId: string;
