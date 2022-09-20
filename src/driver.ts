@@ -118,7 +118,7 @@ async function _deployStack(): Promise<void> {
     });
 
     // Create output file with the result
-    await exec(`npm run output -- ${commonConfig.ghostStackName} --outputs-file-include-sensitive-outputs --outputs-file ${OUTPUT_FILE_NAME}`, { silent: true }).catch((err) => {
+    await exec(`npm run output ${commonConfig.ghostStackName} --outputs-file-include-sensitive-outputs --outputs-file ${OUTPUT_FILE_NAME}`, { silent: true }).catch((err) => {
       console.log(`err data: ${err}`);
       process.exit(1);
     });
