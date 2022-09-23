@@ -1,24 +1,20 @@
 import { Construct } from 'constructs';
 import { TerraformStack } from 'cdktf';
 
-import { S3AsBackendResource } from '../s3_as_backend';
+import { S3AsBackendResource } from './backend/s3_as_backend';
 import { AwsProvider } from '@cdktf/provider-aws';
 
 interface Options {
   accessKey: string;
   secretKey: string;
   region: string;
-}
-
-interface Response {
-  bucketName: string;
-  dynamoTableName: string;
+  uniqueIdentifier: string;
 }
 
 /**
  * @dev Class to create required resources by s3 backend
  */
-class S3AsBackendStack extends TerraformStack {
+class BackendStack extends TerraformStack {
   options: Options;
 
   /**
@@ -37,33 +33,26 @@ class S3AsBackendStack extends TerraformStack {
   /**
    * @dev Main performer of the class
    *
-   * @returns {Response}
+   * @returns {void}
    */
-  perform(): Response {
+  perform(): void {
     new AwsProvider(this, 'aws_provider', {
       region: this.options.region,
       accessKey: this.options.accessKey,
       secretKey: this.options.secretKey,
     });
 
-    const { bucketName, dynamoTableName } = this._s3AsBackend();
-
-    return {
-      bucketName,
-      dynamoTableName,
-    };
+    this._s3AsBackend();
   }
 
   /**
    * @dev Create s3 backend resources
    *
-   * @returns {object}
+   * @returns {void}
    */
-  _s3AsBackend() {
-    const { dynamoDbTable, tfStateBucket } = new S3AsBackendResource(this, 's3_as_backend', {}).perform();
-
-    return { bucketName: tfStateBucket.bucket, dynamoTableName: dynamoDbTable.name };
+  _s3AsBackend(): void {
+    new S3AsBackendResource(this, 's3_as_backend', { uniqueIdentifier: this.options.uniqueIdentifier }).perform();
   }
 }
 
-export { S3AsBackendStack };
+export { BackendStack };

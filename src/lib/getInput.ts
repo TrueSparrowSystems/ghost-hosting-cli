@@ -2,8 +2,11 @@ import * as fs from 'fs';
 import * as readlineSyc from 'readline-sync';
 import chalk from 'chalk';
 import { Command, Argument } from 'commander';
+import { getRootDomainFromUrl, readJsonFileWithFileName, getCurrentTimestampInSeconds } from '../lib/util';
+
+import commonConfig from '../config/common.json';
+
 const command = new Command();
-import { getRootDomainFromUrl } from '../lib/util';
 
 const yes = 'y';
 const no = 'n';
@@ -12,11 +15,11 @@ const USER_CONFIGS = {
   ghostHostingUrl: '',
   hostStaticWebsite: false,
   staticWebsiteUrl: '',
+  uniqueIdentifier: '',
   vpc: {},
   alb: {},
   rds: {},
 };
-const CONFIG_FILE = 'config.json';
 enum ActionType {
   DEPLOY = 'deploy',
   DESTROY = 'destroy',
@@ -119,14 +122,7 @@ class GetInput {
    * @returns {boolean}
    */
   _hasPreviousConfigInFile(): boolean {
-    let configData: object = {};
-    try {
-      configData = require(`${process.cwd()}/${CONFIG_FILE}`);
-    } catch (err) {
-      // console.log('Error: ', err);
-    } finally {
-      configData = configData || {};
-    }
+    const configData = readJsonFileWithFileName(commonConfig.configFile);
 
     let pass = true;
     for (const key in USER_CONFIGS) {
@@ -404,6 +400,8 @@ class GetInput {
    * @returns {void}
    */
   _createConfig(): void {
+    USER_CONFIGS.uniqueIdentifier = getCurrentTimestampInSeconds().toString();
+
     // Add AWS credentials
     USER_CONFIGS[`aws`] = {
       accessKeyId: options.accessKeyId,
@@ -460,7 +458,7 @@ class GetInput {
       });
     }
 
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(USER_CONFIGS, null, 4));
+    fs.writeFileSync(commonConfig.configFile, JSON.stringify(USER_CONFIGS, null, 4));
   }
 }
 

@@ -1,8 +1,12 @@
 {
   "ghostStackName": "ghost",
-  "s3BackendStackName": "s3-stack",
+  "backendStackName": "backend",
   "nameLabel": "PLG Ghost Test",
   "nameIdentifier": "plg-ghost",
+  "configFile": "config.json",
+  "tfStateBucketName": "plg-ghost-tf-state",
+  "tfStateBucketKey": "meta/ghost.tfstate",
+  "tfStateBucketLockDdbTableName": "plg-ghost-tf-state-locking",
   "tags": {
     "Name": "PLG Ghost"
   }

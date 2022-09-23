@@ -2,33 +2,30 @@ import * as readlineSync from 'readline-sync';
 import * as fs from 'fs';
 import chalk from 'chalk';
 import * as shell from 'shelljs';
-
 import { GetInput, ActionType } from './lib/getInput';
 import commonConfig from './config/common.json';
-
 import cdktfConfig from '../cdktf.json';
-
-const INPUT_FILE_NAME = 'config.json';
-const OUTPUT_FILE_NAME = 'output.json';
 
 const YES = 'y';
 const NO = 'n';
+const INPUT_FILE_NAME = 'config.json';
+const OUTPUT_FILE_NAME = 'output.json';
 const INVALID_INPUT = `Invalid input! Please choose ${YES} or ${NO}`;
-
-const ghostOutputDir = `${cdktfConfig.output}/stacks/${commonConfig.ghostStackName}`;
+const GHOST_OUTPUT_DIR = `${cdktfConfig.output}/stacks/${commonConfig.ghostStackName}`;
+const BACKEND_OUTPUT_DIR = `${cdktfConfig.output}/stacks/${commonConfig.backendStackName}`;
 
 /**
  * @dev Entry point to deploy or destroy terraform stacks
  *
- * @returns {void}
+ * @returns {Promise<void>}
  */
-function run(): void {
+async function run(): Promise<void> {
   const response = new GetInput().perform();
 
   if (response.action === ActionType.DEPLOY) {
-    _deployStack();
+    await _deployStack();
   } else if (response.action === ActionType.DESTROY) {
-    _destroyStack();
+    await _destroyStack();
   }
 }
 
@@ -49,12 +46,21 @@ type execOptions = {
 async function exec(command: string, options: execOptions = { silent: false }) {
   return new Promise((resolve, reject) => {
     const handleSilently = options && options.silent ? true : false;
-    shell.exec(command, { silent: handleSilently }, function (code: number, stdout: string, stderr: string) {
+
+    const execCallback = function (code: number, stdout: string, stderr: string) {
       if (code != 0) {
         reject({ code: code, stderr: stderr });
       }
       resolve({ code: code, stderr: stderr });
-    });
+    };
+    shell.exec(command, { silent: handleSilently, async: true }, execCallback);
+
+    function signalCallback(data: string) {
+      console.log(`SIGNAL received.. ${data}`);
+    }
+    process.on('SIGINT', signalCallback);
+    process.on('SIGTERM', signalCallback);
+    process.on('SIGABRT', signalCallback);
   });
 }
 
@@ -64,26 +70,41 @@ async function exec(command: string, options: execOptions = { silent: false }) {
  * @returns {Promise<void>}
  */
 async function _deployStack(): Promise<void> {
-  console.log('Deploy called ..');
-
-  // Deploy s3 backend stack
-  await exec(`npm run auto-deploy ${commonConfig.s3BackendStackName}`).catch((err) => {
-    shell.echo('Error: cdktf s3 backend deploy failed');
-    shell.exit(1);
-  });
-
-  // Diff for ghost stack
-  await exec(`npm run diff ${commonConfig.ghostStackName}`).catch((err) => {
-    shell.echo('Error: cdktf s3 backend deploy failed');
-    shell.exit(1);
-  });
-
-  // Terraform plan
-  await exec(`cd ${ghostOutputDir} && terraform plan`)
+  // Synth
+  await exec('cdktf synth')
     .then()
     .catch((err) => {
-      shell.echo('Error: cdktf exec failed');
-      shell.exit(1);
+      console.log('err: ', err);
+      process.exit(1);
+    });
+
+  // Backend: terraform init
+  console.log('Initializing modules and providers required for backend..');
+  await exec(`cd ${BACKEND_OUTPUT_DIR} && terraform init`, { silent: true }).catch((err) => {
+    console.log(`err data: ${err}`);
+    process.exit(1);
+  });
+
+  // Backend: terraform apply
+  console.log('Setting up s3 backend. This can take several minutes..');
+  await exec(`cd ${BACKEND_OUTPUT_DIR} && terraform apply -auto-approve`, { silent: true }).catch((err) => {
+    console.log(`err data: ${err}`);
+    process.exit(1);
+  });
+
+  // Ghost: terraform init
+  console.log('Initializing modules and providers required for ghost..');
+  await exec(`cd ${GHOST_OUTPUT_DIR} && terraform init`, { silent: true }).catch((err) => {
+    console.log(`err data: ${err}`);
+    process.exit(1);
+  });
+
+  // Ghost: terraform plan
+  await exec(`cd ${GHOST_OUTPUT_DIR} && terraform plan`)
+    .then()
+    .catch((err) => {
+      console.log(`err data: ${err}`);
+      process.exit(1);
     });
 
   console.log(chalk.blue.bold('Please review the above output for DEPLOY action.'));
@@ -91,15 +112,19 @@ async function _deployStack(): Promise<void> {
 
   if (approve === YES) {
     // Deploy ghost stack
-    await exec(`npm run auto-deploy ${commonConfig.ghostStackName}`).catch((err) => {
-      shell.echo('Error: cdktf ghost deploy failed');
-      shell.exit(1);
+    await exec(`cd ${GHOST_OUTPUT_DIR} && terraform apply -auto-approve`).catch((err) => {
+      console.log(`err data: ${err}`);
+      process.exit(1);
     });
 
-    // Success
-    await exec('npm run output', { silent: true }).catch((err) => {
-      shell.echo('Error: cdktf output failed');
-      shell.exit(1);
+    // Create output file with the result
+    console.log('Creating output..');
+    await exec(
+      `npm run output ${commonConfig.ghostStackName} --outputs-file-include-sensitive-outputs --outputs-file ${OUTPUT_FILE_NAME}`,
+      { silent: true },
+    ).catch((err) => {
+      console.log(`err data: ${err}`);
+      process.exit(1);
     });
 
     const input = _readAndShowOutput();
@@ -214,9 +239,16 @@ async function _destroyStack(): Promise<void> {
   const approve = readlineSync.question(chalk.blue.bold('Do you want to approve?(Y/n): '), { defaultInput: YES });
 
   if (approve === YES) {
-    await exec(`npm run auto-destroy ${commonConfig.ghostStackName}`).catch(() => {
-      shell.echo('Error: cdktf destroy failed');
-      shell.exit(1);
+    // Destroy ghost stack
+    console.log('Destroying ghost stack..');
+    await exec(`cd ${GHOST_OUTPUT_DIR} && terraform destroy -auto-approve`).catch(() => {
+      process.exit(1);
+    });
+
+    // Destroy backend stack
+    console.log('Destroying backend stack..');
+    await exec(`cd ${BACKEND_OUTPUT_DIR} && terraform destroy -auto-approve`).catch(() => {
+      process.exit(1);
     });
   } else if (approve === NO) {
     console.log('Declined!');

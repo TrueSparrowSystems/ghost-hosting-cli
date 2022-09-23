@@ -2,34 +2,30 @@ import { Construct } from 'constructs';
 import { S3Backend, TerraformStack } from 'cdktf';
 import { AwsProvider } from '@cdktf/provider-aws';
 
-import { VpcResource } from '../vpc';
-import { RdsResource } from '../rds';
-import { EcsResource } from '../ecs';
-import { AlbResource } from '../alb';
-import { S3Resource } from '../s3';
-import { IamResource } from '../iam';
-import { AcmResource } from '../acm';
-import { S3Upload } from '../s3_upload';
-import { AutoScaling } from '../auto_scaling';
-import { CloudfrontResource } from '../cloudfront';
+import { VpcResource } from './ghost/vpc';
+import { RdsResource } from './ghost/rds';
+import { EcsResource } from './ghost/ecs';
+import { AlbResource } from './ghost/alb';
+import { S3Resource } from './ghost/s3';
+import { IamResource } from './ghost/iam';
+import { AcmResource } from './ghost/acm';
+import { S3Upload } from './ghost/s3_upload';
+import { AutoScaling } from './ghost/auto_scaling';
+import { CloudfrontResource } from './ghost/cloudfront';
 
-import { StringResource } from '../../gen/providers/random';
-import { S3Bucket, S3Object, S3BucketWebsiteConfiguration } from '../../gen/providers/aws/s3';
-import { RandomProvider } from '../../gen/providers/random';
-import { EcsCluster, EcsService } from '../../gen/providers/aws/ecs';
+import { S3Bucket, S3Object, S3BucketWebsiteConfiguration } from '../gen/providers/aws/s3';
+import { RandomProvider } from '../gen/providers/random';
+import { EcsCluster, EcsService } from '../gen/providers/aws/ecs';
 
-import s3Config from '../../config/s3.json';
+import commonConfig from '../config/common.json';
 
 interface Options {
-  bucketName: string;
-  dynamoTableName: string;
   userInput: any;
 }
 
 class GhostStack extends TerraformStack {
   options: Options;
   userInput: any;
-  randomString: string;
   vpcId: string;
   vpcSubnets: string[];
   vpcPublicSubnets: string[];
@@ -38,6 +34,7 @@ class GhostStack extends TerraformStack {
   rdsDbPassword: string;
   rdsDbName: string;
   rdsSecurityGroupId: string;
+  certificateArn: string;
 
   /**
    * @dev Constructor for the terraform stack
@@ -51,7 +48,6 @@ class GhostStack extends TerraformStack {
     this.options = options;
     this.userInput = options.userInput;
 
-    this.randomString = '';
     this.vpcId = '';
     this.vpcSubnets = [];
     this.vpcPublicSubnets = [];
@@ -60,6 +56,7 @@ class GhostStack extends TerraformStack {
     this.rdsDbPassword = '';
     this.rdsDbName = '';
     this.rdsSecurityGroupId = '';
+    this.certificateArn = '';
   }
 
   /**
@@ -74,11 +71,9 @@ class GhostStack extends TerraformStack {
 
     this._createVpc();
 
-    this._generateRandomString();
-
     this._createRdsInstance();
 
-    const { certificateArn } = this._createAcmCertificate();
+    this._createAcmCertificate();
 
     const { blogBucket, staticBucket, configsBucket, s3BucketWebsiteConfiguration } = this._createS3Buckets();
 
@@ -92,7 +87,7 @@ class GhostStack extends TerraformStack {
       cloudfrontDomainName,
     );
 
-    const { albSecurityGroups, listenerArn } = this._createAlb(certificateArn);
+    const { albSecurityGroups, listenerArn } = this._createAlb();
 
     const { customExecutionRoleArn, customTaskRoleArn, ecsAutoScalingRoleArn } = this._createIamRolePolicies(
       blogBucket,
@@ -118,36 +113,17 @@ class GhostStack extends TerraformStack {
    * @returns {void}
    */
   _s3Backend(): void {
+    const tfStateBucketName = `${commonConfig.tfStateBucketName}-${this.userInput.uniqueIdentifier}`;
+
     new S3Backend(this, {
-      bucket: s3Config.tfStateBucketName,
-      key: s3Config.tfStateBucketKey,
+      bucket: tfStateBucketName,
+      key: commonConfig.tfStateBucketKey,
       region: this.userInput.aws.region,
       encrypt: true,
-      dynamodbTable: s3Config.dynamoDbTableName,
+      dynamodbTable: commonConfig.tfStateBucketLockDdbTableName,
       accessKey: this.userInput.aws.accessKeyId,
       secretKey: this.userInput.aws.secretAccessKey,
     });
-  }
-
-  /**
-   * @dev Generate random string append with resource name and identifier
-   *
-   * @returns {void}
-   */
-  _generateRandomString(): void {
-    const stringResource = new StringResource(this, 'random_string', {
-      length: 8,
-      lower: true,
-      upper: false,
-      special: false,
-      numeric: true,
-      minNumeric: 2,
-      keepers: {
-        vpc_id: this.vpcId,
-      },
-    });
-
-    this.randomString = stringResource.result;
   }
 
   /**
@@ -215,13 +191,13 @@ class GhostStack extends TerraformStack {
    *
    * @private
    */
-  _createAlb(certificateArn: string | undefined): { albSecurityGroups: string[]; listenerArn: string } {
+  _createAlb(): { albSecurityGroups: string[]; listenerArn: string } {
     return new AlbResource(this, 'alb', {
       vpcId: this.vpcId,
       publicSubnets: this.vpcPublicSubnets,
       useExistingAlb: this.userInput.alb.useExistingAlb,
       listenerArn: this.userInput.alb.listenerArn,
-      certificateArn,
+      certificateArn: this.certificateArn,
     }).perform();
   }
 
@@ -237,7 +213,7 @@ class GhostStack extends TerraformStack {
     s3BucketWebsiteConfiguration: S3BucketWebsiteConfiguration;
   } {
     return new S3Resource(this, 's3', {
-      randomString: this.randomString,
+      uniqueIdentifier: this.userInput.uniqueIdentifier,
       vpcId: this.vpcId,
       ghostHostingUrl: this.userInput.ghostHostingUrl,
       region: this.userInput.aws.region,
@@ -246,12 +222,14 @@ class GhostStack extends TerraformStack {
 
   _createAcmCertificate() {
     if (this.userInput.alb.useExistingAlb) {
-      return { certificateArn: '' };
+      return;
     }
 
-    return new AcmResource(this, 'acm', {
+    const acmResponse = new AcmResource(this, 'acm', {
       ghostHostingUrl: this.userInput.ghostHostingUrl,
     }).perform();
+
+    this.certificateArn = acmResponse.certificateArn;
   }
 
   _s3Upload(
@@ -291,7 +269,6 @@ class GhostStack extends TerraformStack {
     ecsAutoScalingRoleArn: string;
   } {
     return new IamResource(this, 'iam', {
-      randomString: this.randomString,
       blogBucket,
       configsBucket,
     }).perform();

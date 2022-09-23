@@ -1,9 +1,9 @@
 import { Resource, Fn, TerraformOutput } from 'cdktf';
 import { Construct } from 'constructs';
-import { SecurityGroup } from '../gen/providers/aws/vpc';
-import { Alb, AlbListener, DataAwsLb, DataAwsLbListener } from '../gen/providers/aws/elb';
+import { SecurityGroup } from '../../gen/providers/aws/vpc';
+import { Alb, AlbListener, DataAwsLb, DataAwsLbListener } from '../../gen/providers/aws/elb';
 
-import commonConfig from '../config/common.json';
+import commonConfig from '../../config/common.json';
 
 interface Options {
   vpcId: string;

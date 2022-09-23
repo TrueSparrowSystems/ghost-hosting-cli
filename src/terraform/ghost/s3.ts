@@ -1,15 +1,15 @@
 import { Resource, TerraformOutput } from 'cdktf';
 import { Construct } from 'constructs';
-import { S3Bucket, S3BucketAcl, S3BucketWebsiteConfiguration } from '../gen/providers/aws/s3';
-import { getPathSuffixFromUrl } from '../lib/util';
+import { S3Bucket, S3BucketAcl, S3BucketWebsiteConfiguration } from '../../gen/providers/aws/s3';
+import { getPathSuffixFromUrl } from '../../lib/util';
 
-import s3Config from '../config/s3.json';
+import s3Config from '../../config/s3.json';
 
 interface Options {
-  randomString: string;
   vpcId: string;
   ghostHostingUrl: string;
   region: string;
+  uniqueIdentifier: string;
 }
 
 interface Response {
@@ -63,7 +63,7 @@ class S3Resource extends Resource {
    * @returns { S3Bucket }
    */
   _createBlogAssetBucket(): S3Bucket {
-    const blogContentS3BucketName = s3Config.blogContentS3BucketName.concat('-', this.options.randomString);
+    const blogContentS3BucketName = s3Config.blogContentS3BucketName.concat('-', this.options.uniqueIdentifier);
 
     return new S3Bucket(this, 'blog_assets', {
       bucket: blogContentS3BucketName,
@@ -77,7 +77,7 @@ class S3Resource extends Resource {
    * @returns { S3Bucket }
    */
   _createStaticAssetBucket(): { staticBucket: S3Bucket; s3BucketWebsiteConfiguration: S3BucketWebsiteConfiguration } {
-    const blogStaticS3BucketName = s3Config.blogStaticS3BucketName.concat('-', this.options.randomString);
+    const blogStaticS3BucketName = s3Config.blogStaticS3BucketName.concat('-', this.options.uniqueIdentifier);
 
     const staticBucket = new S3Bucket(this, 'static_assets', {
       bucket: blogStaticS3BucketName,
@@ -119,7 +119,7 @@ class S3Resource extends Resource {
    * @returns { S3Bucket }
    */
   _createConfigsBucket(): S3Bucket {
-    const configsBucket = s3Config.configsS3BucketName.concat('-', this.options.randomString);
+    const configsBucket = s3Config.configsS3BucketName.concat('-', this.options.uniqueIdentifier);
 
     return new S3Bucket(this, 'configs', {
       bucket: configsBucket,

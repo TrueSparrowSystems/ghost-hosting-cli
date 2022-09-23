@@ -1,10 +1,10 @@
 import { Resource } from 'cdktf';
 import { Construct } from 'constructs';
-import { AppautoscalingPolicy, AppautoscalingTarget } from '../gen/providers/aws/appautoscaling';
-import { EcsCluster, EcsService } from '../gen/providers/aws/ecs';
+import { AppautoscalingPolicy, AppautoscalingTarget } from '../../gen/providers/aws/appautoscaling';
+import { EcsCluster, EcsService } from '../../gen/providers/aws/ecs';
 
-import ecsConfig from '../config/ecs.json';
-import commonConfig from '../config/common.json';
+import ecsConfig from '../../config/ecs.json';
+import commonConfig from '../../config/common.json';
 
 interface Options {
   autoScaleRoleArn: string;
