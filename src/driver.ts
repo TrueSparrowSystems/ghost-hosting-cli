@@ -118,7 +118,11 @@ async function _deployStack(): Promise<void> {
     });
 
     // Create output file with the result
-    await exec(`npm run output ${commonConfig.ghostStackName} --outputs-file-include-sensitive-outputs --outputs-file ${OUTPUT_FILE_NAME}`, { silent: true }).catch((err) => {
+    console.log('Creating output..');
+    await exec(
+      `npm run output ${commonConfig.ghostStackName} --outputs-file-include-sensitive-outputs --outputs-file ${OUTPUT_FILE_NAME}`,
+      { silent: true },
+    ).catch((err) => {
       console.log(`err data: ${err}`);
       process.exit(1);
     });
@@ -235,7 +239,15 @@ async function _destroyStack(): Promise<void> {
   const approve = readlineSync.question(chalk.blue.bold('Do you want to approve?(Y/n): '), { defaultInput: YES });
 
   if (approve === YES) {
+    // Destroy ghost stack
+    console.log('Destroying ghost stack..');
     await exec(`cd ${GHOST_OUTPUT_DIR} && terraform destroy -auto-approve`).catch(() => {
+      process.exit(1);
+    });
+
+    // Destroy backend stack
+    console.log('Destroying backend stack..');
+    await exec(`cd ${BACKEND_OUTPUT_DIR} && terraform destroy -auto-approve`).catch(() => {
       process.exit(1);
     });
   } else if (approve === NO) {
