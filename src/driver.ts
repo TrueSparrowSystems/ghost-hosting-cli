@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import chalk from 'chalk';
 import * as shell from 'shelljs';
 import { GetInput, ActionType } from './lib/getInput';
+import { getDomainFromUrl } from './lib/util';
 import commonConfig from './config/common.json';
 import cdktfConfig from '../cdktf.json';
 
@@ -201,9 +202,17 @@ function _formatOutput(output: any): any {
 function _nextActionMessage(input: any): void {
   console.log('');
 
-  if (!input.alb.useExistingAlb) {
-    console.log(chalk.cyan('Create a Route53 "A" record for'), chalk.cyan.bold('ALB DNS Name'));
-  }
+  // TODO::
+  console.log(chalk.cyan.bold('Create following Route53 "A" record:'));
+  const r53Records = [
+    {
+      [chalk.cyan.bold('Domain Name')]: 'mpm.com',
+      [chalk.cyan.bold('Record Name')]: '<Ghost hosted URL domain>',
+      [chalk.cyan.bold('Record Type')]: 'A',
+      [chalk.cyan.bold('Value')]: '<ALB DNS Name>',
+    },
+  ];
+  console.table(r53Records);
 
   if (input.hostStaticWebsite) {
     console.log(
