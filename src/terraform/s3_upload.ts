@@ -1,6 +1,6 @@
 import { Resource } from 'cdktf';
 import { Construct } from 'constructs';
-import { S3Bucket, S3Object } from '../gen/providers/aws/s3';
+import { S3Bucket, S3Object, S3BucketWebsiteConfiguration } from '../gen/providers/aws/s3';
 import { getDomainFromUrl } from '../lib/util';
 
 import ecsConfig from '../config/ecs.json';
@@ -10,6 +10,7 @@ interface Options {
   blogBucket: S3Bucket;
   configsBucket: S3Bucket;
   staticBucket: S3Bucket;
+  s3BucketWebsiteConfiguration: S3BucketWebsiteConfiguration;
   rdsDbHost: string;
   rdsDbUserName: string;
   rdsDbPassword: string;
@@ -18,6 +19,7 @@ interface Options {
   ghostHostingUrl: string;
   hostStaticWebsite: boolean;
   staticWebsiteUrl: string | undefined;
+  cloudfrontDomainName: string;
 }
 
 interface Response {
@@ -73,6 +75,8 @@ class S3Upload extends Resource {
    * @returns { string } - ghost env variables as a concatenated string
    */
   _getGhostEnvFileContent(): string {
+    const cloudfrontUrl = `https://${this.options.cloudfrontDomainName}`;
+
     return (
       `database__client=mysql\n` +
       `database__connection__host=${this.options.rdsDbHost}\n` +
@@ -82,9 +86,10 @@ class S3Upload extends Resource {
       `storage__s3__bucket=${this.options.blogBucket.bucket}\n` +
       `storage__s3__region=${this.options.region}\n` +
       `storage__s3__pathPrefix=blog/images\n` +
-      `storage__s3__acl=public-read\n` +
+      `storage__s3__acl=private\n` +
       `storage__s3__forcePathStyle=true\n` +
       `storage__active=s3\n` +
+      `storage__s3__assetHost=${cloudfrontUrl}\n` +
       `url=${this.options.ghostHostingUrl}`
     );
   }
@@ -105,7 +110,7 @@ class S3Upload extends Resource {
       `PROXY_PASS_HOST=127.0.0.1\n` +
       `PROXY_PASS_PORT=${ecsConfig.ghostContainerPort}\n` +
       `S3_STATIC_BUCKET_HOST=${
-        this.options.hostStaticWebsite ? this.options.staticBucket.websiteEndpoint : '127.0.0.1'
+        this.options.hostStaticWebsite ? this.options.s3BucketWebsiteConfiguration.websiteEndpoint : '127.0.0.1'
       }`;
 
     return fileContent;
@@ -120,12 +125,13 @@ class S3Upload extends Resource {
    */
   _uploadFileToBucket(fileContent: string, filename: string): S3Object {
     const identifier = 'upload_configs_' + filename;
-    
+
     return new S3Object(this, identifier, {
       key: filename,
       bucket: this.options.configsBucket.bucket,
       acl: 'private',
       content: fileContent,
+      dependsOn: [this.options.configsBucket, this.options.staticBucket, this.options.s3BucketWebsiteConfiguration],
     });
   }
 }

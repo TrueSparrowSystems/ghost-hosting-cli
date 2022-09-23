@@ -147,9 +147,9 @@ class GetInput {
   _usePreviousConfigData(): boolean {
     let useExistingConfig = readlineSyc.question(
       chalk.blue.bold(
-        'Previous installation "config.json" file found, Would you like to use the existing configuration options? [Else it will start from the scratch] (Y/n) : '
+        'Previous installation "config.json" file found, Would you like to use the existing configuration options? [Else it will start from the scratch] (Y/n) : ',
       ),
-      { defaultInput: yes }
+      { defaultInput: yes },
     );
     useExistingConfig = this._validateInputBooleanOption(useExistingConfig);
 
@@ -201,7 +201,9 @@ class GetInput {
 
     if (options.useExistingVpc === yes) {
       options.vpcSubnets = readlineSyc.question(
-        chalk.blue.bold('Provide VPC Subnets to run ECS tasks [comma separated values, at least 2 subnets required] : ')
+        chalk.blue.bold(
+          'Provide VPC Subnets to run ECS tasks [comma separated values, at least 2 subnets required] : ',
+        ),
       );
       this._validateInputStringOption(options.vpcSubnets, 'Invalid VPC Subnets.');
     }
@@ -250,9 +252,9 @@ class GetInput {
 
     let hasDomainConfiguredInRoute53 = readlineSyc.question(
       chalk.blue.bold(
-        'Do you have Route53 configured for the domain in the same AWS account? [Else the SSL certification verification will fail] (Y/n) : '
+        'Do you have Route53 configured for the domain in the same AWS account? [Else the SSL certification verification will fail] (Y/n) : ',
       ),
-      { defaultInput: yes }
+      { defaultInput: yes },
     );
     hasDomainConfiguredInRoute53 = this._validateInputBooleanOption(hasDomainConfiguredInRoute53);
 
@@ -270,7 +272,7 @@ class GetInput {
   _getRdsRequirements(): void {
     options.useExistingRds = readlineSyc.question(
       chalk.blue.bold('Do you want to use existing RDS MySQL instance? (y/N) : '),
-      { defaultInput: no }
+      { defaultInput: no },
     );
     options.useExistingRds = this._validateInputBooleanOption(options.useExistingRds);
 
@@ -307,8 +309,8 @@ class GetInput {
       if (options.useExistingVpc === yes) {
         options.vpcPublicSubnets = readlineSyc.question(
           chalk.blue.bold(
-            'Provide VPC Public Subnets to launch ALB [comma separated values, at least 2 subnets required] : '
-          )
+            'Provide VPC Public Subnets to launch ALB [comma separated values, at least 2 subnets required] : ',
+          ),
         );
         this._validateInputStringOption(options.vpcSubnets, 'Invalid VPC Public Subnets.');
       }
@@ -361,7 +363,7 @@ class GetInput {
     ) {
       this._validateInputStringOption(
         '',
-        'Different domain names for Ghost hosting url and Static website url are not allowed.'
+        'Different domain names for Ghost hosting url and Static website url are not allowed.',
       );
     }
   }

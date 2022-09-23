@@ -22,7 +22,7 @@ export function getPublicSubnetCidrBlocks(cidrPrefix: string): string[] {
 export function getPrivateSubnetCidrBlocks(
   cidrPrefix: string,
   privateSubnetCount: number,
-  netNumStart: number
+  netNumStart: number,
 ): string[] {
   const privateSubnetCidrBlocks: string[] = [];
 
