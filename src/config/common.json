@@ -4,6 +4,7 @@
   "nameLabel": "PLG Ghost Test",
   "nameIdentifier": "plg-ghost",
   "configFile": "config.json",
+  "outputFile": "output.json",
   "tfStateBucketName": "plg-ghost-tf-state",
   "tfStateBucketKey": "meta/ghost.tfstate",
   "tfStateBucketLockDdbTableName": "plg-ghost-tf-state-locking",

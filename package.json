@@ -69,6 +69,6 @@
     "dist/**/*"
   ],
   "bin": {
-    "plg-ghost": "./dist/run.js"
+    "plg-ghost": "./dist/src/run.js"
   }
 }

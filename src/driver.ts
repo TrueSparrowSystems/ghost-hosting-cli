@@ -8,8 +8,6 @@ import cdktfConfig from '../cdktf.json';
 
 const YES = 'y';
 const NO = 'n';
-const INPUT_FILE_NAME = 'config.json';
-const OUTPUT_FILE_NAME = 'output.json';
 const INVALID_INPUT = `Invalid input! Please choose ${YES} or ${NO}`;
 const GHOST_OUTPUT_DIR = `${cdktfConfig.output}/stacks/${commonConfig.ghostStackName}`;
 const BACKEND_OUTPUT_DIR = `${cdktfConfig.output}/stacks/${commonConfig.backendStackName}`;
@@ -71,31 +69,27 @@ async function exec(command: string, options: execOptions = { silent: false }) {
  */
 async function _deployStack(): Promise<void> {
   // Synth
-  await exec('cdktf synth')
+  await exec('npm run synth')
     .then()
     .catch((err) => {
-      console.log('err: ', err);
       process.exit(1);
     });
 
   // Backend: terraform init
   console.log('Initializing modules and providers required for backend..');
   await exec(`cd ${BACKEND_OUTPUT_DIR} && terraform init`, { silent: true }).catch((err) => {
-    console.log(`err data: ${err}`);
     process.exit(1);
   });
 
   // Backend: terraform apply
   console.log('Setting up s3 backend. This can take several minutes..');
   await exec(`cd ${BACKEND_OUTPUT_DIR} && terraform apply -auto-approve`, { silent: true }).catch((err) => {
-    console.log(`err data: ${err}`);
     process.exit(1);
   });
 
   // Ghost: terraform init
   console.log('Initializing modules and providers required for ghost..');
   await exec(`cd ${GHOST_OUTPUT_DIR} && terraform init`, { silent: true }).catch((err) => {
-    console.log(`err data: ${err}`);
     process.exit(1);
   });
 
@@ -103,7 +97,6 @@ async function _deployStack(): Promise<void> {
   await exec(`cd ${GHOST_OUTPUT_DIR} && terraform plan`)
     .then()
     .catch((err) => {
-      console.log(`err data: ${err}`);
       process.exit(1);
     });
 
@@ -113,17 +106,15 @@ async function _deployStack(): Promise<void> {
   if (approve === YES) {
     // Deploy ghost stack
     await exec(`cd ${GHOST_OUTPUT_DIR} && terraform apply -auto-approve`).catch((err) => {
-      console.log(`err data: ${err}`);
       process.exit(1);
     });
 
     // Create output file with the result
     console.log('Creating output..');
     await exec(
-      `npm run output ${commonConfig.ghostStackName} --outputs-file-include-sensitive-outputs --outputs-file ${OUTPUT_FILE_NAME}`,
+      `npm run output -- ${commonConfig.ghostStackName} --outputs-file-include-sensitive-outputs --outputs-file ${commonConfig.outputFile}`,
       { silent: true },
     ).catch((err) => {
-      console.log(`err data: ${err}`);
       process.exit(1);
     });
 
@@ -142,8 +133,8 @@ async function _deployStack(): Promise<void> {
  * @returns {object}
  */
 function _readAndShowOutput(): any {
-  const inputData = fs.readFileSync(INPUT_FILE_NAME, 'utf-8');
-  const outputData = fs.readFileSync(OUTPUT_FILE_NAME, 'utf-8');
+  const inputData = fs.readFileSync(commonConfig.configFile, 'utf-8');
+  const outputData = fs.readFileSync(commonConfig.outputFile, 'utf-8');
 
   const input = JSON.parse(inputData);
   const output = JSON.parse(outputData);
@@ -175,6 +166,8 @@ function _readAndShowOutput(): any {
     console.log(chalk.blue.bold('ALB DNS Name: '), chalk.green.bold(formattedOutput['alb_alb_dns_name']));
   }
   console.log(chalk.blue.bold('------------------------------------------------------------'));
+
+  // TODO:: Remove output json file
 
   return input;
 }
@@ -222,7 +215,7 @@ function _nextActionMessage(input: any): void {
 
   console.log(
     chalk.cyan.bold(
-      'Keep "terraform.plg-ghost.tfstate" and "config.json" files safe somewhere. It is required to make changes to the existing stack or to destroy it.',
+      `Keep "terraform.${commonConfig.backendStackName}.tfstate" and "${commonConfig.configFile}" files safe somewhere. It is required to make changes to the existing stack or to destroy it.`,
     ),
   );
 

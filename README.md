@@ -18,6 +18,9 @@ It requires a `Ghost hosting url` where Ghost can be accessed on the web. If you
 
 It requires a MySQL database to store the Ghost configurations along with the content. For that, you can provide either the existing DB credentials like DB host, DB name, DB user password, and database name. Else it will create a new RDS instance for the same.
 
+
+> While executing `deploy`/`destroy` command, you might get timeout exceptions because of network interuptions. If that is the case, then re-run the command to complete the execution.
+
 ## Why do I need to use this tool?
 It gives the following benefits:
 - Easy setup. You don't have to worry about provisioning each of the AWS resources by yourself.
