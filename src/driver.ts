@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import chalk from 'chalk';
 import * as shell from 'shelljs';
 import { GetInput, ActionType } from './lib/getInput';
-import { getDomainFromUrl } from './lib/util';
+import { getDomainFromUrl, getRootDomainFromUrl } from './lib/util';
 import commonConfig from './config/common.json';
 import cdktfConfig from '../cdktf.json';
 
@@ -72,32 +72,32 @@ async function _deployStack(): Promise<void> {
   // Synth
   await exec('npm run synth')
     .then()
-    .catch((err) => {
+    .catch(() => {
       process.exit(1);
     });
 
   // Backend: terraform init
   console.log('Initializing modules and providers required for backend..');
-  await exec(`cd ${BACKEND_OUTPUT_DIR} && terraform init`, { silent: true }).catch((err) => {
+  await exec(`cd ${BACKEND_OUTPUT_DIR} && terraform init`, { silent: true }).catch(() => {
     process.exit(1);
   });
 
   // Backend: terraform apply
   console.log('Setting up s3 backend. This can take several minutes..');
-  await exec(`cd ${BACKEND_OUTPUT_DIR} && terraform apply -auto-approve`, { silent: true }).catch((err) => {
+  await exec(`cd ${BACKEND_OUTPUT_DIR} && terraform apply -auto-approve`, { silent: true }).catch(() => {
     process.exit(1);
   });
 
   // Ghost: terraform init
   console.log('Initializing modules and providers required for ghost..');
-  await exec(`cd ${GHOST_OUTPUT_DIR} && terraform init`, { silent: true }).catch((err) => {
+  await exec(`cd ${GHOST_OUTPUT_DIR} && terraform init`, { silent: true }).catch(() => {
     process.exit(1);
   });
 
   // Ghost: terraform plan
   await exec(`cd ${GHOST_OUTPUT_DIR} && terraform plan`)
     .then()
-    .catch((err) => {
+    .catch(() => {
       process.exit(1);
     });
 
@@ -106,7 +106,7 @@ async function _deployStack(): Promise<void> {
 
   if (approve === YES) {
     // Deploy ghost stack
-    await exec(`cd ${GHOST_OUTPUT_DIR} && terraform apply -auto-approve`).catch((err) => {
+    await exec(`cd ${GHOST_OUTPUT_DIR} && terraform apply -auto-approve`).catch(() => {
       process.exit(1);
     });
 
@@ -115,12 +115,12 @@ async function _deployStack(): Promise<void> {
     await exec(
       `npm run output -- ${commonConfig.ghostStackName} --outputs-file-include-sensitive-outputs --outputs-file ${commonConfig.outputFile}`,
       { silent: true },
-    ).catch((err) => {
+    ).catch(() => {
       process.exit(1);
     });
 
-    const input = _readAndShowOutput();
-    _nextActionMessage(input);
+    const { input, formattedOutput } = _readAndShowOutput();
+    _nextActionMessage(input, formattedOutput);
   } else if (approve === NO) {
     console.log('Declined!');
   } else {
@@ -168,9 +168,10 @@ function _readAndShowOutput(): any {
   }
   console.log(chalk.blue.bold('------------------------------------------------------------'));
 
-  // TODO:: Remove output json file
+  const outputFilePath = `${__dirname}/${commonConfig.outputFile}`;
+  fs.rmSync(outputFilePath);
 
-  return input;
+  return { input, formattedOutput };
 }
 
 /**
@@ -199,17 +200,16 @@ function _formatOutput(output: any): any {
  *
  * @param input
  */
-function _nextActionMessage(input: any): void {
+function _nextActionMessage(input: any, formattedOutput: any): void {
   console.log('');
 
-  // TODO::
   console.log(chalk.cyan.bold('Create following Route53 "A" record:'));
   const r53Records = [
     {
-      [chalk.cyan.bold('Domain Name')]: 'mpm.com',
-      [chalk.cyan.bold('Record Name')]: '<Ghost hosted URL domain>',
+      [chalk.cyan.bold('Domain Name')]: getRootDomainFromUrl(input.ghostHostingUrl),
+      [chalk.cyan.bold('Record Name')]: getDomainFromUrl(input.ghostHostingUrl),
       [chalk.cyan.bold('Record Type')]: 'A',
-      [chalk.cyan.bold('Value')]: '<ALB DNS Name>',
+      [chalk.cyan.bold('Value')]: formattedOutput['alb_alb_dns_name'],
     },
   ];
   console.table(r53Records);
