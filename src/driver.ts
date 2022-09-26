@@ -168,8 +168,7 @@ function _readAndShowOutput(): any {
   }
   console.log(chalk.blue.bold('------------------------------------------------------------'));
 
-  const outputFilePath = `${__dirname}/${commonConfig.outputFile}`;
-  fs.rmSync(outputFilePath);
+  fs.rmSync(commonConfig.outputFile);
 
   return { input, formattedOutput };
 }
@@ -204,14 +203,23 @@ function _nextActionMessage(input: any, formattedOutput: any): void {
   console.log('');
 
   console.log(chalk.cyan.bold('Create following Route53 "A" record:'));
+  const rootDomain = getRootDomainFromUrl(input.ghostHostingUrl);
   const r53Records = [
     {
-      [chalk.cyan.bold('Domain Name')]: getRootDomainFromUrl(input.ghostHostingUrl),
+      [chalk.cyan.bold('Domain Name')]: rootDomain,
       [chalk.cyan.bold('Record Name')]: getDomainFromUrl(input.ghostHostingUrl),
       [chalk.cyan.bold('Record Type')]: 'A',
       [chalk.cyan.bold('Value')]: formattedOutput['alb_alb_dns_name'],
     },
   ];
+  if(input.hostStaticWebsite){
+    r53Records.push({
+      [chalk.cyan.bold('Domain Name')]: rootDomain,
+      [chalk.cyan.bold('Record Name')]: getDomainFromUrl(input.staticWebsiteUrl),
+      [chalk.cyan.bold('Record Type')]: 'A',
+      [chalk.cyan.bold('Value')]: formattedOutput['alb_alb_dns_name'],
+    });
+  }
   console.table(r53Records);
 
   if (input.hostStaticWebsite) {
