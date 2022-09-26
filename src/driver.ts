@@ -69,22 +69,9 @@ async function exec(command: string, options: execOptions = { silent: false }) {
  * @returns {Promise<void>}
  */
 async function _deployStack(): Promise<void> {
-  // Synth
-  await exec('npm run synth')
-    .then()
-    .catch(() => {
-      process.exit(1);
-    });
-
-  // Backend: terraform init
-  console.log('Initializing modules and providers required for backend..');
-  await exec(`cd ${BACKEND_OUTPUT_DIR} && terraform init`, { silent: true }).catch(() => {
-    process.exit(1);
-  });
-
   // Backend: terraform apply
   console.log('Setting up s3 backend. This can take several minutes..');
-  await exec(`cd ${BACKEND_OUTPUT_DIR} && terraform apply -auto-approve`, { silent: true }).catch(() => {
+  await exec(`npm run auto-deploy -- ${commonConfig.backendStackName}`, { silent: true }).catch((err) => {
     process.exit(1);
   });
 
@@ -162,10 +149,6 @@ function _readAndShowOutput(): any {
     console.log(chalk.blue.bold('RDS password: '), chalk.green.bold(formattedOutput['rds_rds_password']));
     console.log(chalk.blue.bold('RDS database: '), chalk.green.bold(formattedOutput['rds_rds_database']));
   }
-
-  if (!input.alb.useExistingAlb) {
-    console.log(chalk.blue.bold('ALB DNS Name: '), chalk.green.bold(formattedOutput['alb_alb_dns_name']));
-  }
   console.log(chalk.blue.bold('------------------------------------------------------------'));
 
   fs.rmSync(commonConfig.outputFile);
@@ -202,25 +185,27 @@ function _formatOutput(output: any): any {
 function _nextActionMessage(input: any, formattedOutput: any): void {
   console.log('');
 
-  console.log(chalk.cyan.bold('Create following Route53 "A" record:'));
-  const rootDomain = getRootDomainFromUrl(input.ghostHostingUrl);
-  const r53Records = [
-    {
-      [chalk.cyan.bold('Domain Name')]: rootDomain,
-      [chalk.cyan.bold('Record Name')]: getDomainFromUrl(input.ghostHostingUrl),
-      [chalk.cyan.bold('Record Type')]: 'A',
-      [chalk.cyan.bold('Value')]: formattedOutput['alb_alb_dns_name'],
-    },
-  ];
-  if(input.hostStaticWebsite){
-    r53Records.push({
-      [chalk.cyan.bold('Domain Name')]: rootDomain,
-      [chalk.cyan.bold('Record Name')]: getDomainFromUrl(input.staticWebsiteUrl),
-      [chalk.cyan.bold('Record Type')]: 'A',
-      [chalk.cyan.bold('Value')]: formattedOutput['alb_alb_dns_name'],
-    });
+  if (!input.alb.useExistingAlb) {
+    console.log(chalk.cyan.bold('Create following Route53 "A" record:'));
+    const rootDomain = getRootDomainFromUrl(input.ghostHostingUrl);
+    const r53Records = [
+      {
+        [chalk.cyan.bold('Domain Name')]: rootDomain,
+        [chalk.cyan.bold('Record Name')]: getDomainFromUrl(input.ghostHostingUrl),
+        [chalk.cyan.bold('Record Type')]: 'A',
+        [chalk.cyan.bold('Value')]: formattedOutput['alb_alb_dns_name'],
+      },
+    ];
+    if(input.hostStaticWebsite){
+      r53Records.push({
+        [chalk.cyan.bold('Domain Name')]: rootDomain,
+        [chalk.cyan.bold('Record Name')]: getDomainFromUrl(input.staticWebsiteUrl),
+        [chalk.cyan.bold('Record Type')]: 'A',
+        [chalk.cyan.bold('Value')]: formattedOutput['alb_alb_dns_name'],
+      });
+    }
+    console.table(r53Records);
   }
-  console.table(r53Records);
 
   if (input.hostStaticWebsite) {
     console.log(
@@ -249,6 +234,13 @@ async function _destroyStack(): Promise<void> {
   const approve = readlineSync.question(chalk.blue.bold('Do you want to approve?(Y/n): '), { defaultInput: YES });
 
   if (approve === YES) {
+
+    // Ghost: terraform init
+    console.log('Initializing modules and providers required for ghost..');
+    await exec(`cd ${GHOST_OUTPUT_DIR} && terraform init`, { silent: true }).catch(() => {
+      process.exit(1);
+    });
+
     // Destroy ghost stack
     console.log('Destroying ghost stack..');
     await exec(`cd ${GHOST_OUTPUT_DIR} && terraform destroy -auto-approve`).catch(() => {
@@ -257,7 +249,7 @@ async function _destroyStack(): Promise<void> {
 
     // Destroy backend stack
     console.log('Destroying backend stack..');
-    await exec(`cd ${BACKEND_OUTPUT_DIR} && terraform destroy -auto-approve`).catch(() => {
+    await exec(`npm run auto-destroy -- ${commonConfig.backendStackName}`, { silent: true }).catch(() => {
       process.exit(1);
     });
   } else if (approve === NO) {
