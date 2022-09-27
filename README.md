@@ -51,8 +51,9 @@ $ cd ghost-hosting-cli
 
 npm install
 
-npm run watch
+npm run get
+npm run build
+# Or you can also use "npm run watch"
 
-# In a new terminal run
 npm run dev -- deploy
 ```

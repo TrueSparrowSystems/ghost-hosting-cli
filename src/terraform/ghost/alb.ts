@@ -53,6 +53,10 @@ class AlbResource extends Resource {
         arn: dataAwsLbListenerDefaultAction.loadBalancerArn,
       });
 
+      new TerraformOutput(this, 'alb_dns_name', {
+        value: dataAwsLb.dnsName,
+      });
+
       return { albSecurityGroups: Fn.tolist(dataAwsLb.securityGroups), listenerArn };
     }
 
@@ -63,6 +67,10 @@ class AlbResource extends Resource {
     this._addHttpListener(alb);
 
     listenerArn = this._addHttpsListener(alb);
+
+    new TerraformOutput(this, 'alb_dns_name', {
+      value: alb.dnsName,
+    });
 
     return { albSecurityGroups: Fn.tolist(alb.securityGroups), listenerArn };
   }
@@ -122,10 +130,6 @@ class AlbResource extends Resource {
       securityGroups: [securityGroup.id],
       idleTimeout: 60,
       tags: commonConfig.tags,
-    });
-
-    new TerraformOutput(this, 'alb_dns_name', {
-      value: alb.dnsName,
     });
 
     return alb;

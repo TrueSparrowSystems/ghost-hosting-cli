@@ -11,7 +11,6 @@ const YES = 'y';
 const NO = 'n';
 const INVALID_INPUT = `Invalid input! Please choose ${YES} or ${NO}`;
 const GHOST_OUTPUT_DIR = `${cdktfConfig.output}/stacks/${commonConfig.ghostStackName}`;
-const BACKEND_OUTPUT_DIR = `${cdktfConfig.output}/stacks/${commonConfig.backendStackName}`;
 
 /**
  * @dev Entry point to deploy or destroy terraform stacks
@@ -185,27 +184,25 @@ function _formatOutput(output: any): any {
 function _nextActionMessage(input: any, formattedOutput: any): void {
   console.log('');
 
-  if (!input.alb.useExistingAlb) {
-    console.log(chalk.cyan.bold('Create following Route53 "A" record:'));
-    const rootDomain = getRootDomainFromUrl(input.ghostHostingUrl);
-    const r53Records = [
-      {
-        [chalk.cyan.bold('Domain Name')]: rootDomain,
-        [chalk.cyan.bold('Record Name')]: getDomainFromUrl(input.ghostHostingUrl),
-        [chalk.cyan.bold('Record Type')]: 'A',
-        [chalk.cyan.bold('Value')]: formattedOutput['alb_alb_dns_name'],
-      },
-    ];
-    if(input.hostStaticWebsite){
-      r53Records.push({
-        [chalk.cyan.bold('Domain Name')]: rootDomain,
-        [chalk.cyan.bold('Record Name')]: getDomainFromUrl(input.staticWebsiteUrl),
-        [chalk.cyan.bold('Record Type')]: 'A',
-        [chalk.cyan.bold('Value')]: formattedOutput['alb_alb_dns_name'],
-      });
-    }
-    console.table(r53Records);
+  console.log(chalk.cyan.bold('Create following Route53 "A" record:'));
+  const rootDomain = getRootDomainFromUrl(input.ghostHostingUrl);
+  const r53Records = [
+    {
+      [chalk.cyan.bold('Domain Name')]: rootDomain,
+      [chalk.cyan.bold('Record Name')]: getDomainFromUrl(input.ghostHostingUrl),
+      [chalk.cyan.bold('Record Type')]: 'A',
+      [chalk.cyan.bold('Value')]: formattedOutput['alb_alb_dns_name'],
+    },
+  ];
+  if(input.hostStaticWebsite){
+    r53Records.push({
+      [chalk.cyan.bold('Domain Name')]: rootDomain,
+      [chalk.cyan.bold('Record Name')]: getDomainFromUrl(input.staticWebsiteUrl),
+      [chalk.cyan.bold('Record Type')]: 'A',
+      [chalk.cyan.bold('Value')]: formattedOutput['alb_alb_dns_name'],
+    });
   }
+  console.table(r53Records);
 
   if (input.hostStaticWebsite) {
     console.log(
@@ -234,13 +231,6 @@ async function _destroyStack(): Promise<void> {
   const approve = readlineSync.question(chalk.blue.bold('Do you want to approve?(Y/n): '), { defaultInput: YES });
 
   if (approve === YES) {
-
-    // Ghost: terraform init
-    console.log('Initializing modules and providers required for ghost..');
-    await exec(`cd ${GHOST_OUTPUT_DIR} && terraform init`, { silent: true }).catch(() => {
-      process.exit(1);
-    });
-
     // Destroy ghost stack
     console.log('Destroying ghost stack..');
     await exec(`cd ${GHOST_OUTPUT_DIR} && terraform destroy -auto-approve`).catch(() => {
