@@ -69,13 +69,14 @@ async function exec(command: string, options: execOptions = { silent: false }) {
  */
 async function _deployStack(): Promise<void> {
   // Backend: terraform apply
-  console.log('Setting up s3 backend. This can take several minutes..');
+  console.log('Setting up S3 backend. This can take several minutes...');
   await exec(`npm run auto-deploy -- ${commonConfig.backendStackName}`, { silent: true }).catch((err) => {
     process.exit(1);
   });
+  console.log('S3 backend has been setup successfully.');
 
   // Ghost: terraform init
-  console.log('Initializing modules and providers required for ghost..');
+  console.log('Initializing modules and providers required for Ghost...');
   await exec(`cd ${GHOST_OUTPUT_DIR} && terraform init`, { silent: true }).catch(() => {
     process.exit(1);
   });
@@ -97,7 +98,7 @@ async function _deployStack(): Promise<void> {
     });
 
     // Create output file with the result
-    console.log('Creating output..');
+    console.log('\nGenerating output...');
     await exec(
       `npm run output -- ${commonConfig.ghostStackName} --outputs-file-include-sensitive-outputs --outputs-file ${commonConfig.outputFile}`,
       { silent: true },
@@ -232,16 +233,18 @@ async function _destroyStack(): Promise<void> {
 
   if (approve === YES) {
     // Destroy ghost stack
-    console.log('Destroying ghost stack..');
+    console.log('Destroying Ghost stack...');
     await exec(`cd ${GHOST_OUTPUT_DIR} && terraform destroy -auto-approve`).catch(() => {
       process.exit(1);
     });
+    console.log('Ghost stack destroyed successfully.');
 
     // Destroy backend stack
-    console.log('Destroying backend stack..');
+    console.log('Destroying S3 backend stack...');
     await exec(`npm run auto-destroy -- ${commonConfig.backendStackName}`, { silent: true }).catch(() => {
       process.exit(1);
     });
+    console.log('S3 backend stack destroyed successfully.');
   } else if (approve === NO) {
     console.log('Declined!');
   } else {
