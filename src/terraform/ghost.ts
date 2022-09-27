@@ -14,7 +14,6 @@ import { AutoScaling } from './ghost/auto_scaling';
 import { CloudfrontResource } from './ghost/cloudfront';
 
 import { S3Bucket, S3Object, S3BucketWebsiteConfiguration } from '../gen/providers/aws/s3';
-import { RandomProvider } from '../gen/providers/random';
 import { EcsCluster, EcsService } from '../gen/providers/aws/ecs';
 
 import commonConfig from '../config/common.json';
@@ -137,11 +136,6 @@ class GhostStack extends TerraformStack {
       region: this.userInput.aws.region,
       accessKey: this.userInput.aws.accessKeyId,
       secretKey: this.userInput.aws.secretAccessKey,
-    });
-
-    // Random provider
-    new RandomProvider(this, 'random_provider', {
-      alias: 'random_provider',
     });
   }
 
