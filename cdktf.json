@@ -13,8 +13,8 @@
     },
     {
       "name": "random",
-      "source": "hashicorp/random",
-      "version": "3.4.1"
+      "source": "registry.terraform.io/hashicorp/random",
+      "version": "3.4.3"
     }
   ],
   "terraformModules": [

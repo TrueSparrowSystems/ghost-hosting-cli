@@ -1,6 +1,7 @@
 import { Construct } from 'constructs';
 import { S3Backend, TerraformStack } from 'cdktf';
 import { AwsProvider } from '@cdktf/provider-aws';
+import { RandomProvider } from '../gen/providers/random';
 
 import { VpcResource } from './ghost/vpc';
 import { RdsResource } from './ghost/rds';
@@ -136,6 +137,9 @@ class GhostStack extends TerraformStack {
       region: this.userInput.aws.region,
       accessKey: this.userInput.aws.accessKeyId,
       secretKey: this.userInput.aws.secretAccessKey,
+    });
+    new RandomProvider(this, 'random_provider', {
+      alias: 'random_provider',
     });
   }
 
