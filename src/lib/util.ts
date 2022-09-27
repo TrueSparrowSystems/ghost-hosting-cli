@@ -80,6 +80,11 @@ export function readJsonFileWithFileName(fileName: string): any {
   return fileContent;
 }
 
+/**
+ * @dev Get current timestamp in seconds.
+ *
+ * @returns {number}
+ */
 export function getCurrentTimestampInSeconds() {
   return Math.floor(Date.now() / 1000);
 }

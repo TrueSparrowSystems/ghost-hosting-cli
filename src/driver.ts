@@ -3,16 +3,14 @@ import * as fs from 'fs';
 import chalk from 'chalk';
 import * as shell from 'shelljs';
 import { GetInput, ActionType } from './lib/getInput';
+import { getDomainFromUrl, getRootDomainFromUrl } from './lib/util';
 import commonConfig from './config/common.json';
 import cdktfConfig from '../cdktf.json';
 
 const YES = 'y';
 const NO = 'n';
-const INPUT_FILE_NAME = 'config.json';
-const OUTPUT_FILE_NAME = 'output.json';
 const INVALID_INPUT = `Invalid input! Please choose ${YES} or ${NO}`;
 const GHOST_OUTPUT_DIR = `${cdktfConfig.output}/stacks/${commonConfig.ghostStackName}`;
-const BACKEND_OUTPUT_DIR = `${cdktfConfig.output}/stacks/${commonConfig.backendStackName}`;
 
 /**
  * @dev Entry point to deploy or destroy terraform stacks
@@ -70,40 +68,23 @@ async function exec(command: string, options: execOptions = { silent: false }) {
  * @returns {Promise<void>}
  */
 async function _deployStack(): Promise<void> {
-  // Synth
-  await exec('cdktf synth')
-    .then()
-    .catch((err) => {
-      console.log('err: ', err);
-      process.exit(1);
-    });
-
-  // Backend: terraform init
-  console.log('Initializing modules and providers required for backend..');
-  await exec(`cd ${BACKEND_OUTPUT_DIR} && terraform init`, { silent: true }).catch((err) => {
-    console.log(`err data: ${err}`);
-    process.exit(1);
-  });
-
   // Backend: terraform apply
-  console.log('Setting up s3 backend. This can take several minutes..');
-  await exec(`cd ${BACKEND_OUTPUT_DIR} && terraform apply -auto-approve`, { silent: true }).catch((err) => {
-    console.log(`err data: ${err}`);
+  console.log('Setting up S3 backend. This can take several minutes...');
+  await exec(`npm run auto-deploy -- ${commonConfig.backendStackName}`, { silent: true }).catch((err) => {
     process.exit(1);
   });
+  console.log('S3 backend has been setup successfully.');
 
   // Ghost: terraform init
-  console.log('Initializing modules and providers required for ghost..');
-  await exec(`cd ${GHOST_OUTPUT_DIR} && terraform init`, { silent: true }).catch((err) => {
-    console.log(`err data: ${err}`);
+  console.log('Initializing modules and providers required for Ghost...');
+  await exec(`cd ${GHOST_OUTPUT_DIR} && terraform init`, { silent: true }).catch(() => {
     process.exit(1);
   });
 
   // Ghost: terraform plan
   await exec(`cd ${GHOST_OUTPUT_DIR} && terraform plan`)
     .then()
-    .catch((err) => {
-      console.log(`err data: ${err}`);
+    .catch(() => {
       process.exit(1);
     });
 
@@ -112,23 +93,21 @@ async function _deployStack(): Promise<void> {
 
   if (approve === YES) {
     // Deploy ghost stack
-    await exec(`cd ${GHOST_OUTPUT_DIR} && terraform apply -auto-approve`).catch((err) => {
-      console.log(`err data: ${err}`);
+    await exec(`cd ${GHOST_OUTPUT_DIR} && terraform apply -auto-approve`).catch(() => {
       process.exit(1);
     });
 
     // Create output file with the result
-    console.log('Creating output..');
+    console.log('\nGenerating output...');
     await exec(
-      `npm run output ${commonConfig.ghostStackName} --outputs-file-include-sensitive-outputs --outputs-file ${OUTPUT_FILE_NAME}`,
+      `npm run output -- ${commonConfig.ghostStackName} --outputs-file-include-sensitive-outputs --outputs-file ${commonConfig.outputFile}`,
       { silent: true },
-    ).catch((err) => {
-      console.log(`err data: ${err}`);
+    ).catch(() => {
       process.exit(1);
     });
 
-    const input = _readAndShowOutput();
-    _nextActionMessage(input);
+    const { input, formattedOutput } = _readAndShowOutput();
+    _nextActionMessage(input, formattedOutput);
   } else if (approve === NO) {
     console.log('Declined!');
   } else {
@@ -142,8 +121,8 @@ async function _deployStack(): Promise<void> {
  * @returns {object}
  */
 function _readAndShowOutput(): any {
-  const inputData = fs.readFileSync(INPUT_FILE_NAME, 'utf-8');
-  const outputData = fs.readFileSync(OUTPUT_FILE_NAME, 'utf-8');
+  const inputData = fs.readFileSync(commonConfig.configFile, 'utf-8');
+  const outputData = fs.readFileSync(commonConfig.outputFile, 'utf-8');
 
   const input = JSON.parse(inputData);
   const output = JSON.parse(outputData);
@@ -170,13 +149,11 @@ function _readAndShowOutput(): any {
     console.log(chalk.blue.bold('RDS password: '), chalk.green.bold(formattedOutput['rds_rds_password']));
     console.log(chalk.blue.bold('RDS database: '), chalk.green.bold(formattedOutput['rds_rds_database']));
   }
-
-  if (!input.alb.useExistingAlb) {
-    console.log(chalk.blue.bold('ALB DNS Name: '), chalk.green.bold(formattedOutput['alb_alb_dns_name']));
-  }
   console.log(chalk.blue.bold('------------------------------------------------------------'));
 
-  return input;
+  fs.rmSync(commonConfig.outputFile);
+
+  return { input, formattedOutput };
 }
 
 /**
@@ -205,12 +182,28 @@ function _formatOutput(output: any): any {
  *
  * @param input
  */
-function _nextActionMessage(input: any): void {
+function _nextActionMessage(input: any, formattedOutput: any): void {
   console.log('');
 
-  if (!input.alb.useExistingAlb) {
-    console.log(chalk.cyan('Create a Route53 "A" record for'), chalk.cyan.bold('ALB DNS Name'));
+  console.log(chalk.cyan.bold('Create following Route53 "A" record:'));
+  const rootDomain = getRootDomainFromUrl(input.ghostHostingUrl);
+  const r53Records = [
+    {
+      [chalk.cyan.bold('Domain Name')]: rootDomain,
+      [chalk.cyan.bold('Record Name')]: getDomainFromUrl(input.ghostHostingUrl),
+      [chalk.cyan.bold('Record Type')]: 'A',
+      [chalk.cyan.bold('Value')]: formattedOutput['alb_alb_dns_name'],
+    },
+  ];
+  if(input.hostStaticWebsite){
+    r53Records.push({
+      [chalk.cyan.bold('Domain Name')]: rootDomain,
+      [chalk.cyan.bold('Record Name')]: getDomainFromUrl(input.staticWebsiteUrl),
+      [chalk.cyan.bold('Record Type')]: 'A',
+      [chalk.cyan.bold('Value')]: formattedOutput['alb_alb_dns_name'],
+    });
   }
+  console.table(r53Records);
 
   if (input.hostStaticWebsite) {
     console.log(
@@ -222,7 +215,7 @@ function _nextActionMessage(input: any): void {
 
   console.log(
     chalk.cyan.bold(
-      'Keep "terraform.plg-ghost.tfstate" and "config.json" files safe somewhere. It is required to make changes to the existing stack or to destroy it.',
+      `Keep "terraform.${commonConfig.backendStackName}.tfstate" and "${commonConfig.configFile}" files safe somewhere. It is required to make changes to the existing stack or to destroy it.`,
     ),
   );
 
@@ -240,16 +233,18 @@ async function _destroyStack(): Promise<void> {
 
   if (approve === YES) {
     // Destroy ghost stack
-    console.log('Destroying ghost stack..');
+    console.log('Destroying Ghost stack...');
     await exec(`cd ${GHOST_OUTPUT_DIR} && terraform destroy -auto-approve`).catch(() => {
       process.exit(1);
     });
+    console.log('Ghost stack destroyed successfully.');
 
     // Destroy backend stack
-    console.log('Destroying backend stack..');
-    await exec(`cd ${BACKEND_OUTPUT_DIR} && terraform destroy -auto-approve`).catch(() => {
+    console.log('Destroying S3 backend stack...');
+    await exec(`npm run auto-destroy -- ${commonConfig.backendStackName}`, { silent: true }).catch(() => {
       process.exit(1);
     });
+    console.log('S3 backend stack destroyed successfully.');
   } else if (approve === NO) {
     console.log('Declined!');
   } else {
