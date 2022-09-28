@@ -8,8 +8,6 @@ import commonConfig from '../config/common.json';
 
 const command = new Command();
 
-const yes = 'y';
-const no = 'n';
 const USER_CONFIGS = {
   aws: {},
   ghostHostingUrl: '',
@@ -31,14 +29,14 @@ interface Options {
   secretAccessKey: string;
   region: string;
   ghostHostingUrl: string;
-  hostStaticWebsite: string;
+  hostStaticWebsite: boolean;
   staticWebsiteUrl: string;
-  useExistingVpc: string;
+  useExistingVpc: boolean;
   vpcSubnets: string;
   vpcPublicSubnets: string;
-  useExistingAlb: string;
+  useExistingAlb: boolean;
   listenerArn: string;
-  useExistingRds: string;
+  useExistingRds: boolean;
   rdsDbName: string;
   rdsHost: string;
   rdsDbUserName: string;
@@ -49,14 +47,14 @@ const options: Options = {
   accessKeyId: '',
   secretAccessKey: '',
   region: '',
-  useExistingVpc: '',
+  useExistingVpc: false,
   vpcSubnets: '',
   vpcPublicSubnets: '',
-  useExistingRds: '',
+  useExistingRds: false,
   ghostHostingUrl: '',
-  hostStaticWebsite: '',
+  hostStaticWebsite: false,
   listenerArn: '',
-  useExistingAlb: '',
+  useExistingAlb: false,
   staticWebsiteUrl: '',
   rdsDbName: '',
   rdsHost: '',
@@ -141,15 +139,13 @@ class GetInput {
    * @returns {boolean}
    */
   _usePreviousConfigData(): boolean {
-    let useExistingConfig = readlineSyc.question(
+    const useExistingConfig = readlineSyc.keyInYN(
       chalk.blue.bold(
-        'Previous installation "config.json" file found, Would you like to use the existing configuration options? [Else it will start from the scratch] (Y/n) : ',
+        'Previous installation "config.json" file found, Would you like to use the existing configuration options? [Else it will start from the scratch]',
       ),
-      { defaultInput: yes },
     );
-    useExistingConfig = this._validateInputBooleanOption(useExistingConfig);
 
-    return useExistingConfig === yes;
+    return useExistingConfig === true ? true : false;
   }
 
   /**
@@ -192,10 +188,10 @@ class GetInput {
    * @returns {void}
    */
   _getVpcConfigurations(): void {
-    options.useExistingVpc = readlineSyc.question(chalk.blue.bold('Use existing VPC? (y/N) : '), { defaultInput: no });
-    options.useExistingVpc = this._validateInputBooleanOption(options.useExistingVpc);
+    const useExistingVpc = readlineSyc.keyInYN(chalk.blue.bold('Use existing VPC?'));
+    options.useExistingVpc = useExistingVpc === true ? true : false;
 
-    if (options.useExistingVpc === yes) {
+    if (options.useExistingVpc) {
       options.vpcSubnets = readlineSyc.question(
         chalk.blue.bold(
           'Provide VPC Subnets to run ECS tasks [comma separated values, at least 2 subnets required] : ',
@@ -236,25 +232,22 @@ class GetInput {
     options.ghostHostingUrl = readlineSyc.question(chalk.blue.bold('Ghost hosting url : '));
     this._validateInputStringOption(options.ghostHostingUrl);
 
-    options.hostStaticWebsite = readlineSyc.question(chalk.blue.bold('Do you want to host static website? (Y/n) : '), {
-      defaultInput: yes,
-    });
-    options.hostStaticWebsite = this._validateInputBooleanOption(options.hostStaticWebsite);
+    const hostStaticWebsite = readlineSyc.keyInYN(chalk.blue.bold('Do you want to host static website?'));
+    options.hostStaticWebsite = hostStaticWebsite === true ? true : false;
 
-    if (options.hostStaticWebsite === yes) {
+    if (options.hostStaticWebsite) {
       options.staticWebsiteUrl = readlineSyc.question(chalk.blue.bold('Static website url : '));
       this._validateInputStringOption(options.staticWebsiteUrl);
     }
 
-    let hasDomainConfiguredInRoute53 = readlineSyc.question(
+    let hasDomainConfiguredInRoute53 = readlineSyc.keyInYN(
       chalk.blue.bold(
-        'Do you have Route53 configured for the domain in the same AWS account? [Else the SSL certification verification will fail] (Y/n) : ',
+        'Do you have Route53 configured for the domain in the same AWS account? [Else the SSL certification verification will fail]',
       ),
-      { defaultInput: yes },
     );
-    hasDomainConfiguredInRoute53 = this._validateInputBooleanOption(hasDomainConfiguredInRoute53);
+    hasDomainConfiguredInRoute53 = hasDomainConfiguredInRoute53 === true ? true : false;
 
-    if (hasDomainConfiguredInRoute53 === no) {
+    if (!hasDomainConfiguredInRoute53) {
       console.log(chalk.yellow.bold('Cannot proceed further!'));
       process.exit(0);
     }
@@ -266,13 +259,10 @@ class GetInput {
    * @returns {void}
    */
   _getRdsRequirements(): void {
-    options.useExistingRds = readlineSyc.question(
-      chalk.blue.bold('Do you want to use existing RDS MySQL instance? (y/N) : '),
-      { defaultInput: no },
-    );
-    options.useExistingRds = this._validateInputBooleanOption(options.useExistingRds);
+    const useExistingRds = readlineSyc.keyInYN(chalk.blue.bold('Do you want to use existing RDS MySQL instance?'));
+    options.useExistingRds = useExistingRds === true ? true : false;
 
-    if (options.useExistingRds === yes) {
+    if (options.useExistingRds) {
       options.rdsHost = readlineSyc.question(chalk.blue.bold('MySQL host : '));
       this._validateInputStringOption(options.rdsHost);
       options.rdsDbUserName = readlineSyc.question(chalk.blue.bold('MySQL user name : '));
@@ -292,17 +282,15 @@ class GetInput {
    * @returns {void}
    */
   _getAlbRequirements(): void {
-    if (options.useExistingVpc === yes) {
-      options.useExistingAlb = readlineSyc.question(chalk.blue.bold('Do you have existing ALB? (y/N) : '), {
-        defaultInput: no,
-      });
-      options.useExistingAlb = this._validateInputBooleanOption(options.useExistingAlb);
+    if (options.useExistingVpc) {
+      const useExistingAlb = readlineSyc.keyInYN(chalk.blue.bold('Do you have existing ALB?'));
+      options.useExistingAlb = useExistingAlb === true ? true : false;
     }
 
-    if (options.useExistingAlb === yes) {
+    if (options.useExistingAlb) {
       options.listenerArn = readlineSyc.question(chalk.blue.bold('Please provide listener ARN : '));
     } else {
-      if (options.useExistingVpc === yes) {
+      if (options.useExistingVpc) {
         options.vpcPublicSubnets = readlineSyc.question(
           chalk.blue.bold(
             'Provide VPC Public Subnets to launch ALB [comma separated values, at least 2 subnets required] : ',
@@ -333,7 +321,7 @@ class GetInput {
     options.staticWebsiteUrl = options.staticWebsiteUrl.replace(/\/+$/, '');
     const hostingUrlParts = options.ghostHostingUrl.split('://');
     const staticUrlParts = options.staticWebsiteUrl.split('://');
-    const hostStaticWebsite = options.hostStaticWebsite === yes;
+    const hostStaticWebsite = options.hostStaticWebsite;
 
     if (hostingUrlParts[0] !== 'https' || (hostStaticWebsite && staticUrlParts[0] !== 'https')) {
       this._validateInputStringOption('', 'Invalid url scheme! It has to be "https"');
@@ -362,22 +350,6 @@ class GetInput {
         'Different domain names for Ghost hosting url and Static website url are not allowed.',
       );
     }
-  }
-
-  /**
-   * @dev Validate boolean option
-   *
-   * @param bool - boolean value as a string
-   * @returns {string}
-   */
-  _validateInputBooleanOption(bool: string): string {
-    bool = bool.toLowerCase();
-    if (![yes, no].includes(bool)) {
-      console.error(new Error(chalk.red.bold('Invalid option!')));
-      process.exit(1);
-    }
-
-    return bool;
   }
 
   /**
@@ -411,15 +383,15 @@ class GetInput {
 
     // Add VPC configurations
     USER_CONFIGS[`vpc`] = {
-      useExistingVpc: options.useExistingVpc === yes,
+      useExistingVpc: options.useExistingVpc,
     };
 
-    if (options.useExistingVpc === yes) {
+    if (options.useExistingVpc) {
       Object.assign(USER_CONFIGS[`vpc`], {
         vpcSubnets: options.vpcSubnets.split(','),
       });
 
-      if (options.useExistingAlb === no) {
+      if (!options.useExistingAlb) {
         Object.assign(USER_CONFIGS[`vpc`], {
           vpcPublicSubnets: options.vpcPublicSubnets.split(','),
         });
@@ -427,18 +399,18 @@ class GetInput {
     }
 
     USER_CONFIGS.ghostHostingUrl = options.ghostHostingUrl;
-    USER_CONFIGS.hostStaticWebsite = options.hostStaticWebsite === yes;
+    USER_CONFIGS.hostStaticWebsite = options.hostStaticWebsite;
     // Add static page site data
-    if (options.hostStaticWebsite === yes) {
+    if (options.hostStaticWebsite) {
       USER_CONFIGS.staticWebsiteUrl = options.staticWebsiteUrl;
     }
 
     // Add alb inputs
     USER_CONFIGS[`alb`] = {
-      useExistingAlb: options.useExistingAlb === yes,
+      useExistingAlb: options.useExistingAlb,
     };
 
-    if (options.useExistingAlb === yes) {
+    if (options.useExistingAlb) {
       Object.assign(USER_CONFIGS[`alb`], {
         listenerArn: options.listenerArn,
       });
@@ -446,10 +418,10 @@ class GetInput {
 
     // Add rds inputs
     USER_CONFIGS[`rds`] = {
-      useExistingRds: options.useExistingRds === yes,
+      useExistingRds: options.useExistingRds,
     };
 
-    if (options.useExistingRds === yes) {
+    if (options.useExistingRds) {
       Object.assign(USER_CONFIGS[`rds`], {
         rdsHost: options.rdsHost,
         rdsDbUserName: options.rdsDbUserName,

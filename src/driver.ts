@@ -89,9 +89,9 @@ async function _deployStack(): Promise<void> {
     });
 
   console.log(chalk.blue.bold('Please review the above output for DEPLOY action.'));
-  const approve = readlineSync.question(chalk.blue.bold('Do you want to approve?(Y/n): '), { defaultInput: YES });
+  const approve = readlineSync.keyInYN(chalk.blue.bold('Do you want to approve?'));
 
-  if (approve === YES) {
+  if (approve === true) {
     // Deploy ghost stack
     await exec(`cd ${GHOST_OUTPUT_DIR} && terraform apply -auto-approve`).catch(() => {
       process.exit(1);
@@ -108,7 +108,7 @@ async function _deployStack(): Promise<void> {
 
     const { input, formattedOutput } = _readAndShowOutput();
     _nextActionMessage(input, formattedOutput);
-  } else if (approve === NO) {
+  } else if (approve === false) {
     console.log('Declined!');
   } else {
     console.log(INVALID_INPUT);
@@ -195,7 +195,7 @@ function _nextActionMessage(input: any, formattedOutput: any): void {
       [chalk.cyan.bold('Value')]: formattedOutput['alb_alb_dns_name'],
     },
   ];
-  if(input.hostStaticWebsite){
+  if (input.hostStaticWebsite) {
     r53Records.push({
       [chalk.cyan.bold('Domain Name')]: rootDomain,
       [chalk.cyan.bold('Record Name')]: getDomainFromUrl(input.staticWebsiteUrl),
@@ -229,9 +229,9 @@ function _nextActionMessage(input: any, formattedOutput: any): void {
  */
 async function _destroyStack(): Promise<void> {
   console.log(chalk.blue.bold('\nThis action will destroy the stack.'));
-  const approve = readlineSync.question(chalk.blue.bold('Do you want to approve?(Y/n): '), { defaultInput: YES });
+  const approve = readlineSync.keyInYN(chalk.blue.bold('Do you want to approve?'));
 
-  if (approve === YES) {
+  if (approve === true) {
     // Destroy ghost stack
     console.log('Destroying Ghost stack...');
     await exec(`cd ${GHOST_OUTPUT_DIR} && terraform destroy -auto-approve`).catch(() => {
@@ -245,7 +245,7 @@ async function _destroyStack(): Promise<void> {
       process.exit(1);
     });
     console.log('S3 backend stack destroyed successfully.');
-  } else if (approve === NO) {
+  } else if (approve === false) {
     console.log('Declined!');
   } else {
     console.log(INVALID_INPUT);
