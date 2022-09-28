@@ -2,7 +2,7 @@
 Ghost hosting cli is a command line interactive tool to host the [Ghost](https://ghost.org/) on the AWS cloud. It simplifies the Ghost server deployment by utilizing the AWS infrastructure. It also provides the flexibility to host the fresh stack or to plug it into the existing infrastructure.
 
 ## Prerequisites
-- Terraform >= 1.2.5
+- Terraform >= 1.1.8
 - NodeJS >= 14.17
 - AWS account
 

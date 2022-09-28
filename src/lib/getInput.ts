@@ -212,12 +212,12 @@ class GetInput {
    */
   _getAwsCredentials(): void {
     if (!options.accessKeyId) {
-      options.accessKeyId = readlineSyc.question(chalk.blue.bold('AWS access key id : '));
+      options.accessKeyId = readlineSyc.question(chalk.blue.bold('AWS access key id : '), {hideEchoBack: true});
       this._validateInputStringOption(options.accessKeyId);
     }
 
     if (!options.secretAccessKey) {
-      options.secretAccessKey = readlineSyc.question(chalk.blue.bold('AWS secret access key : '));
+      options.secretAccessKey = readlineSyc.question(chalk.blue.bold('AWS secret access key : '), {hideEchoBack: true});
       this._validateInputStringOption(options.secretAccessKey);
     }
 
