@@ -72,7 +72,7 @@ export function readJsonFileWithFileName(fileName: string): any {
     const data = fs.readFileSync(fileName, 'utf-8');
     fileContent = JSON.parse(data);
   } catch (err) {
-    console.log(err);
+    // console.log(err);
   } finally {
     fileContent = fileContent || {};
   }
