@@ -120,8 +120,7 @@ class GetInput {
    * @returns {boolean}
    */
   _hasPreviousConfigInFile(): boolean {
-    const filePath = `${__dirname}/${commonConfig.configFile}`;
-    const configData = readJsonFile(filePath);
+    const configData = readJsonFile(commonConfig.configFile);
 
     let pass = true;
     for (const key in USER_CONFIGS) {

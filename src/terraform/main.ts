@@ -7,8 +7,7 @@ import commonConfig from '../config/common.json';
 
 const app = new App();
 
-const filePath = `${__dirname}/${commonConfig.configFile}`;
-const userInput = readJsonFile(filePath);
+const userInput = readJsonFile(commonConfig.configFile);
 
 new BackendStack(app, commonConfig.backendStackName, {
   accessKey: userInput.aws.accessKeyId,
