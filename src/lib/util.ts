@@ -66,13 +66,13 @@ export function getPathSuffixFromUrl(url: string): string {
   return urlParts.slice(1).join('/');
 }
 
-export function readJsonFileWithFileName(fileName: string): any {
+export function readJsonFile(filePath: string): any {
   let fileContent = null;
   try {
-    const data = fs.readFileSync(fileName, 'utf-8');
+    const data = fs.readFileSync(filePath, 'utf-8');
     fileContent = JSON.parse(data);
   } catch (err) {
-    console.log(err);
+    // console.log(err);
   } finally {
     fileContent = fileContent || {};
   }

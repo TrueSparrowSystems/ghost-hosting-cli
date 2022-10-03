@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as readlineSyc from 'readline-sync';
 import chalk from 'chalk';
 import { Command, Argument } from 'commander';
-import { getRootDomainFromUrl, readJsonFileWithFileName, getCurrentTimestampInSeconds } from '../lib/util';
+import { getRootDomainFromUrl, readJsonFile, getCurrentTimestampInSeconds } from '../lib/util';
 
 import commonConfig from '../config/common.json';
 
@@ -120,7 +120,8 @@ class GetInput {
    * @returns {boolean}
    */
   _hasPreviousConfigInFile(): boolean {
-    const configData = readJsonFileWithFileName(commonConfig.configFile);
+    const filePath = `${__dirname}/${commonConfig.configFile}`;
+    const configData = readJsonFile(filePath);
 
     let pass = true;
     for (const key in USER_CONFIGS) {
