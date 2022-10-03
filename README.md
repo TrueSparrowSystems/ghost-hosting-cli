@@ -4,16 +4,28 @@ Ghost hosting cli is a command line interactive tool to host the [Ghost](https:/
 ## Prerequisites
 - Terraform >= 1.2.5
 - NodeJS >= 14.17
-- AWS account
+- AWS account with admin access
 
-## Deployment options
+## How does it work? 
 
 Ghost Hosting CLI uses AWS cloud platform, the following parameters are required by default. 
 * `AWS access key`
 * `AWS secret access key`
-* `AWS region` 
+* `AWS region`
 
-Ghost Hosting CLI provides flexibility with: 
+It requires a `config.json` file. This `config.json` is get's generated while taking input from the user. If this file is already present at the location (from previous deployments), the CLI prompt ask user whether to use the existing configuration or to create new. 
+
+Configuration file generation happens only in the deploy stage. Once the `config.json` file is ready, the CLI synthesizes Terraform configuration for an application.
+
+After this, rest is handled by terraform to deploy/destroy stacks. 
+
+For the deployment, CLI create two stacks:
+- **Backend stack**: S3 backend is used to provide state locking and consistency checking. S3 bucket is used to store the generated state files by the terraform and Dynamo DB table is used for the locking purpose. 
+- **Ghost stack**: Once the backend stack is deployed, the deployment for the Ghost stack begins. Changes in the infrastructure plan will be shown to user before deploying/destroying the stack.
+
+Terraform CDK then utilizes the providers and modules specified to generate terraform configuration. This terraform configuration later used for deploying/destroying stacks.
+
+### Provides flexibility with: 
 1. **Existing VPC**: You can use the existing VPC by providing subnet ids as comma-separated values otherwise it'll create the new VPC and the subnets.
 It expects to have Route53 configured for the domain where you want to host the Ghost. If you want to use the existing VPC, you need to provide the `subnet ids` to launch the ECS tasks (recommend private subnets) and `public subnet ids` to launch the load balancer (ALB). 
 2. **Existing Load Balancer**: You can use the existing load balancer (ALB) by providing the `load balancer listener ARN`.
