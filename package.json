@@ -2,7 +2,7 @@
   "name": "plg-ghost",
   "version": "1.0.0",
   "description": "Host Ghost server in AWS ECS and provision to host static files on AWS S3",
-  "main": "./dist/run.js",
+  "main": "./dist/src/run.js",
   "scripts": {
     "dev": "ts-node ./src/run.ts",
     "build": "tsc",
@@ -43,12 +43,12 @@
     "@cdktf/provider-aws": "8.0.12",
     "cdktf": "0.11.2",
     "cdktf-cli": "0.11.2",
+    "chalk": "4.1.2",
     "commander": "9.3.0",
     "constructs": "10.1.37",
     "psl": "1.9.0",
     "readline-sync": "1.4.10",
-    "shelljs": "0.8.5",
-    "chalk": "4.1.2"
+    "shelljs": "0.8.5"
   },
   "devDependencies": {
     "@types/jest": "28.1.1",

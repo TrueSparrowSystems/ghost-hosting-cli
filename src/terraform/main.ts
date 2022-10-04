@@ -1,13 +1,13 @@
 import { App } from 'cdktf';
 import { BackendStack } from './backend';
 import { GhostStack } from './ghost';
-import { readJsonFileWithFileName } from '../lib/util';
+import { readJsonFile } from '../lib/util';
 
 import commonConfig from '../config/common.json';
 
 const app = new App();
 
-const userInput = readJsonFileWithFileName(commonConfig.configFile);
+const userInput = readJsonFile(commonConfig.configFile);
 
 new BackendStack(app, commonConfig.backendStackName, {
   accessKey: userInput.aws.accessKeyId,

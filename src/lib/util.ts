@@ -66,7 +66,7 @@ export function getPathSuffixFromUrl(url: string): string {
   return urlParts.slice(1).join('/');
 }
 
-export function readJsonFileWithFileName(fileName: string): any {
+export function readJsonFile(fileName: string): any {
   let fileContent = null;
   try {
     const data = fs.readFileSync(fileName, 'utf-8');
