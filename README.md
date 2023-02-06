@@ -30,7 +30,7 @@ Terraform CDK then utilizes the providers and modules specified to generate terr
 It expects to have Route53 configured for the domain where you want to host the Ghost. If you want to use the existing VPC, you need to provide the `subnet ids` to launch the ECS tasks (recommend private subnets) and `public subnet ids` to launch the load balancer (ALB). 
 2. **Existing Load Balancer**: You can use the existing load balancer (ALB) by providing the `load balancer listener ARN`.
 3. **Hosting URL**: It requires a `Ghost hosting url` where Ghost can be accessed on the web.
-4. **Static Website**: Refer [this](https://github.com/PLG-Works/ghost-static-website-generator) to host the static website for the generated content. You can also specify `Static website url` where it will provision the AWS S3 bucket to host the static website.
+4. **Static Website**: Refer [this](https://github.com/TrueSparrowSystems/ghost-static-website-generator) to host the static website for the generated content. You can also specify `Static website url` where it will provision the AWS S3 bucket to host the static website.
 5. **Existing MySQL Database**: The cli requires a MySQL database to store the Ghost configurations along with the content. You can provide the existing DB credentials like DB host, DB name, DB user password, and database name. (otherwise it'll create a new RDS instance).
 
 ## Why do I need to use this tool?
@@ -45,22 +45,22 @@ It comes with the following benefits:
 
 - Install the package:
   ```bash
-  npm install -g plg-ghost
+  npm install -g truesparrow-ghost
   ```
 - Deploy Ghost Stack and Backend Stack:
     ```bash
-    plg-ghost deploy
+    truesparrow-ghost deploy
     ```
 
 - Destroy Ghost and Backend Stack:
     ```bash
-    plg-ghost destroy
+    truesparrow-ghost destroy
     ```
 
 ## Development:
 - Clone the repository:
     ```bash
-    git clone git@github.com:PLG-Works/ghost-hosting-cli.git
+    git clone git@github.com:truesparrow-Works/ghost-hosting-cli.git
     ```
 - Install all dependencies:
     ```bash

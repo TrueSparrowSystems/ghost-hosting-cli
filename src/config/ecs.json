@@ -5,7 +5,7 @@
   "nginxContainerPort": 8080,
   "autoScalingMinCapacity": 2,
   "autoScalingMaxCapacity": 10,
-  "logGroupName": "plg/ghost",
+  "logGroupName": "truesparrow/ghost",
 
   "logStreamPrefix": "ecs",
   "taskDefinition": {
@@ -14,7 +14,7 @@
   },
   "ghostImageUri": "public.ecr.aws/j0d2y7t1/ghost:5.7.0-alpine",
   "nginxImageUri": "public.ecr.aws/j0d2y7t1/nginx:1.23.1",
-  "clusterName": "plg-ghost",
+  "clusterName": "truesparrow-ghost",
   "amazonECSTaskExecutionRolePolicy": "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
   "amazonEC2ContainerServiceAutoscaleRole": "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole"
 }

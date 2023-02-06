@@ -1,5 +1,5 @@
 {
-  "configsS3BucketName": "plg-ghost-configs",
-  "blogContentS3BucketName": "plg-ghost-blog-assets",
-  "blogStaticS3BucketName": "plg-ghost-static-assets"
+  "configsS3BucketName": "truesparrow-ghost-configs",
+  "blogContentS3BucketName": "truesparrow-ghost-blog-assets",
+  "blogStaticS3BucketName": "truesparrow-ghost-static-assets"
 }
