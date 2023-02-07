@@ -60,7 +60,7 @@ It comes with the following benefits:
 ## Development:
 - Clone the repository:
     ```bash
-    git clone git@github.com:truesparrow-Works/ghost-hosting-cli.git
+    git clone git@github.com:TrueSparrowSystems/ghost-hosting-cli.git
     ```
 - Install all dependencies:
     ```bash
