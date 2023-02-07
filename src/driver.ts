@@ -165,9 +165,9 @@ function _readAndShowOutput(): any {
 function _formatOutput(output: any): any {
   const responseData = {};
 
-  const plgGhostOutputHash = output[commonConfig.ghostStackName];
-  Object.keys(plgGhostOutputHash).forEach(function (key) {
-    const value = plgGhostOutputHash[key];
+  const tsGhostOutputHash = output[commonConfig.ghostStackName];
+  Object.keys(tsGhostOutputHash).forEach(function (key) {
+    const value = tsGhostOutputHash[key];
 
     const extractedKey = key.substring(0, key.length - 9); // 8 char random string with '_'
 

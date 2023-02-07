@@ -1,5 +1,5 @@
 {
-  "name": "plg-ghost",
+  "name": "truesparrow-ghost",
   "version": "1.0.0",
   "description": "Host Ghost server in AWS ECS and provision to host static files on AWS S3",
   "main": "./dist/src/run.js",
@@ -23,7 +23,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/PLG-Works/ghost-hosting-cli.git"
+    "url": "git+https://github.com/TrueSparrowSystems/ghost-hosting-cli.git"
   },
   "keywords": [
     "ghost",
@@ -33,12 +33,12 @@
     "cdktf",
     "devops"
   ],
-  "author": "PLG Works",
+  "author": "True Sparrow",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/PLG-Works/ghost-hosting-cli/issues"
+    "url": "https://github.com/TrueSparrowSystems/ghost-hosting-cli/issues"
   },
-  "homepage": "https://github.com/PLG-Works/ghost-hosting-cli#readme",
+  "homepage": "https://github.com/TrueSparrowSystems/ghost-hosting-cli#readme",
   "dependencies": {
     "@cdktf/provider-aws": "8.0.12",
     "cdktf": "0.11.2",
@@ -69,6 +69,6 @@
     "dist/**/*"
   ],
   "bin": {
-    "plg-ghost": "./dist/src/run.js"
+    "truesparrow-ghost": "./dist/src/run.js"
   }
 }

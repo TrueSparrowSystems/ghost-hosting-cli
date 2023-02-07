@@ -107,7 +107,7 @@ class CloudfrontResource extends Resource {
    */
   _createOriginAccessIdentity() {
     return new CloudfrontOriginAccessIdentity(this, 'origin_access_identity', {
-      comment: 'PLG Ghost blog',
+      comment: 'True Sparrow Ghost blog',
     });
   }
 
@@ -140,7 +140,7 @@ class CloudfrontResource extends Resource {
       ],
       enabled: true,
       isIpv6Enabled: true,
-      comment: 'PLG Ghost blog',
+      comment: 'True Sparrow Ghost blog',
       defaultCacheBehavior: {
         allowedMethods: ['GET', 'HEAD', 'OPTIONS'],
         cachedMethods: ['GET', 'HEAD'],

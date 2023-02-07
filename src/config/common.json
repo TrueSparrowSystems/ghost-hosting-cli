@@ -1,14 +1,14 @@
 {
   "ghostStackName": "ghost",
   "backendStackName": "backend",
-  "nameLabel": "PLG Ghost Test",
-  "nameIdentifier": "plg-ghost",
+  "nameLabel": "True Sparrow Ghost Test",
+  "nameIdentifier": "truesparrow-ghost",
   "configFile": "config.json",
   "outputFile": "output.json",
-  "tfStateBucketName": "plg-ghost-tf-state",
+  "tfStateBucketName": "truesparrow-ghost-tf-state",
   "tfStateBucketKey": "meta/ghost.tfstate",
-  "tfStateBucketLockDdbTableName": "plg-ghost-tf-state-locking",
+  "tfStateBucketLockDdbTableName": "truesparrow-ghost-tf-state-locking",
   "tags": {
-    "Name": "PLG Ghost"
+    "Name": "True Sparrow Ghost"
   }
 }
